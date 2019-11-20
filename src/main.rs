@@ -10,7 +10,7 @@
 // printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i))
 
 // this prints formatted 4-byte hex representing amplitute of the sound wave
-// all is multiplied by 100 (scalar for volume control
+// all is multiplied by 100 (scalar for volume control) - TODO structopt
 // 1382 is ABOUT 440 * Pi - use RUST for this - constexpr??
 // The bash verison uses 2^x = e^(x*ln(2)), we can just use 2^x
 // 100 * sin((440*Pi) * (pick a random semitone / 12) * i)
