@@ -41,10 +41,6 @@ awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("
 
 No, just mashing your keyboard will likely not yield similar results.  I tried it myself so you don't have to.  Tools like `awk` are terse, but this is merely a `for` loop with some math in the body.
 
-#### Disclaimer
-
-I am not a physics person, and all the music theory I know I picked up in high school and never touched again.  This overview is just scratching the surface enough to write this program - please pipe up if I've said something that's just not accurate.
-
 #### A Little Physics
 
 A sound at a specific pitch is a consequence of that sound's frequency.  You may know that sound travels as a "wave":
@@ -81,6 +77,10 @@ Note that this scale is still diatonic - there are the same number of whole and 
 // minor : 0,2,3,5,7,8,10,12
 
 Think of a super cool way to abstract this concept
+
+#### Disclaimer
+
+I am not trained in physics, and all the music theory I know I picked up in high school and never touched again.  This overview naturally reflects my understanding, not necessarily reality, and is just scratching the surface of both topics enough to write this program.  Please pipe up if I've said something here that's just not accurate.  That said, it did get us this far...
 
 ### Play The Sound
 
