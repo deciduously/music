@@ -31,8 +31,6 @@ Check out a blog post about how that line specifically works [here](https://blog
 // Get random number stream
 // Map random data to u8 stream
 
-// semitones : 0,2,4,5,7,9,11,12
-
 ### Mapping Bytes To Notes
 
 This is the meat of the program - turning our numeric data into something we can hear.  To get from random numbers to sounds we can hear, we need to map each data point to an amplitude.  The relevant section of the `bash` again:
@@ -54,6 +52,12 @@ TODO Sound Graph
 #### A Little Music Theory
 
 Sound is a continuous spectrum of frequency, but when we make music deliberatly we tend to use scales to pick which frequency to use.
+
+// semitones : 0,2,4,5,7,9,11,12
+
+Whole, whole, half, whole, whole, whole, half
+
+Think of a super cool way to abstract this concept
 
 ### Play The Sound
 
