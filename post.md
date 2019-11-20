@@ -51,9 +51,13 @@ TODO Sound Graph
 
 #### A Little Music Theory
 
-Sound is a continuous spectrum of frequency, but when we make music deliberatly we tend to use scales to pick which frequency to use.  To start, though, we need some sort of standard, and the world has settled on [440hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) (or the "Stuttgart Pitch"), which is the A above Middle C.  If you're a musicion, you may own a tuner that marks 440 specifically.  This pitch is used for calibrating musical instruments and tuning a group, and we'll use it as a baseline constant for calculating frequencies.
+Sound is a continuous spectrum of frequency, but when we make music deliberatly we tend to use scales to pick which frequency to use.  To start, though, we need some sort of standard, and the world has settled on [440hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) (also denotedd "A440", sometimes called the "Stuttgart Pitch"), which is the A above Middle C on a piano:
 
-A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies).  The smallest of these is called a [semitone](https://en.wikipedia.org/wiki/Semitone), or minor second.  A major scale, also known as [Ionian mode](https://en.m.wikipedia.org/wiki/Mode_(music)), falls into a category called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range consists of five whole steps, which is two semitones or a [major second](https://en.wikipedia.org/wiki/Major_second) and two half steps (semitones):
+TODO piano diagram of A440
+
+If you're a musician you may own a tuner that marks 440Hz specifically.  This pitch is used for calibrating musical instruments and tuning a group, and we'll use it as a baseline constant for calculating frequencies.
+
+A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intrvals from a base note.  The smallest of these is called a [semitone](https://en.wikipedia.org/wiki/Semitone), or minor second.  A major scale, also known as [Ionian mode](https://en.m.wikipedia.org/wiki/Mode_(music)), falls into a category called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range consists of five whole steps, which is two semitones or a [major second](https://en.wikipedia.org/wiki/Major_second) and two half steps (semitones):
 
 ```txt
 whole, whole, half, whole, whole, whole, half
