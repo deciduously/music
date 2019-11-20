@@ -41,6 +41,10 @@ awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("
 
 No, just mashing your keyboard will likely not yield similar results.  I tried it myself so you don't have to.  Tools like `awk` are terse, but this is merely a `for` loop with some math in the body.
 
+#### Disclaimer
+
+I am not a physics person, and all the music theory I know I picked up in high school and never touched again.  This overview is just scratching the surface enough to write this program - please pipe up if I've said something that's just not accurate.
+
 #### A Little Physics
 
 A sound at a specific pitch is a consequence of that sound's frequency.  You may know that sound travels as a "wave":
@@ -51,11 +55,30 @@ TODO Sound Graph
 
 #### A Little Music Theory
 
-Sound is a continuous spectrum of frequency, but when we make music deliberatly we tend to use scales to pick which frequency to use.
+Sound is a continuous spectrum of frequency, but when we make music deliberatly we tend to use scales to pick which frequency to use.  To start, though, we need some sort of standard, and the world has settled on [440hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) (or the "Stuttgart Pitch"), which is the A above Middle C.  If you're a musicion, you may own a tuner that marks 440 specifically.  This pitch is used for calibrating musical instruments and tuning a group, and we'll use it as a baseline constant for calculating frequencies.
 
-// semitones : 0,2,4,5,7,9,11,12
+A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies).  The smallest of these is called a [semitone](https://en.wikipedia.org/wiki/Semitone), or minor second.  A major scale, also known as [Ionian mode](https://en.m.wikipedia.org/wiki/Mode_(music)), falls into a category called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range consists of five whole steps, which is two semitones or a [major second](https://en.wikipedia.org/wiki/Major_second) and two half steps (semitones):
 
-Whole, whole, half, whole, whole, whole, half
+```txt
+whole, whole, half, whole, whole, whole, half
+```
+
+TODO embed sound
+
+
+There are a few variations of minor scale, but for this application I'll define the [natural minor scale](https://en.m.wikipedia.org/wiki/Minor_scale#Natural_minor_scale) (a.k.k Aeolian mode):
+
+```txt
+whole, half, whole, whole, half, whole, whole
+```
+
+TODO embed sound
+
+Note that this scale is still diatonic - there are the same number of whole and half intervals, they're just distributed differently.
+
+// major : 0,2,4,5,7,9,11,12
+
+// minor : 0,2,3,5,7,8,10,12
 
 Think of a super cool way to abstract this concept
 
