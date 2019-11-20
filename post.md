@@ -70,7 +70,7 @@ whole, half, whole, whole, half, whole, whole
 
 TODO embed sound
 
-Note that this scale is still diatonic - there are the same number of whole and half intervals, they're just distributed differently.
+Note that this scale is still diatonic - there are the same number of whole and half intervals, they're just distributed differently. Actually, if you start the major scale at the sixth note you get a corresponding minor scale - when you reach the end, you've gone an octave and wrap back up to the beginning.  Try it yourself, counting on the examples above.
 
 // major : 0,2,4,5,7,9,11,12
 
