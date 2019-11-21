@@ -152,23 +152,23 @@ type Hertz = f64;
 const STANDARD_PITCH: Hertz = 440.0;
 
 struct Pitch {
-    hertz: Hertz,
+    frequency: Hertz,
 }
 
 impl Pitch {
-    fn new(hertz: Hertz) -> Self {
-        Self { hertz }
+    fn new(frequency: Hertz) -> Self {
+        Self { frequency }
     }
 }
 
 impl Default for Pitch {
     fn default() -> Self {
-        Self { hertz: STANDARD_PITCH }
+        Self { frequency: STANDARD_PITCH }
     }
 }
 ```
 
-With this code we can use `Pitch::default()` to get our A440 pitch, or pass an abitrary frequency: `Pitch::new(440)`.
+With this code we can use `Pitch::default()` to get our A440 pitch, or pass an abitrary frequency: `Pitch::new(440.0)`.
 
 Let's see if we can produce this tone.
 
@@ -234,23 +234,23 @@ const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64;
 
 The ratio between frequencies separated by a *single* cent is the 1200th root of 2, or 2^1/1200 - it's unlikely you'd be able to hear a distinction between two tones a single cent apart.
 
-We can use this to calculate the Hertz of a desired pitch if we know both a base frequency and the number of cents to increase by:
+Knowing all this we can calculate the frequency in Hertz of a desired pitch if we know both a base frequency and the number of cents to increase by:
 
 TODO sub your awn LaTeX?
 
 ![cents formula](https://wikimedia.org/api/rest_v1/media/math/render/svg/920411bb22d357b13f69a76fa33557c707f7cb57)
 
-Here, *a* is the initial frequency in Hertz and *n* is the number of cents to increase.
+Here, *a* is the initial frequency in Hertz, `b` is the target frequency, and *n* is the number of cents by which to increase `a`.
 
 We can add a method to `Pitch` with this logic:
 
 ```diff
   impl Pitch {
-      fn new(hertz: Hertz) -> Self {
-          Self { hertz }
+      fn new(frequency: Hertz) -> Self {
+          Self { frequency }
       }
 +     fn add_cents(&mut self, cents: Cents) {
-+         self.hertz *= 2.0f64.powf(cents / OCTAVE_CENTS);
++         self.frequency *= 2.0f64.powf(cents / OCTAVE_CENTS);
 +     }
   }
 ```
@@ -261,9 +261,9 @@ This works out to just shy of 4 cents to cause an increase of 1Hz, more precisel
 ```rust
 fn main() {
     let mut pitch = Pitch::default();
-    println!("{:?}", pitch); // Pitch { hertz: 440.0 }
+    println!("{:?}", pitch); // Pitch { frequency: 440.0 }
     pitch.add_cents(3.9302); // attempt to add one Hz
-    println!("{:?}", pitch); // Pitch { hertz: 441.0000105867894 } - close enough
+    println!("{:?}", pitch); // Pitch { frequency: 441.0000105867894 } - close enough
 }
 ```
 
@@ -271,11 +271,11 @@ Instead of adding single cents at a time, add a helper method that just expects 
 
 ```diff
   impl Pitch {
-      fn new(hertz: Hertz) -> Self {
-          Self { hertz }
+      fn new(frequency: Hertz) -> Self {
+          Self { frequency }
       }
       fn add_cents(&mut self, cents: Cents) {
-          self.hertz = (self.hertz as f64 * 2.0f64.powf(cents / OCTAVE_CENTS)) as u32;
+          self.frequency *= 2.0f64.powf(cents / OCTAVE_CENTS);
       }
 +     fn add_semitones(&mut self, semitones: u32) {
 +         self.add_cents(semitones as f64 * SEMITONE_CENTS);
@@ -288,9 +288,9 @@ That's a lot easier to work with:
 ```rust
 fn main() {
     let mut pitch = Pitch::default();
-    println!("{:?}", pitch); // Pitch { hertz: 440.0 }
+    println!("{:?}", pitch); // Pitch { frequency: 440.0 }
     pitch.add_semitones(OCTAVE_SEMITONES); // add an octave
-    println!("{:?}", pitch); // Pitch { hertz: 880.0 } - 2:1 ratio
+    println!("{:?}", pitch); // Pitch { frequency: 880.0 } - 2:1 ratio
 }
 ```
 

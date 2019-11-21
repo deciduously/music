@@ -52,15 +52,15 @@ const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64; // 1200.0
 
 #[derive(Debug)]
 struct Pitch {
-    hertz: Hertz,
+    frequency: Hertz,
 }
 
 impl Pitch {
-    fn new(hertz: Hertz) -> Self {
-        Self { hertz }
+    fn new(frequency: Hertz) -> Self {
+        Self { frequency }
     }
     fn add_cents(&mut self, cents: Cents) {
-        self.hertz *= 2.0f64.powf(cents / OCTAVE_CENTS);
+        self.frequency *= 2.0f64.powf(cents / OCTAVE_CENTS);
     }
     fn add_semitones(&mut self, semitones: u32) {
         self.add_cents(semitones as f64 * SEMITONE_CENTS);
@@ -70,7 +70,7 @@ impl Pitch {
 impl Default for Pitch {
     fn default() -> Self {
         Self {
-            hertz: STANDARD_PITCH,
+            frequency: STANDARD_PITCH,
         }
     }
 }
