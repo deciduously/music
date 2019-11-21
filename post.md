@@ -11,7 +11,7 @@ tags: beginners, rust, tutorial, music
 
 *- [Winona Ryder](https://en.wikipedia.org/wiki/Winona_Ryder) as [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk) on [SNL's Celebrity Jeopardy!](https://youtu.be/R3V94ZtmdbQ?t=190) - 2002*
 
-Let's channel that wacky energy.  In this post, we'll throw something random into, well, a [math-oven](https://en.wikipedia.org/wiki/Subroutine) and *viola*, music!  We're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://www.rust-lang.org/), along with a juuust a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).  ¡Vámonos!
+Let's channel that wacky energy.  In this post, we'll throw something random into, well, a [math-oven](https://en.wikipedia.org/wiki/Subroutine) and [*viola*](https://en.wikipedia.org/wiki/Viola), [music](https://en.wikipedia.org/wiki/Music)!  We're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://www.rust-lang.org/), along with a juuust a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).  ¡Vámonos!
 
 ## Table of Contents
 
