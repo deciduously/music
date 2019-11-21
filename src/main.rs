@@ -22,6 +22,64 @@
 
 // THEN - author your own!
 
+use rand::random;
+
+#[derive(Default)]
+struct RandomInput;
+
+impl RandomInput {
+    fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Iterator for RandomInput {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(random::<Self::Item>())
+    }
+}
+
+type Hertz = u32;
+const STANDARD_PITCH: Hertz = 440;
+
+const SCALE_SIZE: usize = 7;
+
+#[derive(Debug, Clone, Copy)]
+enum Interval {
+    Half = 1,
+    Whole = 2,
+}
+
+type ScaleIntervals = [Interval; SCALE_SIZE];
+
+const MajorScale: ScaleIntervals = [
+    Interval::Whole,
+    Interval::Whole,
+    Interval::Half,
+    Interval::Whole,
+    Interval::Whole,
+    Interval::Whole,
+    Interval::Half,
+];
+
+#[derive(Debug)]
+enum Mode {
+    Aeolian,
+    Ionian,
+}
+
+impl Mode {
+    fn get_interval(&self, n: u8) -> Interval {
+        let idx = n as usize % SCALE_SIZE;
+        MajorScale[idx]
+    }
+}
+
 fn main() {
-    println!("Hello, world!");
+    let mut rands = RandomInput::new();
+    loop {
+        println!("{}", rands.next().unwrap());
+    }
 }
