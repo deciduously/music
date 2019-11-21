@@ -1,7 +1,7 @@
 ---
-title: Teach Your Computer To Sing
+title: Teaching Numbers To Sing
 published: false
-description: 
+description: Learn how to generate sound from numeric data in Rust.
 tags: beginners, rust, tutorial, music
 ---
 
@@ -133,7 +133,7 @@ If the X axis is time, a sine wave represents a recurring action with an analog 
 
 It makes sense that a vibration propogating through a medium could be represented as such a wave - picture a string vibrating on a guitar.  It wobbles back and forth rapidly, just like this wave's shape.  It stands to reason that the waves generated from this action would correspond to this osciallation at a given point.
 
-In simple cases, a sound at a specific pitch is a result of that sound's frequency.  The higher the frequency, or closer together the peaks.
+In simple cases, a sound at a specific pitch is a result of that sound's frequency.  The higher the frequency, or closer together the peaks, the higher the pitch.
 
 The standard unit for frequency is the [Hertz](https://en.wikipedia.org/wiki/Hertz), abbreviated `Hz`, which measures the *number of cycles per second*.  One cycle here is the distance (or time) between two peaks on the graph:
 
@@ -149,6 +149,7 @@ Let's set up a type to represent a pitch:
 
 ```rust
 type Hertz = u32;
+const STANDARD_PITCH: Hertz = 440;
 
 struct Pitch {
     hertz: Hertz,
@@ -162,12 +163,12 @@ impl Pitch {
 
 impl Default for Pitch {
     fn default() -> Self {
-        Self { hertz: 440 }
+        Self { hertz: STANDARD_PITCH }
     }
 }
 ```
 
-With this code, we can use `Pitch::default()` to get our A440 pitch, or pass an abitrary freqwuency: `Pitch::new(440)`.
+With this code we can use `Pitch::default()` to get our A440 pitch, or pass an abitrary frequency: `Pitch::new(440)`.
 
 Let's see if we can produce this tone.
 
@@ -187,7 +188,7 @@ If you're a musician you may own a tuner that marks 440Hz specifically.  This pi
 
 A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  The smallest of these intervals is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second.  Here I'll refer to it as a "half" step.  Take a look back at that piano diagram above - one semitone is the distance between an adjacacent white key and black key.  A *whole* step, or a [major second](https://en.wikipedia.org/wiki/Major_second), is equal to two of these, or two adjacant white keys skipping a black.
 
-Clearly, though, there isn't a black key between every white key.  The piano is designed to play notes from a catagory called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five *whole* steps and two half steps.  We can see this visually on the keyboard - an octave is 8 notes, and between any two keys that are eight apart there will be the same number of whole and half steps.
+Clearly, though, there isn't a black key between every white key.  The piano is designed to play notes from a catagory called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - an octave is 8 notes, and between any two keys that are eight apart there will be the same number of whole and half steps.
 
 A major scale, also known as [Ionian mode](https://en.m.wikipedia.org/wiki/Mode_(music)), is the baseline scale.  Start at Middle C, the one highlight in cyan above, and count up to the next C key, eight white keys to the left.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get:
 
@@ -207,7 +208,6 @@ TODO embed sound
 
 There are the same number of whole and half intervals, they're just distributed differently.  You can play a corresponding minor scale using only the white keys by simply starting at the sixth note.  Try counting it out yourself!
 
-
 TODO figure out how to present after it works
 
 To model this, we'll create another `Iterator` but this time implemented for an `enum`:
@@ -220,10 +220,10 @@ To calculate the value needed in Hertz, we need a more precise way to describe a
 
 ```txt
 whole, whole, half, whole, whole, whole, half
-2    +  2   +  1  +   2   +  2  +   2  +  1 = 12  
+  2  +  2   +  1  +   2   +  2  +   2  +  1   =  12  
 ```
 
-This means that a full octave spans 1200 cents, 12 semitones at 100 cents each.:
+This means that a full octave spans 1200 cents, 12 semitones at 100 cents each.  Set up some Rust constants:
 
 ```rust
 type Cents = f64;
@@ -235,6 +235,8 @@ const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64;
 The ratio between frequencies separated by a *single* cent is the 1200th root of 2, or 2^1/1200 - it's unlikely you'd be able to hear a distinction between two tones a single cent apart.
 
 We can use this to calculate the Hertz of a desired pitch if we know both a base frequency and the number of cents to increase by:
+
+TODO sub your awn LaTeX?
 
 ![cents formula](https://wikimedia.org/api/rest_v1/media/math/render/svg/920411bb22d357b13f69a76fa33557c707f7cb57)
 
@@ -253,7 +255,7 @@ We can add a method to `Pitch` with this logic:
   }
 ```
 
-This works out to an increase of 1 Hz representing just shy of 4 cents (around 3.93 for a base frequency of 440).  I'm using floating-point values to hadnle the cents accurately, but Hertz are just unsigned integers, so we should expect that adding `3.0` cents will not change our frequency, but `4.0` will increase it by one:
+This works out to just shy of 4 cents to cause an increase of 1Hz, more precisely around 3.93 for a base frequency of 440.  I'm using floating-point values to handle the cents arithmetic, but Hertz are just stored as unsigned integers.  We should expect that adding `3.0` cents will not change our frequency, but `4.0` will increase it by one:
 
 ```rust
 fn main() {
@@ -266,7 +268,7 @@ fn main() {
 }
 ```
 
-This implementation isn't keeping track of partial intervals - adding `3.0` cents doesn't result in any change at all to the stored frequency, so you can't get there by adding `2.0` and then `2.0`:
+This implementation isn't keeping track of partial-Hertz intervals.  Adding fewer than 4 cents doesn't result in any change at all to the stored frequency, so you can't get there by adding `2.0` and then `2.0`:
 
 ```rust
 fn main() {
@@ -279,13 +281,38 @@ fn main() {
 }
 ```
 
-Now we can define each variant's sequence.  I'm taking advantage of the face that it's actually the same sa
+Instead of adding single cents at a time, add a helper method that just expects a number of semitones:
+
+```diff
+  impl Pitch {
+      fn new(hertz: Hertz) -> Self {
+          Self { hertz }
+      }
+      fn add_cents(&mut self, cents: Cents) {
+          self.hertz = (self.hertz as f64 * 2.0f64.powf(cents / OCTAVE_CENTS)) as u32;
+      }
++     fn add_semitones(&mut self, semitones: u32) {
++         self.add_cents(semitones as f64 * SEMITONE_CENTS);
++     }
+  }
+```
+
+That's a lot easier to work with:
+
+```rust
+fn main() {
+    let mut pitch = Pitch::default();
+    println!("{:?}", pitch); // Pitch { hertz: 440 }
+    pitch.add_semitones(OCTAVE_SEMITONES); // add an octave
+    println!("{:?}", pitch); // Pitch { hertz: 880 } - 2:1 ratio
+}
+```
+
+Now we can start defining scales.
 
 // major : 0,2,4,5,7,9,11,12
 
 // minor : 0,2,3,5,7,8,10,12
-
-Think of a super cool way to abstract this concept
 
 ### Play The Sound
 
