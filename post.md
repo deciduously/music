@@ -232,7 +232,7 @@ const OCTAVE_SEMITONES: u32 = 12;
 const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64;
 ```
 
-The ratio between frequencies separated by a *single* cent is the 1200th root of 2, or 2^1/1200 - it's unlikely you'd be able to hear a distinction between two tones a single cent apart.
+The ratio between frequencies separated by a *single* cent is the 1200th root of 2, or 2^1/1200.  You wouldn't be able to hear a distinction between two tones a single cent apart.  The [Just-noticable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents.
 
 Knowing all this we can calculate the frequency in Hertz of a desired pitch if we know both a base frequency and the number of cents to increase by:
 
