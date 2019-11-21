@@ -52,7 +52,7 @@ enum Interval {
     Whole = 2,
 }
 
-type ScaleIntervals = [Interval; SCALE_SIZE];
+type ScaleIntervals = [Interval; SCALE_SIZE]; // TODO - not fixed length, pentatonic etc
 
 const MajorScale: ScaleIntervals = [
     Interval::Whole,

@@ -9,13 +9,13 @@ tags: beginners, rust, tutorial, music
 
 We're going to teach our computers to sing using [Rust](https://www.rust-lang.org/), along with a little light physics and music theory.  This is (hopefully) a beginner-level post.  It's not necessarily Rust-specific, but the code is potentially a little Rust-idiosyncratic for the totally uninitiated.
 
-We'll start, as any worthwhile tutorial should, with a quote from one of SNL's *Celebrity Jeopardy!* sketches in which Winona Ryder is channeling Icelandic music icon [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk):
+We'll start, as any worthwhile tutorial should, with a quote from SNL's 2002 *Celebrity Jeopardy!* sketch in which Winona Ryder is channeling Icelandic music icon [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk), with Will Ferrell playing Trebek:
 
 > Alex Trebek: Björk, this is the only thing that becomes toast.
 Björk: Everything is music. When I go home, I throw knickers in the oven and it's music. Crash, boom, bang! (buzz)
 Alex Trebek: Wow. The answer, of course, was bread.
 
-Here's a [YouTube link](https://youtu.be/R3V94ZtmdbQ?t=190) to this moment.  Let's channel that energy - we'll throw some random numbers into the Rust compiler, and extract some music!
+Here's a [YouTube link](https://youtu.be/R3V94ZtmdbQ?t=190) to this moment.  Let's channel that wacky energy - we'll throw some random numbers into the Rust compiler, and extract some music!
 
 ## Table of Contents
 
@@ -158,7 +158,7 @@ const STANDARD_PITCH: Hertz = 440;
 
 Let's see if we can produce this tone.
 
-I tend to name *all the things*.
+TODO produce the flat tone - I think it's just gonna be 440*i*Pi
 
 #### A Little Music Theory
 
@@ -172,9 +172,11 @@ The cyan key is Middle C, and A440 is highlighted in yellow.
 
 If you're a musician you may own a tuner that marks 440Hz specifically.  This pitch is used for calibrating musical instruments and tuning a group, and we'll use it as a baseline constant for calculating frequencies.
 
-A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.
+A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  The smallest of these intervals is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second.  Here I'll refer to it as a "half" step.  Take a look back at that piano diagram above - one semitone is the distance between an adjacacent white key and black key.  A *whole* step, or a [major second](https://en.wikipedia.org/wiki/Major_second), is equal to two of these, or two adjacant white keys skipping a black.
 
-The smallest of these intervals is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second.  Here I'll refer to it as a "half" step.  A major scale, also known as [Ionian mode](https://en.m.wikipedia.org/wiki/Mode_(music)), falls into a category called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five *whole* steps, which is *two* semitones or a [major second](https://en.wikipedia.org/wiki/Major_second), and two half steps:
+Clearly, though, there isn't a black key between every white key.  The piano is designed to play notes from a catagory called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five *whole* steps and two half steps.  We can see this visually on the keyboard - an octave is 8 notes, and between any two keys that are eight apart there will be the same number of whole and half steps.
+
+A major scale, also known as [Ionian mode](https://en.m.wikipedia.org/wiki/Mode_(music)), is the baseline scale.  Start at Middle C, the one highlight in cyan above, and count up to the next C key, eight white keys to the left.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get:
 
 ```txt
 whole, whole, half, whole, whole, whole, half
@@ -182,7 +184,7 @@ whole, whole, half, whole, whole, whole, half
 
 TODO embed sound
 
-There are a few variations of minor scale, but for this application I'll define the [natural minor scale](https://en.m.wikipedia.org/wiki/Minor_scale#Natural_minor_scale) (a.k.a. Aeolian mode):
+There are a few variations of *minor* scale, but for now I'll define the [natural minor scale](https://en.m.wikipedia.org/wiki/Minor_scale#Natural_minor_scale) (a.k.a. Aeolian mode):
 
 ```txt
 whole, half, whole, whole, half, whole, whole
@@ -190,9 +192,9 @@ whole, half, whole, whole, half, whole, whole
 
 TODO embed sound
 
-Note that this scale is still diatonic - there are the same number of whole and half intervals, they're just distributed differently. Actually, if you start the major scale at the sixth note you get a corresponding minor scale - when you reach the end, you've gone an octave and wrap back up to the beginning.  Try it yourself, counting on the examples above.
+There are the same number of whole and half intervals, they're just distributed differently.  You can play a corresponding minor scale using only the white keys by simply starting at the sixth note.  Try counting it out yourself!
 
-To madel this, we'll create another `Iterator`, but this time implemented for an `enum`:
+To model this, we'll create another `Iterator` but this time implemented for an `enum`:
 
 ```rust
 ENUM
