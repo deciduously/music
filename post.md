@@ -29,6 +29,7 @@ Let's channel that wacky energy.  In this post, we'll throw something random int
       - [Cents](#cents)
       - [Modes](#modes)
       - [Other Scales](#other-scales)
+    + [Back To The Bytes](#back-to-the-bytes)
   * [Listen To Your Files](#listen-to-your-files)
 - [Challenges](#challenges)
 
@@ -106,7 +107,7 @@ use rand::random;
 
 #### Iterator
 
-We can skip the conversion from binary.   This crate can give us random 8-bit integers out of the box.  We can implement a similar result to the first two steps, or `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'` by manually implementing an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html):
+We can skip the conversion from binary.   This crate can give us random 8-bit integers out of the box.  We can implement a similar result to the first two steps, or `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'` by manually implementing an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html).  This trait is the standard way to represent, well, things that we iterate over.  It's easy to implement manually if a standard collection isn't right.  There's a [rich library](https://doc.rust-lang.org/std/iter/trait.Iterator.html) for types that implement thhis trait that you can take advantage of quickly.   There's only the one method:
 
 ```rust
 #[derive(Default)]
@@ -127,7 +128,7 @@ impl Iterator for RandomBytes {
 }
 ```
 
-The struct itself doesn't need to store any state.  We just always want to produce the next value by calling `rand::random()`, specified with the associated type of this iterator.  I set `Item` to `u8`, so calling `Random::Input::next()` will always return a `random::<u8>()` - there's no `None` branch, just `Some(x)`.  That means `unwrap()` is always safe to call on this iterator, it won't panic.  You can take it for a spin with this driver code:
+This struct itself doesn't need to store any [state](https://en.wikipedia.org/wiki/State_(computer_science)).  We just always want to produce the next value by calling `rand::random()`, specified with the associated type of this iterator.  I set `Item` to `u8`, so calling `Random::Input::next()` will always return a `random::<u8>()` - there's no `None` branch, just `Some(x)`.  That means `unwrap()` is always safe to call on this iterator, it won't panic.  You can take it for a spin with this driver code:
 
 ```rust
 fn main() {
@@ -164,7 +165,7 @@ Sound propogates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](
 
 *image: [wikimedia commons](https://en.wikipedia.org/wiki/File:Sine_waves_different_frequencies.svg)*
 
-If you're thinking *but Ben, you CAN mix component frequencies to represent sound waves as sine waves we all do that all the time*, you're correct (and probably smarter than me).  This is much simpler math-wise.  If that was either turning you on or off to this post, you can {start/stop} breathing.  No signal processing here, just a single frequency we modulate.
+If you're thinking *but Ben, you CAN mix component frequencies to represent sound waves as sine waves we all do that all the time*, you're correct (and probably smarter than me).  That's really cool stuff and a lot more complicated than what happens in this post.  If that was either turning you {on|off} to this, you can {stop|start} breathing normally.  There will be no signals processed here, just a single frequency [scalar](https://en.wikipedia.org/wiki/Variable_(computer_science)) we modulate.  Maybe next time if I can hack it coherently!
 
 If the X axis is time, a sine wave represents a recurring action with an analog (or smooth) oscillation between their maximal *amplitudes*, or distances in either direction from 0.  The *frequency* is how close together these peaks are, or how frequently this thing occurs.
 
@@ -345,11 +346,13 @@ Okay, Ben.  Ben, okay.  Okay, Ben.  But what about the pentatonic scale:
 
 This corresponds to playing just the black keys on a piano, starting from 
 
-Alright.  
+Alright.  Back to the bytes.
+
+##### Back To The Bytes
 
 ### Listen To Your Files
 
-You know what else is a stream of bytes?  Literally everything else.  Lucky we made this pretty adaptable, huh!
+You know what else is a stream of bytes?  Literally everything else.  Who needs `bash`!
 
 TODO maybe?  maybe not?  
 
