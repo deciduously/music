@@ -212,14 +212,14 @@ There are the same number of whole and half intervals, they're just distributed 
 
 ##### Cents
 
-To calculate the value needed in Hertz, we need a more precise way to describe an interval.  There is a logarithmic unit called a [cent](https://en.wikipedia.org/wiki/Cent_(music)) which represents the ratio between two frequencies.  There are 100 cents in a semitone.  A full octave has a frequency ratio of 2:1, so a note one octave higher has double the frequency of the lower.  We saw above that this spans twelve semitones - count them up:
+To calculate the value needed in Hertz, we need a more precise way to describe an interval.  A full octave has a frequency ratio of 2:1, meaning a note one octave higher has double the frequency of the lower.  This results in an exponential curve if you were to graph frequencies as they grow.  When working with such a curve there's often a corresponding logarithmic unit that turns that curve into a line.  For musical intervals this unit called a [cent](https://en.wikipedia.org/wiki/Cent_(music)) to represent the ratio between two frequencies.  We've already seen how each octave is divided into 12 semitones:
 
 ```txt
 whole, whole, half, whole, whole, whole, half
   2  +  2   +  1  +   2   +  2  +   2  +  1   =  12  
 ```
 
-This means that a full octave spans 1200 cents, 12 semitones at 100 cents each.  Set up some Rust constants:
+Each semitone is defined as 100 cents, meaing that a full octave spans 1200 cents.  Go ahead and set up some Rust constants:
 
 ```rust
 type Cents = f64;
@@ -231,8 +231,6 @@ const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64;
 The ratio between frequencies separated by a *single* cent is the 1200th root of 2, or 2^1/1200.  You wouldn't be able to hear a distinction between two tones a single cent apart.  The [Just-noticable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents.
 
 Knowing all this we can calculate the frequency in Hertz of a desired pitch if we know both a base frequency and the number of cents to increase by:
-
-TODO sub your awn LaTeX?
 
 ![cents formula](https://wikimedia.org/api/rest_v1/media/math/render/svg/920411bb22d357b13f69a76fa33557c707f7cb57)
 
