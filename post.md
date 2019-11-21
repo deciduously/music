@@ -29,7 +29,7 @@ Let's channel that wacky energy.  In this post, we'll throw something random int
       - [Cents](#cents)
       - [Modes](#modes)
       - [Other Scales](#other-scales)
-  * [Listen To Any Arbitrary File](#listen-to-any-arbitrary-file)
+  * [Listen To Your Files](#listen-to-your-files)
 - [Challenges](#challenges)
 
 ## Preamble
@@ -347,7 +347,9 @@ This corresponds to playing just the black keys on a piano, starting from
 
 Alright.  
 
-### Listen To Any Arbitrary File
+### Listen To Your Files
+
+You know what else is a stream of bytes?  Literally everything else.  Lucky we made this pretty adaptable, huh!
 
 TODO maybe?  maybe not?  
 
