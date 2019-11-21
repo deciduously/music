@@ -9,11 +9,9 @@ tags: beginners, rust, tutorial, music
 
 We're going to teach our computers to sing using [Rust](https://www.rust-lang.org/), along with a little light physics and music theory.  This is (hopefully) a beginner-level post.  It's not necessarily Rust-specific, but the code is potentially a little Rust-idiosyncratic for the totally uninitiated.
 
-We'll start, as any worthwhile tutorial should, with a quote from SNL's 2002 *Celebrity Jeopardy!* sketch in which Winona Ryder is channeling Icelandic music icon [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk), with Will Ferrell playing Trebek:
+We'll start, as any worthwhile tutorial should, with a quote from SNL's 2002 *Celebrity Jeopardy!* sketch in which Winona Ryder is channeling Icelandic music icon [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk):
 
-> Alex Trebek: Björk, this is the only thing that becomes toast.
-Björk: Everything is music. When I go home, I throw knickers in the oven and it's music. Crash, boom, bang! (buzz)
-Alex Trebek: Wow. The answer, of course, was bread.
+> Everything is music. When I go home, I throw knickers in the oven and it's music. Crash, boom, bang!
 
 Here's a [YouTube link](https://youtu.be/R3V94ZtmdbQ?t=190) to this moment.  Let's channel that wacky energy - we'll throw some random numbers into the Rust compiler, and extract some music!
 
@@ -133,7 +131,7 @@ Sound is composed physically of vibrations.  These vibrations cause perturbances
 
 If the X axis is time, a sine wave represents a recurring action with an analog (or smooth) oscillation between their maximal *amplitudes*, or distances in either direction from 0.  The *frequency* is how close together these peaks are, or how frequently this thing occurs.
 
-It makes sense that a vibration propogating through a medium could be represented as such a wave - picture a string vibrating on a guitar.  It wobbles back and forth rapidly, just like this wave's shape.
+It makes sense that a vibration propogating through a medium could be represented as such a wave - picture a string vibrating on a guitar.  It wobbles back and forth rapidly, just like this wave's shape.  It stands to reason that the waves generated from this action would correspond to this osciallation at a given point.
 
 In simple cases, a sound at a specific pitch is a result of that sound's frequency.  The higher the frequency, or closer together the peaks.
 
@@ -194,11 +192,27 @@ TODO embed sound
 
 There are the same number of whole and half intervals, they're just distributed differently.  You can play a corresponding minor scale using only the white keys by simply starting at the sixth note.  Try counting it out yourself!
 
+
+TODO figure out how to present after it works
+
 To model this, we'll create another `Iterator` but this time implemented for an `enum`:
 
 ```rust
 ENUM
 ```
+
+To calculate the value needed in Hertz, we need a more precise way to describe an interval.  There is a logarithmic unit called a [cent](https://en.wikipedia.org/wiki/Cent_(music)) which represents the ratio between two frequencies.  There are 100 cents in a semitone.  A full octave has a frequency ratio of 2:1, so a note one octave higher has double the frequency of the lower.  We saw above that this spans twelve semitones - count them up:
+
+```txt
+whole, whole, half, whole, whole, whole, half
+2    +  2   +  1  +   2   +  2  +   2  +  1 = 12  
+```
+
+This means that a full octave spans 1200 cents, 12 semitones at 100 cents each. The ratio between frequencies separated by a *single* cent is the 1200th root of 2, or 2^1/1200.
+
+We can use this to calculate the Hertz of a desired pitch if we know both a base frequency and the number of cents to increase by:
+
+![cents formula](https://wikimedia.org/api/rest_v1/media/math/render/svg/920411bb22d357b13f69a76fa33557c707f7cb57)
 
 Then, we can define each variant's sequence.  I'm taking advantage of the face that it's actually the same sa
 

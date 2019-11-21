@@ -22,6 +22,7 @@
 
 // THEN - author your own!
 
+use lazy_static::lazy_static;
 use rand::random;
 
 #[derive(Default)]
@@ -44,25 +45,25 @@ impl Iterator for RandomInput {
 type Hertz = u32;
 const STANDARD_PITCH: Hertz = 440;
 
-const SCALE_SIZE: usize = 7;
-
 #[derive(Debug, Clone, Copy)]
-enum Interval {
+pub enum Interval {
     Half = 1,
     Whole = 2,
 }
 
-type ScaleIntervals = [Interval; SCALE_SIZE]; // TODO - not fixed length, pentatonic etc
+type ScaleIntervals = Vec<Interval>;
 
-const MajorScale: ScaleIntervals = [
-    Interval::Whole,
-    Interval::Whole,
-    Interval::Half,
-    Interval::Whole,
-    Interval::Whole,
-    Interval::Whole,
-    Interval::Half,
-];
+lazy_static! {
+    pub static ref MAJOR_SCALE: ScaleIntervals = vec![
+        Interval::Whole,
+        Interval::Whole,
+        Interval::Half,
+        Interval::Whole,
+        Interval::Whole,
+        Interval::Whole,
+        Interval::Half,
+    ];
+}
 
 #[derive(Debug)]
 enum Mode {
@@ -72,14 +73,21 @@ enum Mode {
 
 impl Mode {
     fn get_interval(&self, n: u8) -> Interval {
-        let idx = n as usize % SCALE_SIZE;
-        MajorScale[idx]
+        use Mode::*;
+        let start_note = match self {
+            Aeolian => 5,
+            Ionian => 0,
+        };
+        let idx = n as usize + start_note % MAJOR_SCALE.len();
+        MAJOR_SCALE[idx]
     }
 }
 
 fn main() {
-    let mut rands = RandomInput::new();
-    loop {
-        println!("{}", rands.next().unwrap());
-    }
+    //let mut rands = RandomInput::new();
+    //loop {
+    //    println!("{}", rands.next().unwrap());
+    //}
+
+    //println!("{}", Mode::Ionian.get_interval(0));
 }
