@@ -17,9 +17,9 @@ Let's channel that wacky energy.  In this post, we'll throw something random int
 
 - [Preamble](#preamble)
 - [The Meme](#the-meme)
-- [The Rust](#the-rust)
+- [The Program](#the-program)
   * [Random input data](#random-input-data)
-    + [`Iterator`](#-iterator-)
+    + [`Iterator`](#iterator)
   * [Mapping Bytes To Notes](#mapping-bytes-to-notes)
     + [A Little Physics](#a-little-physics)
       - [Sine Waves](#sine-waves)
@@ -76,7 +76,7 @@ for (i = 0; i < 1; i+= 0.0001)
 
 Don't worry, we're gonna Rust up the joint and it'll all be clear.  We'll actually be able to make it even cooler with minimal effort thanks to aforementional total Rusting.  ¡Vámonos!
 
-## The Rust
+## The Program
 
 As always, ensure you have at least the default stable Rust toolchain [installed](https://www.rust-lang.org/tools/install).  This code was written with `rustc` [version 1.39](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html) for [Rust 2018](https://doc.rust-lang.org/nightly/edition-guide/rust-2018/edition-changes.html), and uses only the [`rand`](https://docs.rs/rand/0.7.2/rand/) crate.
 
