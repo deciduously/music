@@ -104,7 +104,7 @@ This crate is quite featureful, but we're keeping it simple.  Add an import to t
 use rand::random;
 ```
 
-#### `Iterator`
+#### Iterator
 
 We can skip the conversion from binary.   This crate can give us random 8-bit integers out of the box.  We can implement a similar result to the first two steps, or `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'` by manually implementing an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html):
 
