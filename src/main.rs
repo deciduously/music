@@ -26,15 +26,15 @@ use lazy_static::lazy_static;
 use rand::random;
 
 #[derive(Default)]
-struct RandomInput;
+struct RandomBytes;
 
-impl RandomInput {
+impl RandomBytes {
     fn new() -> Self {
         Self::default()
     }
 }
 
-impl Iterator for RandomInput {
+impl Iterator for RandomBytes {
     type Item = u8;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -114,13 +114,13 @@ impl Mode {
 }
 
 fn main() {
-    //let mut rands = RandomInput::new();
-    //loop {
-    //    println!("{}", rands.next().unwrap());
-    //}
+    let mut rands = RandomBytes::new();
+    loop {
+        println!("{}", rands.next().unwrap());
+    }
 
-    let mut pitch = Pitch::default();
-    println!("{:?}", pitch);
-    pitch.add_semitones(1);
-    println!("{:?}", pitch);
+    //let mut pitch = Pitch::default();
+    //println!("{:?}", pitch);
+    //pitch.add_semitones(1);
+    //println!("{:?}", pitch);
 }

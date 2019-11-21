@@ -11,24 +11,35 @@ tags: beginners, rust, tutorial, music
 
 *- [Winona Ryder](https://en.wikipedia.org/wiki/Winona_Ryder) as [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk) on [SNL's Celebrity Jeopardy!](https://youtu.be/R3V94ZtmdbQ?t=190) - 2002*
 
-Let's channel that wacky energy - we'll throw something random into the Rust compiler and *viola*, music!  We're going to teach our computers to sing using [Rust](https://www.rust-lang.org/), along with a juuust a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).
+Let's channel that wacky energy.  In this post, we'll throw something random into, well, a [math-oven](https://en.wikipedia.org/wiki/Subroutine) and *viola*, music!  We're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://www.rust-lang.org/), along with a juuust a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).  ¡Vámonos!
 
 ## Table of Contents
 
-TODO maybe??
+- [Preamble](#preamble)
+- [The Meme](#the-meme)
+- [The Rust](#the-rust)
+  * [Random input data](#random-input-data)
+    + [`Iterator`](#-iterator-)
+  * [Mapping Bytes To Notes](#mapping-bytes-to-notes)
+    + [A Little Physics](#a-little-physics)
+      - [Sine Waves](#sine-waves)
+      - [Notes](#notes)
+    + [A Little Music Theory](#a-little-music-theory)
+      - [Scales](#scales)
+      - [Cents](#cents)
+      - [Modes](#modes)
+      - [Other Scales](#other-scales)
+  * [Listen To Any Arbitrary File](#listen-to-any-arbitrary-file)
+- [Challenges](#challenges)
 
 ## Preamble
 
 I have two disclaimers:
 
-1. There are a lot of [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) links here.  If you're *that* kind of person, there's a potential for problematic [rabbit](https://en.wikipedia.org/wiki/Rabbit) holes.  Set rules.
+1. There are a lot of [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) links here.  If you're *that* kind of [person](https://en.wikipedia.org/wiki/Person), there's a potential for problematic [rabbit](https://en.wikipedia.org/wiki/Rabbit) holes.  Set [rules](https://en.wikipedia.org/wiki/Law).  Most of them will be on topic from here on, though.
 1. Further to Point 1, most of this I learned *myself* on Wikipedia.  The rest was [high school](https://en.wikipedia.org/wiki/High_school_(North_America)), which was like ten years ago.  I do believe it's generally on the mark, but I am making *no* claims of authority.  If you see something, say something.
 
-We're just going surface level - I'm using things like [*frequency*](https://en.wikipedia.org/wiki/Fundamental_frequency) and [*pitch*](https://en.wikipedia.org/wiki/Pitch_(music)) interchangeably, because for this application specifically they are.
-
 This is (hopefully) a beginner-level post.  It's not necessarily specific to Rust but also not shy about Rust idioms.  Even so, or perhaps because of, it should be pretty readable even if you don't speak Rust (yet) - that's the whole point!  I promise I'll (mostly) stop the whole parenthesis thing, too.
-
-¡Vámonos!
 
 ## The Meme
 
@@ -46,31 +57,30 @@ No, just mashing your keyboard will (likely) not yield similar results.  I tried
 
 {% youtube uLhQQSKhTok %}
 
-We're not going to do what that code does exactly, and I'm not going to elaborate on what any of these specific snippets mean, but it does serve as a solid roadmap:
+We're not going to do what that code does exactly, and I'm not going to elaborate on what any of these specific snippets mean, but it does serve as a solid roadmap.  Each like calls out to some other GNU/Linux/(ALSA) tool:
 
-1. `cat /dev/urandom`: Get a stream of random binary data
-1. `hexdump -v -e '/1 "%u\n"'`: Convert binary to 8-bit base-10 integers (0-255)
-1. `awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }'`: Map integers to pitches, as 8-byte hexadecimal values
-1. `xxd -r -p`: Convert hex numbers back to binary
-1. `aplay -c 2 -f S32_LE -r 16000`: Play back binary data as sound
+1. `cat /dev/urandom`: Get a stream of random binary data.
+1. `hexdump -v -e '/1 "%u\n"'`: Convert binary to 8-bit base-10 integers (0-255).
+1. `awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }'`: Map integers to pitches, as 8-byte hexadecimal values.
+1. `xxd -r -p`: Convert hex numbers back to binary.
+1. `aplay -c 2 -f S32_LE -r 16000`: Play back binary data as sound.
 
-Of this, step three ends up being pretty much what happens here too - here's what it looks like as spread apart as I could:
+Of this, only step three ends up being pretty much what happens here too - here's what it looks like as spread apart as I could:
 
-```awk
+```bash
 split("0,2,4,5,7,9,11,12",a,",");
 for (i = 0; i < 1; i+= 0.0001)
     printf("%08X\n",
            100 * sin(1382 * exp((a[$1 % 8]/12) * log(2)) * i))
-}
 ```
 
-The first line stores a list of numbers into `a`, and then prints a series of 
-
-Let's Rust up the joint.  ¡Vámonos!
+Don't worry, we're gonna Rust up the joint and it'll all be clear.  We'll actually be able to make it even cooler with minimal effort thanks to aforementional total Rusting.  ¡Vámonos!
 
 ## The Rust
 
-As always, ensure you have at least the default stable Rust toolchain [installed](https://www.rust-lang.org/tools/install).  Then, spin up a new project:
+As always, ensure you have at least the default stable Rust toolchain [installed](https://www.rust-lang.org/tools/install).  This code was written with `rustc` [version 1.39](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html) for [Rust 2018](https://doc.rust-lang.org/nightly/edition-guide/rust-2018/edition-changes.html), and uses only the [`rand`](https://docs.rs/rand/0.7.2/rand/) crate.
+
+Then, spin up a new project:
 
 ```txt
 $ cargo new music
@@ -88,27 +98,27 @@ First off, we need to grab the Rust crate used for generating random numbers.  A
 + rand = "0.7"
 ```
 
-This crate is [quite featureful](https://docs.rs/rand/0.7.2/rand/), but we're keeping it simple.  Add an import to the top of `src/main.rs`:
+This crate is quite featureful, but we're keeping it simple.  Add an import to the top of `src/main.rs`:
 
 ```rust
 use rand::random;
 ```
 
-#### Iterators
+#### `Iterator`
 
-We can skip the whole conversion from binary - this crate can give us randum 8-bit integers out of the box.  We can implement a similar result to the first two steps, or `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'` by manually implementing an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html):
+We can skip the conversion from binary.   This crate can give us random 8-bit integers out of the box.  We can implement a similar result to the first two steps, or `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'` by manually implementing an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html):
 
 ```rust
 #[derive(Default)]
-struct RandomInput;
+struct RandomBytes;
 
-impl RandomInput {
+impl RandomBytes {
     fn new() -> Self {
         Self::default()
     }
 }
 
-impl Iterator for RandomInput {
+impl Iterator for RandomBytes {
     type Item = u8;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -117,11 +127,11 @@ impl Iterator for RandomInput {
 }
 ```
 
-The struct itself doesn't need to store any state - it will just always produce the next value by calling `rand::random()`, specified with the associated typoe of this iterator.  You can take it for a spin with this driver code:
+The struct itself doesn't need to store any state.  We just always want to produce the next value by calling `rand::random()`, specified with the associated type of this iterator.  I set `Item` to `u8`, so calling `Random::Input::next()` will always return a `random::<u8>()` - there's no `None` branch, just `Some(x)`.  That means `unwrap()` is always safe to call on this iterator, it won't panic.  You can take it for a spin with this driver code:
 
 ```rust
 fn main() {
-    let mut rands = RandomInput::new();
+    let mut rands = RandomBytes::new();
     loop {
         println!("{}", rands.next().unwrap());
     }
@@ -142,11 +152,19 @@ Tools like `awk` are terse, but this is merely a `for` loop with some math in th
 
 #### A Little Physics
 
-Sound is composed physically of vibrations.  These vibrations cause perturbances in some medium, usually air, and propogate as a wave.  This wave can be represented as a [sine wave](https://en.wikipedia.org/wiki/Sine_wave):
+Before diving in - I'm using things like [*frequency*](https://en.wikipedia.org/wiki/Fundamental_frequency) and [*pitch*](https://en.wikipedia.org/wiki/Pitch_(music)) interchangeably, because for this application specifically they are, and this is a huge oversimplification of what makes up sound.
+
+[Sound](https://en.wikipedia.org/wiki/Sound) is composed physically of [vibrations](https://en.wikipedia.org/wiki/Vibration).  These vibrations cause perturbances in some [medium](https://en.wikipedia.org/wiki/Transmission_medium), and those perturbations are what we experience as sound.  When we're talking about hearing a sound with our ears, the medium is usually air.
+
+##### Sine Waves
+
+Sound propogates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](https://en.wikipedia.org/wiki/Reality) a sound contains many components but we can talk about a simplified version that can be represented as a single [*sine wave*](https://en.wikipedia.org/wiki/Sine_wave):
 
 ![sine waves](https://upload.wikimedia.org/wikipedia/commons/6/6d/Sine_waves_different_frequencies.svg)
 
 *image: [wikimedia commons](https://en.wikipedia.org/wiki/File:Sine_waves_different_frequencies.svg)*
+
+If you're thinking *but Ben, you CAN mix component frequencies to represent sound waves as sine waves we all do that all the time*, you're correct (and probably smarter than me).  This is much simpler math-wise.  If that was either turning you on or off to this post, you can {start/stop} breathing.  No signal processing here, just a single frequency we modulate.
 
 If the X axis is time, a sine wave represents a recurring action with an analog (or smooth) oscillation between their maximal *amplitudes*, or distances in either direction from 0.  The *frequency* is how close together these peaks are, or how frequently this thing occurs.
 
@@ -158,7 +176,9 @@ The standard unit for frequency is the [Hertz](https://en.wikipedia.org/wiki/Her
 
 ![cycle gif](https://media.giphy.com/media/F5rQlfTXqCJ8c/giphy.gif)
 
-Sound is a continuous spectrum of frequency, but when we make music we tend to prefer *notes* at set frequencies.  To start, though, we need some sort of standard, and some of the world has settled on [440Hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO 16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
+##### Notes
+
+Sound is a continuous spectrum of frequency, but when we make music we tend to prefer [*notes*](https://en.wikipedia.org/wiki/Musical_note) at set frequencies.  To start, though, we need some sort of standard, and some of the world has settled on [440Hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO 16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
 
 ![stuttgart](https://i.imgflip.com/3h0y3g.jpg)
 
@@ -307,25 +327,36 @@ fn main() {
 }
 ```
 
+##### Modes
+
 Now we can start defining scales.
 
 // major : 0,2,4,5,7,9,11,12
 
 // minor : 0,2,3,5,7,8,10,12
 
-### Play The Sound
+##### Other Scales
+
+Okay, Ben.  Ben, okay.  Okay, Ben.  But what about the pentatonic scale:
+
+```txt
+
+```
+
+This corresponds to playing just the black keys on a piano, starting from 
+
+Alright.  
 
 ### Listen To Any Arbitrary File
 
-### Music Authoring
-
-TODO - maybe??
+TODO maybe?  maybe not?  
 
 TODO Rick & Morty "Human Music" gif
 
-## Challenge
+## Challenges
 
-* Port this to your favorite programming language (second favorite if that's already Rust)
-* Write your favorite melody
-
-To learn more about asynchronous programming in Rust, I recommend the aptly named [Async Book](https://rust-lang.github.io/async-book/).
+* Port this to your favorite programming language (second favorite if that's already Rust).
+* Add some more scales.
+* Extend beyond one octave.
+* Signal processing.
+    - Write a post to teach me signal processing
