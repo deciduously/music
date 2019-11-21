@@ -47,7 +47,7 @@ There's a blog post about how that line specifically works [here](https://blog.r
 1. `xxd -r -p`: Convert hex numbers back to binary
 1. `aplay -c 2 -f S32_LE -r 16000`: Play back binary data as sound
 
-This, however, is not a post about these commands, nor is it a post about that series of steps exactly.  However, the underlying idea (really, step 3) is identical, and this gives us a roadmap.  ¡Vámonos!
+This, however, is not a post about these commands, nor is it a post about that series of steps exactly.  However, the underlying idea (really, step 3) works in the same way, and this gives us a roadmap.  ¡Vámonos!
 
 ## The Rust
 
