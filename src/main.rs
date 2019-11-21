@@ -42,8 +42,8 @@ impl Iterator for RandomInput {
     }
 }
 
-type Hertz = u32;
-const STANDARD_PITCH: Hertz = 440;
+type Hertz = f64;
+const STANDARD_PITCH: Hertz = 440.0;
 
 type Cents = f64;
 const SEMITONE_CENTS: Cents = 100.0;
@@ -60,7 +60,7 @@ impl Pitch {
         Self { hertz }
     }
     fn add_cents(&mut self, cents: Cents) {
-        self.hertz = (self.hertz as f64 * 2.0f64.powf(cents / OCTAVE_CENTS)) as u32;
+        self.hertz *= 2.0f64.powf(cents / OCTAVE_CENTS);
     }
     fn add_semitones(&mut self, semitones: u32) {
         self.add_cents(semitones as f64 * SEMITONE_CENTS);
@@ -69,7 +69,9 @@ impl Pitch {
 
 impl Default for Pitch {
     fn default() -> Self {
-        Self { hertz: STANDARD_PITCH }
+        Self {
+            hertz: STANDARD_PITCH,
+        }
     }
 }
 
@@ -119,6 +121,6 @@ fn main() {
 
     let mut pitch = Pitch::default();
     println!("{:?}", pitch);
-    pitch.add_semitones(OCTAVE_SEMITONES);
+    pitch.add_semitones(1);
     println!("{:?}", pitch);
 }

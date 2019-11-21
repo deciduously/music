@@ -148,8 +148,8 @@ Sound is a continuous spectrum of frequency, but when we make music we tend to p
 Let's set up a type to represent a pitch:
 
 ```rust
-type Hertz = u32;
-const STANDARD_PITCH: Hertz = 440;
+type Hertz = f64;
+const STANDARD_PITCH: Hertz = 440.0;
 
 struct Pitch {
     hertz: Hertz,
@@ -250,34 +250,20 @@ We can add a method to `Pitch` with this logic:
           Self { hertz }
       }
 +     fn add_cents(&mut self, cents: Cents) {
-+         self.hertz = (self.hertz as f64 * 2.0f64.powf(cents / OCTAVE_CENTS)) as u32;
++         self.hertz *= 2.0f64.powf(cents / OCTAVE_CENTS);
 +     }
   }
 ```
 
-This works out to just shy of 4 cents to cause an increase of 1Hz, more precisely around 3.93 for a base frequency of 440.  I'm using floating-point values to handle the cents arithmetic, but Hertz are just stored as unsigned integers.  We should expect that adding `3.0` cents will not change our frequency, but `4.0` will increase it by one:
+This works out to just shy of 4 cents to cause an increase of 1Hz, more precisely around 3.9302 for a base frequency of 440:
+
 
 ```rust
 fn main() {
     let mut pitch = Pitch::default();
-    println!("{:?}", pitch); // Pitch { hertz: 440 }
-    pitch.add_cents(3.0);
-    println!("{:?}", pitch); // Pitch { hertz: 440 }
-    pitch.add_cents(4.0);
-    println!("{:?}", pitch); // Pitch { hertz: 441 }
-}
-```
-
-This implementation isn't keeping track of partial-Hertz intervals.  Adding fewer than 4 cents doesn't result in any change at all to the stored frequency, so you can't get there by adding `2.0` and then `2.0`:
-
-```rust
-fn main() {
-    let mut pitch = Pitch::default();
-    println!("{:?}", pitch); // Pitch { hertz: 440 }
-    pitch.add_cents(2.0);
-    println!("{:?}", pitch); // Pitch { hertz: 440 }
-    pitch.add_cents(2.0);
-    println!("{:?}", pitch); // Pitch { hertz: 440 }
+    println!("{:?}", pitch); // Pitch { hertz: 440.0 }
+    pitch.add_cents(3.9302); // attempt to add one Hz
+    println!("{:?}", pitch); // Pitch { hertz: 441.0000105867894 } - close enough
 }
 ```
 
@@ -302,9 +288,9 @@ That's a lot easier to work with:
 ```rust
 fn main() {
     let mut pitch = Pitch::default();
-    println!("{:?}", pitch); // Pitch { hertz: 440 }
+    println!("{:?}", pitch); // Pitch { hertz: 440.0 }
     pitch.add_semitones(OCTAVE_SEMITONES); // add an octave
-    println!("{:?}", pitch); // Pitch { hertz: 880 } - 2:1 ratio
+    println!("{:?}", pitch); // Pitch { hertz: 880.0 } - 2:1 ratio
 }
 ```
 
