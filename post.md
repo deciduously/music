@@ -186,6 +186,8 @@ The cyan key is Middle C, and A440 is highlighted in yellow.
 
 If you're a musician you may own a tuner that marks 440Hz specifically.  This pitch is used for calibrating musical instruments and tuning a group, and we'll use it as a baseline constant for calculating frequencies.
 
+##### Scales
+
 A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  The smallest of these intervals is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second.  Here I'll refer to it as a "half" step.  Take a look back at that piano diagram above - one semitone is the distance between an adjacacent white key and black key.  A *whole* step, or a [major second](https://en.wikipedia.org/wiki/Major_second), is equal to two of these, or two adjacant white keys skipping a black.
 
 Clearly, though, there isn't a black key between every white key.  The piano is designed to play notes from a catagory called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - an octave is 8 notes, and between any two keys that are eight apart there will be the same number of whole and half steps.
@@ -208,13 +210,7 @@ TODO embed sound
 
 There are the same number of whole and half intervals, they're just distributed differently.  You can play a corresponding minor scale using only the white keys by simply starting at the sixth note.  Try counting it out yourself!
 
-TODO figure out how to present after it works
-
-To model this, we'll create another `Iterator` but this time implemented for an `enum`:
-
-```rust
-ENUM
-```
+##### Cents
 
 To calculate the value needed in Hertz, we need a more precise way to describe an interval.  There is a logarithmic unit called a [cent](https://en.wikipedia.org/wiki/Cent_(music)) which represents the ratio between two frequencies.  There are 100 cents in a semitone.  A full octave has a frequency ratio of 2:1, so a note one octave higher has double the frequency of the lower.  We saw above that this spans twelve semitones - count them up:
 
