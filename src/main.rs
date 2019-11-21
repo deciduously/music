@@ -43,7 +43,31 @@ impl Iterator for RandomInput {
 }
 
 type Hertz = u32;
-const STANDARD_PITCH: Hertz = 440;
+
+type Cents = f64;
+const SEMITONE_CENTS: Cents = 100.0;
+const OCTAVE_SEMITONES: u32 = 12;
+const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64; // 1200.0
+
+#[derive(Debug)]
+struct Pitch {
+    hertz: Hertz,
+}
+
+impl Pitch {
+    fn new(hertz: Hertz) -> Self {
+        Self { hertz }
+    }
+    fn add_cents(&mut self, cents: Cents) {
+        self.hertz = (self.hertz as f64 * 2.0f64.powf(cents / OCTAVE_CENTS)) as u32;
+    }
+}
+
+impl Default for Pitch {
+    fn default() -> Self {
+        Self { hertz: 440 }
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum Interval {
@@ -89,5 +113,10 @@ fn main() {
     //    println!("{}", rands.next().unwrap());
     //}
 
-    //println!("{}", Mode::Ionian.get_interval(0));
+    let mut pitch = Pitch::default();
+    println!("{:?}", pitch);
+    pitch.add_cents(2.0);
+    println!("{:?}", pitch);
+    pitch.add_cents(2.0);
+    println!("{:?}", pitch);
 }

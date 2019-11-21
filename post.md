@@ -139,20 +139,35 @@ The standard unit for frequency is the [Hertz](https://en.wikipedia.org/wiki/Her
 
 ![cycle gif](https://media.giphy.com/media/F5rQlfTXqCJ8c/giphy.gif)
 
-Sound is a continuous spectrum of frequency, but when we make music we tend to prefer *notes* at set frequencies.  To start, though, we need some sort of standard, and some of the world has settled on [440Hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO 16](https://www.iso.org/standard/3601.html), at least.
-
-It's also apparently called "The Stuttgart Pitch", which is funny.
+Sound is a continuous spectrum of frequency, but when we make music we tend to prefer *notes* at set frequencies.  To start, though, we need some sort of standard, and some of the world has settled on [440Hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO 16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
 
 ![stuttgart](https://i.imgflip.com/3h0y3g.jpg)
 
 *image: I made this on [imgflip.com](https://imgflip.com/) but have no proof of that*
 
-Go ahead and toss that into your source file:
+Let's set up a type to represent a pitch:
 
 ```rust
 type Hertz = u32;
-const STANDARD_PITCH: Hertz = 440;
+
+struct Pitch {
+    hertz: Hertz,
+}
+
+impl Pitch {
+    fn new(hertz: Hertz) -> Self {
+        Self { hertz }
+    }
+}
+
+impl Default for Pitch {
+    fn default() -> Self {
+        Self { hertz: 440 }
+    }
+}
 ```
+
+With this code, we can use `Pitch::default()` to get our A440 pitch, or pass an abitrary freqwuency: `Pitch::new(440)`.
 
 Let's see if we can produce this tone.
 
@@ -208,13 +223,63 @@ whole, whole, half, whole, whole, whole, half
 2    +  2   +  1  +   2   +  2  +   2  +  1 = 12  
 ```
 
-This means that a full octave spans 1200 cents, 12 semitones at 100 cents each. The ratio between frequencies separated by a *single* cent is the 1200th root of 2, or 2^1/1200.
+This means that a full octave spans 1200 cents, 12 semitones at 100 cents each.:
+
+```rust
+type Cents = f64;
+const SEMITONE_CENTS: Cents = 100.0;
+const OCTAVE_SEMITONES: u32 = 12;
+const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64;
+```
+
+The ratio between frequencies separated by a *single* cent is the 1200th root of 2, or 2^1/1200 - it's unlikely you'd be able to hear a distinction between two tones a single cent apart.
 
 We can use this to calculate the Hertz of a desired pitch if we know both a base frequency and the number of cents to increase by:
 
 ![cents formula](https://wikimedia.org/api/rest_v1/media/math/render/svg/920411bb22d357b13f69a76fa33557c707f7cb57)
 
-Then, we can define each variant's sequence.  I'm taking advantage of the face that it's actually the same sa
+Here, *a* is the initial frequency in Hertz and *n* is the number of cents to increase.
+
+We can add a method to `Pitch` with this logic:
+
+```diff
+  impl Pitch {
+      fn new(hertz: Hertz) -> Self {
+          Self { hertz }
+      }
++     fn add_cents(&mut self, cents: Cents) {
++         self.hertz = (self.hertz as f64 * 2.0f64.powf(cents / OCTAVE_CENTS)) as u32;
++     }
+  }
+```
+
+This works out to an increase of 1 Hz representing just shy of 4 cents (around 3.93 for a base frequency of 440).  I'm using floating-point values to hadnle the cents accurately, but Hertz are just unsigned integers, so we should expect that adding `3.0` cents will not change our frequency, but `4.0` will increase it by one:
+
+```rust
+fn main() {
+    let mut pitch = Pitch::default();
+    println!("{:?}", pitch); // Pitch { hertz: 440 }
+    pitch.add_cents(3.0);
+    println!("{:?}", pitch); // Pitch { hertz: 440 }
+    pitch.add_cents(4.0);
+    println!("{:?}", pitch); // Pitch { hertz: 441 }
+}
+```
+
+This implementation isn't keeping track of partial intervals - adding `3.0` cents doesn't result in any change at all to the stored frequency, so you can't get there by adding `2.0` and then `2.0`:
+
+```rust
+fn main() {
+    let mut pitch = Pitch::default();
+    println!("{:?}", pitch); // Pitch { hertz: 440 }
+    pitch.add_cents(2.0);
+    println!("{:?}", pitch); // Pitch { hertz: 440 }
+    pitch.add_cents(2.0);
+    println!("{:?}", pitch); // Pitch { hertz: 440 }
+}
+```
+
+Now we can define each variant's sequence.  I'm taking advantage of the face that it's actually the same sa
 
 // major : 0,2,4,5,7,9,11,12
 
