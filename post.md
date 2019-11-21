@@ -7,39 +7,46 @@ tags: beginners, rust, tutorial, music
 
 # Everything Is Music
 
-We're going to teach our computers to sing using [Rust](https://www.rust-lang.org/), along with a little light physics and music theory.  This is (hopefully) a beginner-level post.  It's not necessarily Rust-specific, but the code is potentially a little Rust-idiosyncratic for the totally uninitiated.
-
-We'll start, as any worthwhile tutorial should, with a quote from SNL's 2002 *Celebrity Jeopardy!* sketch in which Winona Ryder is channeling Icelandic music icon [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk):
-
 > Everything is music. When I go home, I throw knickers in the oven and it's music. Crash, boom, bang!
 
-Here's a [YouTube link](https://youtu.be/R3V94ZtmdbQ?t=190) to this moment.  Let's channel that wacky energy - we'll throw some random numbers into the Rust compiler, and extract some music!
+*- [Winona Ryder](https://en.wikipedia.org/wiki/Winona_Ryder) as [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk) on SNL's Celebrity Jeopardy! - 2002*
+
+Here's a [YouTube link](https://youtu.be/R3V94ZtmdbQ?t=190) to this moment.  Let's channel that wacky energy - we'll throw something random into the Rust compiler an *viola*, music!  We're going to teach our computers to sing using [Rust](https://www.rust-lang.org/), along with a juuust a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).
 
 ## Table of Contents
 
 TODO maybe??
 
-## The Linux One-liner
+## Preamble
 
-### The Meme
+I have two disclaimers:
+
+1. There are a lot of [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) links here.  If you're *that* kind of person, there's a potential for problematic [rabbit](https://en.wikipedia.org/wiki/Rabbit) holes.  Set rules.
+1. Further to Point 1, most of this I learned *myself* on Wikipedia.  The rest was [high school](https://en.wikipedia.org/wiki/High_school_(North_America)), which was like ten years ago.  I do believe it's generally on the mark, but I am making *no* claims of authority.  If you see something, say something.
+
+We're just going surface level - I'm using things like [*frequency*](https://en.wikipedia.org/wiki/Fundamental_frequency) and [*pitch*](https://en.wikipedia.org/wiki/Pitch_(music)) interchangeably, because for this application specifically they are.
+
+This is (hopefully) a beginner-level post.  It's not necessarily specific to Rust but also not shy about Rust idioms.  Even so, or perhaps because of, it should be pretty readable even if you don't speak Rust (yet) - that's the whole point!  I promise I'll (mostly) stop the whole parenthesis thing, too.
+
+¡Vámonos!
+
+## The Meme
 
 This post was inpsired by this meme:
 
 ![the meme](https://i.redd.it/uirqnamnjpz31.jpg)
 
-Here's a slightly modified version of the `bash` one-liner at the bottom:
+Here's a slightly modified version of the `bash` one-liner at the bottom, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) that explores it:
 
 ```bash
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
 ```
 
-No, just mashing your keyboard will (likely) not yield similar results.  I tried it myself so you don't have to.  Here's a step-by-step video demonstration:
+No, just mashing your keyboard will (likely) not yield similar results.  I tried myself so you don't have to.  Here's a step-by-step video demonstration:
 
 {% youtube uLhQQSKhTok %}
 
-### The Code
-
-There's a blog post about how that line specifically works [here](https://blog.robertelder.org/bash-one-liner-compose-music/).  Here's a friendlier breeze-through of the `bash`:
+We're not going to do what that code does exactly, and I'm not going to elaborate on what any of these specific snippets mean, but it does serve as a solid roadmap:
 
 1. `cat /dev/urandom`: Get a stream of random binary data
 1. `hexdump -v -e '/1 "%u\n"'`: Convert binary to 8-bit base-10 integers (0-255)
@@ -47,7 +54,19 @@ There's a blog post about how that line specifically works [here](https://blog.r
 1. `xxd -r -p`: Convert hex numbers back to binary
 1. `aplay -c 2 -f S32_LE -r 16000`: Play back binary data as sound
 
-This, however, is not a post about these commands, nor is it a post about that series of steps exactly.  However, the underlying idea (really, step 3) works in the same way, and this gives us a roadmap.  ¡Vámonos!
+Of this, step three ends up being pretty much what happens here too - here's what it looks like as spread apart as I could:
+
+```awk
+split("0,2,4,5,7,9,11,12",a,",");
+for (i = 0; i < 1; i+= 0.0001)
+    printf("%08X\n",
+           100 * sin(1382 * exp((a[$1 % 8]/12) * log(2)) * i))
+}
+```
+
+The first line stores a list of numbers into `a`, and then prints a series of 
+
+Let's Rust up the joint.  ¡Vámonos!
 
 ## The Rust
 
