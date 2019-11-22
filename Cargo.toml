@@ -8,5 +8,6 @@ edition = "2018"
 
 [dependencies]
 
-lazy_static = "1.4"
+hound = "3.4"
 rand = "0.7"
+rodio = "0.10"

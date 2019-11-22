@@ -9,9 +9,9 @@ tags: beginners, rust, tutorial, music
 
 > Everything is music. When I go home, I throw knickers in the oven and it's music. Crash, boom, bang!
 
-*- [Winona Ryder](https://en.wikipedia.org/wiki/Winona_Ryder) as [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk) on [SNL's Celebrity Jeopardy!](https://youtu.be/R3V94ZtmdbQ?t=190) - 2002*
+*- [Winona Ryder](https://en.wikipedia.org/wiki/Winona_Ryder) as [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk) on [SNL's Celebrity Rock 'N' Roll Jeopardy!](https://youtu.be/R3V94ZtmdbQ?t=190) - 2002*
 
-Let's channel that wacky energy.  In this post, we'll throw something random into, well, a [math-oven](https://en.wikipedia.org/wiki/Subroutine) and [*viola*](https://en.wikipedia.org/wiki/Viola), [music](https://en.wikipedia.org/wiki/Music)!  We're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://www.rust-lang.org/), along with a juuust a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).  ¡Vámonos!
+Let's channel that wacky energy.  In this post, we'll throw something [random](https://en.wikipedia.org/wiki/Random_number_generation) into, well, a [math-oven](https://en.wikipedia.org/wiki/Subroutine) and [*viola*](https://en.wikipedia.org/wiki/Viola), [music](https://en.wikipedia.org/wiki/Music)!  We're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://www.rust-lang.org/), along with a juuust a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).  ¡Vámonos!
 
 ## Table of Contents
 
@@ -37,10 +37,10 @@ Let's channel that wacky energy.  In this post, we'll throw something random int
 
 I have two disclaimers:
 
-1. There are a lot of [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) links here.  If you're *that* kind of [person](https://en.wikipedia.org/wiki/Person), there's a potential for problematic [rabbit](https://en.wikipedia.org/wiki/Rabbit) holes.  Set [rules](https://en.wikipedia.org/wiki/Law).  Most of them will be on topic from here on, though.
-1. Further to Point 1, most of this I learned *myself* on Wikipedia.  The rest was [high school](https://en.wikipedia.org/wiki/High_school_(North_America)), which was like ten years ago.  I do believe it's generally on the mark, but I am making *no* claims of authority.  If you see something, say something.
+1. There are too many [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) links here.  If you're that kind of [person](https://en.wikipedia.org/wiki/Person), set [rules](https://en.wikipedia.org/wiki/Law).
+1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest was [high school](https://en.wikipedia.org/wiki/High_school_(North_America)), which was like ten years ago, I never got formally introduced to any of what you're about to read.  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, say something.
 
-This is (hopefully) a beginner-level post.  It's not necessarily specific to Rust but also not shy about Rust idioms.  Even so, or perhaps because of, it should be pretty readable even if you don't speak Rust (yet) - that's the whole point!  I promise I'll (mostly) stop the whole parenthesis thing, too.
+This is (hopefully) a beginner-level post.  It's not necessarily specific to Rust but also not shy about Rust idioms.  Even so, or perhaps because of, it should be pretty readable even if you don't speak Rust (yet) - that's the whole point oif the added verbosity!  I promise I'll (mostly) stop the whole parenthesis thing, too.
 
 ## The Meme
 
@@ -58,7 +58,7 @@ No, just mashing your keyboard will (likely) not yield similar results.  I tried
 
 {% youtube uLhQQSKhTok %}
 
-We're not going to do what that code does exactly, and I'm not going to elaborate on what any of these specific snippets mean, but it does serve as a solid roadmap.  Each like calls out to some other GNU/Linux/(ALSA) tool:
+We're not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does exactly, and I'm not going to elaborate on what any of these specific snippets mean, but it does serve as a solid [roadmap](https://en.wikipedia.org/wiki/Plan).  Each line calls out to some other tool present on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu):
 
 1. `cat /dev/urandom`: Get a stream of random binary data.
 1. `hexdump -v -e '/1 "%u\n"'`: Convert binary to 8-bit base-10 integers (0-255).
@@ -72,14 +72,14 @@ Of this, only step three ends up being pretty much what happens here too - here'
 split("0,2,4,5,7,9,11,12",a,",");
 for (i = 0; i < 1; i+= 0.0001)
     printf("%08X\n",
-           100 * sin(1382 * exp((a[$1 % 8]/12) * log(2)) * i))
+           100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))
 ```
 
 Don't worry, we're gonna Rust up the joint and it'll all be clear.  We'll actually be able to make it even cooler with minimal effort thanks to aforementional total Rusting.  ¡Vámonos!
 
 ## The Program
 
-As always, ensure you have at least the default stable Rust toolchain [installed](https://www.rust-lang.org/tools/install).  This code was written with `rustc` [version 1.39](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html) for [Rust 2018](https://doc.rust-lang.org/nightly/edition-guide/rust-2018/edition-changes.html), and uses only the [`rand`](https://docs.rs/rand/0.7.2/rand/) crate.
+As always, ensure you have at least the default stable Rust toolchain [installed](https://www.rust-lang.org/tools/install).  This code was written with `rustc` [version 1.39](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html) for [Rust 2018](https://doc.rust-lang.org/nightly/edition-guide/rust-2018/edition-changes.html).  
 
 Then, spin up a new project:
 
@@ -87,17 +87,23 @@ Then, spin up a new project:
 $ cargo new music
 ```
 
-Open that directory in the environment of your choice.
+Open that directory in the environment of your choice.  We'll use three crates:
 
-### Random input data
+* [`rand`](https://docs.rs/rand/0.7.2/rand/)
+* [`hound`](https://github.com/ruuda/hound)
+* [`rodio`](https://docs.rs/rodio/0.10.0/rodio/).
 
-First off, we need to grab the Rust crate used for generating random numbers.  Add the `rand` dependency to `Cargo.toml`:
+We'll use `rand` in place of `[cat] /dev/urandom`, and `hound`/`rodio` will cover [`aplay`](https://linux.die.net/man/1/aplay).
 
 ```diff
   [dependencies]
 
++ hound = "3.4"
 + rand = "0.7"
++ rodio = "0.10"
 ```
+
+### Random input data
 
 This crate is quite featureful, but we're keeping it simple.  Add an import to the top of `src/main.rs`:
 
@@ -363,5 +369,6 @@ TODO Rick & Morty "Human Music" gif
 * Port this to your favorite programming language (second favorite if that's already Rust).
 * Add some more scales.
 * Extend beyond one octave.
+* Don't use `lazy_static` - get more Rusty.
 * Signal processing.
     - Write a post to teach me signal processing
