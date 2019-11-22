@@ -45,7 +45,8 @@ In other words, we're going to teach our [computers](https://en.wikipedia.org/wi
 I have two disclaimers:
 
 1. [There are](https://en.wikipedia.org/wiki/Existence) [too many](https://en.wikipedia.org/wiki/Saturated_model) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Blog).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
-1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest was [high school](https://en.wikipedia.org/wiki/High_school_(North_America)), which was like [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Say_Something_(Justin_Timberlake_song)).
+1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Say_Something_(Justin_Timberlake_song)).
+
 
 This is (hopefully) a [beginner](https://en.wikipedia.org/wiki/Novice)-level post.  It's not necessarily specific to Rust but also not shy about Rust idioms or added [verbosity](https://en.wikipedia.org/wiki/Verbosity).  Even so, or perhaps because of, it should be pretty readable even if you don't speak Rust - that's the whole point!  I promise I'll (mostly) stop the whole parenthesis thing, too.
 
@@ -61,13 +62,13 @@ Here's a slightly modified version of the [`bash`](https://en.wikipedia.org/wiki
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
 ```
 
-The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this particular adventure, but that's not to discredit it at all - that write-up and Wikipedia were all I needed to complete this translation with absolutely not a clue how this whole thing worked going in.
+The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this particular adventure, but that's not to discredit it at all - that write-up and Wikipedia were all I needed to complete this translation with absolutely not a clue how this whole thing worked going in.  If you'd like the challenge of implementing this yourself blind, stop right here. Read just that, try it yourself in the language of your choice, come back when you get stuck.  The stuff here should apply to whatever you've got unless you've gone real funky.  This post does extend that functionality, so, you know, maybe still come back anyway.
 
-Here's a step-by-step video demonstration of the [pipeline](https://en.wikipedia.org/wiki/Pipeline_%28Unix%29) in sequence:
+Here's a step-by-step video demonstration of that [pipeline](https://en.wikipedia.org/wiki/Pipeline_%28Unix%29) in sequence:
 
 {% youtube uLhQQSKhTok %}
 
-I've gotta be honest - I didn't even try it myself.  Im'm not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does in this post, and I'm not going to elaborate on what any of these specific steps of the pipeline mean.  Nevertheless, it serves as a solid [roadmap](https://en.wikipedia.org/wiki/Plan) for this program.  Each command of this pipeline calls out to some other tool present on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) to perform a series of operations on some continuous incoming data:
+I've gotta be honest - I didn't even try it myself.  I'm not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does in this post, and I'm not going to elaborate on what any of these specific steps of the pipeline mean.  We're immediately diving into a pure Rust solution.  Nevertheless, it serves as a solid [roadmap](https://en.wikipedia.org/wiki/Plan).  Each command of this pipeline calls out to some other tool present on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) to perform a series of operations on some continuous incoming data:
 
 1. `cat /dev/urandom`: Get a stream of random binary data.
 1. `hexdump -v -e '/1 "%u\n"'`: Convert binary to 8-bit base-10 integers (0-255).
@@ -249,7 +250,7 @@ enum Interval {
 }
 ```
 
-Each variant also carries the number of semitones it represents.
+Each variant of this [`enum`](https://en.wikipedia.org/wiki/Tagged_union#2010s) also carries the number of semitones it represents.
 
 Clearly, there isn't a black key between every white key.  The piano is designed to play notes from a catagory of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern for the whole length.
 
