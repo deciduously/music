@@ -12,9 +12,13 @@ TODO TESTS THROUGHOUT
 
 > Everything is music. When I go home, I throw knickers in the oven and it's music. Crash, boom, bang!
 
-*- [Winona Ryder](https://en.wikipedia.org/wiki/Winona_Ryder) as [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk) on [SNL's Celebrity Rock 'N' Roll Jeopardy!](https://youtu.be/R3V94ZtmdbQ?t=190) - [2002](https://en.wikipedia.org/wiki/2002)*
+*- [Winona Ryder](https://en.wikipedia.org/wiki/Winona_Ryder) as [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk) on [SNL](https://en.wikipedia.org/wiki/Saturday_Night_Live)'s [Celebrity Rock 'N' Roll Jeopardy!](https://en.wikipedia.org/wiki/Celebrity_Jeopardy!_(Saturday_Night_Live)) - [2002](https://en.wikipedia.org/wiki/2002) - [YouTube](https://youtu.be/R3V94ZtmdbQ?t=190)*
 
-Let's channel that wacky energy.  In this post, we'll throw something [random](https://en.wikipedia.org/wiki/Random_number_generation) into, well, a [math-oven](https://en.wikipedia.org/wiki/Subroutine) and [*viola*](https://en.wikipedia.org/wiki/Viola), [music](https://en.wikipedia.org/wiki/Music)!  We're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://www.rust-lang.org/), backed by a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).  ¡Vámonos!
+Let's channel that wacky energy.  In this post, we'll throw something [random](https://en.wikipedia.org/wiki/Random_number_generation) into, well, a [math-oven](https://en.wikipedia.org/wiki/Subroutine) and [*viola*](https://en.wikipedia.org/wiki/Viola), [music](https://en.wikipedia.org/wiki/Music)!
+
+In other words, we're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://www.rust-lang.org/), backed by a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).
+
+[¡Vámonos!](https://en.wikipedia.org/wiki/Party)
 
 ## Table of Contents
 
@@ -47,17 +51,17 @@ This is (hopefully) a [beginner](https://en.wikipedia.org/wiki/Novice)-level pos
 
 ## The Meme
 
-This post was inpsired by this meme:
+This post was inspired by this meme:
 
 ![the meme](https://i.redd.it/uirqnamnjpz31.jpg)
 
-Here's a slightly modified version of the `bash` one-liner at the bottom, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) that explores it:
+Here's a slightly modified version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) one-liner at the bottom, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
 
 ```bash
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
 ```
 
-No, just mashing your keyboard will (likely) not yield similar results.  I tried myself so you don't have to.  The link blogpost is considerably more brief and assumes a greater degree of background knowledge than this diatribe, but that's not to discredit it - that write-up and Wikipedia were all I needed to complete this translation with absolutely not a clue how this whole thing worked going in.
+The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this particular adventure, but that's not to discredit it at all - that write-up and Wikipedia were all I needed to complete this translation with absolutely not a clue how this whole thing worked going in.
 
 Here's a step-by-step video demonstration:
 
@@ -80,9 +84,11 @@ for (i = 0; i < 1; i += 0.0001)
            100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))
 ```
 
-Probably still not too helpful at a glance for most - there's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) - and its written in freakin' [`awk`](https://en.wikipedia.org/wiki/AWK) -  don't beat yourself up by an means if this still doesn't mean much (or literally anything).  We're going to model this problem from the ground up in [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)).  As a result this logic will become crystal clear, and we'll be able to extend a lot further with minimal effort.
+This is probably still not too helpful for most - there's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) (oh, my) - and its written in freakin' [`AWK`](https://en.wikipedia.org/wiki/AWK).  Don't despair if this still doesn't mean much (or literally anything) to you.  We're going to model this problem from the ground up in [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)).  As a result, this logic will become crystal clear, and we'll be able to extend a lot further with minimal effort.
 
-We can glean a bit of information at a glance, though.  It looks like we're going to tick up floating point values by ten-thousandths, from zero to one, and do math on each one.  Even if you're not a math person, that very sentence alone may have triggered [something](https://en.wikipedia.org/wiki/Unit_circle) from deep within your teenage math textbooks.  If it did, don't sweat it, I'm not going to be drilling you on the radian unit circle values, but we are going to be working with a sine wave.  If it didn't, also don't sweat it, I'm gonna walk us through the whole thing and it's really not painful.
+We can glean a bit of information at a glance, though, and depending on your current comfort with this domain you may be able to kind of understand the general idea here.  It looks like we're going to tick up floating point values by ten-thousandths from zero to one (`for (i = 0; i < 1; i += 0.0001)`), and do... I don't know, some math and stuff on each value based on the list `[0,2,4,5,7,9,11,12]`: `100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))` .
+
+Even if you're not a math person, this alone may have triggered [something](https://en.wikipedia.org/wiki/Unit_circle) from deep within your teenage math textbooks.  If it did, don't sweat it, I'm not going to be drilling you on the [radian](https://en.wikipedia.org/wiki/Radian) unit circle values, but we are going to be working with a sine wave.  If it didn't, also don't sweat it, I'm gonna walk us through the whole thing and it's really not painful.  After we do the math, we're going to print it out as an 8-digit hex number: `printf("%08X\n",math())` - this [`printf`](https://en.wikipedia.org/wiki/Printf_format_string) formatter means we want a [0-padded](https://en.wikipedia.org/wiki/Npm_(software)#Notable_breakages) number that's 8 digits long in [upper-case](https://en.wikipedia.org/wiki/Letter_case) [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal).  Te [base 10] integer [`42`](https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_(42)) would be printed as `0000002A`.
 
 This code goes a little further than the one-liner can - thank gosh, we hit XXX lines here.  ¡Vámonos!
 
@@ -124,7 +130,7 @@ use rand::random;
 
 We can skip the conversion from binary.   This crate can give us random 8-bit integers out of the box by ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html)ing a type: `random::<u8>()` to get a random unsigned 8 bit integer with the default generator settings.  See the crate docs for all the various ways to tune this.
 
-We can implement a similar result to the first two steps, or `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'` by manually implementing an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html).  This trait is the standard way to represent, well, things that we iterate over, and this will easily let us represent what's essentially an inifinte list.  It's easy to implement manually if a standard collection isn't right.  There's a [rich library](https://doc.rust-lang.org/std/iter/trait.Iterator.html) for types that implement thhis trait that you can take advantage of quickly.   There's only the one method:
+We can implement a similar result to the first two steps, or `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'` by manually implementing an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html).  This trait is the standard way to represent, well, things that we iterate over, and this will easily let us represent what's essentially an infinite list.  It's easy to implement manually if a standard collection isn't right.  There's a [rich library](https://doc.rust-lang.org/std/iter/trait.Iterator.html) for types that implement this trait that you can take advantage of quickly.   There's only the one method:
 
 ```rust
 #[derive(Default)]
@@ -174,7 +180,7 @@ Tools like `awk` are terse, but this is merely a `for` loop with some math in th
 
 ##### Sine Waves
 
-Sound propogates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](https://en.wikipedia.org/wiki/Reality) a sound contains many components but for this program we can talk about a super-simplified version that can be represented as a single [sine wave](https://en.wikipedia.org/wiki/Sine_wave):
+Sound propagates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](https://en.wikipedia.org/wiki/Reality) a sound contains many components but for this program we can talk about a super-simplified version that can be represented as a single [sine wave](https://en.wikipedia.org/wiki/Sine_wave):
 
 ![sine waves](https://upload.wikimedia.org/wikipedia/commons/6/6d/Sine_waves_different_frequencies.svg)
 
@@ -190,7 +196,7 @@ The standard unit for frequency is the [Hertz](https://en.wikipedia.org/wiki/Her
 
 Sound is a continuous spectrum of frequency, but when we make music we tend to prefer [notes](https://en.wikipedia.org/wiki/Musical_note) at set frequencies, or pitches.  I'm using  [frequency](https://en.wikipedia.org/wiki/Fundamental_frequency) and [pitch](https://en.wikipedia.org/wiki/Pitch_(music)) interchangeably, because for this application specifically they are, but go Wiki-diving if you want to learn about the distinction and nuance at lay here.  The nature of sound is super cool but super complex and outside of the scope of this post - we just want to hear some numbers sing, we don't need to hear a full orchestra.
 
-To start working with something concrete, we need some sort of standard.   Some of the world has settled on [440Hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO 16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
+To start working with something concrete, we need some sort of standard.   Some of the world has settled on [440Hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO](https://en.wikipedia.org/wiki/International_Organization_for_Standardization) [16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
 
 ![stuttgart](https://i.imgflip.com/3h0y3g.jpg)
 
@@ -233,7 +239,7 @@ The cyan key is Middle C, and A440 is highlighted in yellow.  The octaves on an 
 
 ##### Scales
 
-A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  The smallest of these intervals on a piano (and most of Western music) is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second.  Here I'll refer to it as a "half" step.  Take a look back at that piano diagram above - one semitone is the distance between an adjacacent white key and black key.  A *whole* step, or a [major second](https://en.wikipedia.org/wiki/Major_second), is equal to two of these, or two adjacant white keys skipping a black key.  For now these are teh only ones we'll need:
+A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  The smallest of these intervals on a piano (and most of Western music) is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second or half step.  Take a look back at that piano diagram above - one semitone is the distance between an adjacent white key and black key.  A *whole* step, or a [major second](https://en.wikipedia.org/wiki/Major_second), is equal to two of semitones, or two adjacent white keys that pass over a black key.  For now these are the only intervals we'll need:
 
 ```rust
 #[derive(Debug, Clone, Copy)]
@@ -267,7 +273,7 @@ There are the same number of whole and half intervals, they're just distributed 
 
 ##### Cents
 
-The reason an octave is where the pattern restarts is that we're working in a tuning system called [equal temperment,] For an octave, the frequency ratio is 2:1.  A5 is thwi
+The reason an octave is where the pattern restarts is that we're working in a tuning system called [equal temperment](https://en.wikipedia.org/wiki/Equal_temperament).  This means any two adjacent notes in this system have the same ratio.  There's a reason diatonic scales move up eight keys on a piano, or twelve semitones: the frequency ratio over an octave is 2:1.  Middle C is C4, A5 is thwi
 
 To calculate the value needed in Hertz, we need a more precise way to describe an interval.  A full octave has a frequency ratio of 2:1, meaning a note one octave higher has double the frequency of the lower.  This results in an exponential curve if you were to graph frequencies as they grow.  When working with such a curve there's often a corresponding logarithmic unit that turns that curve into a line.  For musical intervals this unit called a [cent](https://en.wikipedia.org/wiki/Cent_(music)) to represent the ratio between two frequencies.  We've already seen how each octave is divided into 12 semitones:
 
@@ -276,7 +282,7 @@ whole, whole, half, whole, whole, whole, half
   2  +  2   +  1  +   2   +  2  +   2  +  1   =  12  
 ```
 
-Each semitone is defined as 100 cents, meaing that a full octave spans 1200 cents.  Go ahead and set up some Rust constants:
+Each semitone is defined as 100 cents meaning a full octave spans 1200 cents.  Go ahead and set up some constants:
 
 ```rust
 type Cents = f64;
@@ -285,7 +291,7 @@ const OCTAVE_SEMITONES: u32 = 12;
 const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64;
 ```
 
-The ratio between frequencies separated by a *single* cent is the 1200th root of 2, or 2^1/1200.  You wouldn't be able to hear a distinction between two tones a single cent apart.  The [just-noticable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents.
+The ratio between frequencies separated by a *single* cent is the 1200th root of 2, or 2^1/1200.  You wouldn't be able to hear a distinction between two tones a single cent apart.  The [just-noticeable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents.
 
 Knowing all this we can calculate the frequency in Hertz of a desired pitch if we know both a base frequency and the number of cents to increase by:
 
@@ -370,18 +376,23 @@ impl FromStr for PianoKey {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use io::{Error, ErrorKind::*};
+        // Verify it's a 2-character string
         if s.len() != 2 {
             return Err(Error::new(InvalidInput, "Must be two characters long"));
         }
         let mut chars = s.chars();
+        // Grab the note value - first character of string
         if let Some(note) = chars.next() {
             let char_note = note as char;
             if !char_note.is_uppercase() {
-                return Err(Error::new(InvalidData, "First character must be a letter"));
+                // Reject anything outside [A-Z]
+                Err(Error::new(InvalidData, "First character must be an uppercase letter"))
             } else if let Some(octave) = chars.next() {
+                // Grabbed octave value - second and final character of string
                 // Turn octave to integer
                 let integer_octave = octave as u8 - b'0';
                 if integer_octave > 8 {
+                    // Reject anything outside [0-8]
                     return Err(Error::new(InvalidData, "Second character must be 0-8"));
                 }
                 // Turn note to integer
@@ -389,23 +400,23 @@ impl FromStr for PianoKey {
                 // Make sure its a real note
                 if integer_note <= 8 {
                     // Success!!
-                    return Ok(PianoKey::new(integer_note, integer_octave));
+                    Ok(PianoKey::new(integer_note, integer_octave))
                 } else {
-                    return Err(Error::new(InvalidData, "First character must be A-G"));
+                    Err(Error::new(InvalidData, "First character must be A-G"))
                 }
             } else {
-                return Err(Error::new(InvalidInput, "Must be two characters long"));
+                Err(Error::new(InvalidInput, "Must be two characters long"))
             }
         } else {
-            return Err(Error::new(NotFound, "Input cannot be empty"));
+            Err(Error::new(NotFound, "Input cannot be empty"))
         }
     }
 }
 ```
 
-This has some error checking to make sure we get a valid key, doesn't handle the special cases where 0 and 8 not actually full octaves - for this demonstration I'm sticking to the middle of the keyboard, but you'll wnat to address that correctly in your app!  Refer to the diagram.
+This has some error checking to make sure we get a valid key, doesn't handle the special cases where `0` and `8` are not actually full octaves - for this demonstration I'm sticking to the middle of the keyboard where it doesn't matter, but you'll want to address that correctly if you build out form this example!  Refer to the diagram for specifics. The [`regex`](https://docs.rs/regex/1.3.1/regex/) crate for representing [regular expressions](https://en.wikipedia.org/wiki/Regular_expression) might come in handy.
 
-Next, we need a way to conver to a `Pitch`:
+Next, we need a way to convert a `PianoKey` to a `Pitch`:
 
 ```rust
 
@@ -418,15 +429,16 @@ Now we can start defining scales.  We actually get seven of these for free - one
 The first scale I laid out, the major scale, is also known as the [`Ionian mode`](https://en.wikipedia.org/wiki/Ionian_mode).  This is the base mode, each other is some offset from this scale.  The natural minor scale, where we started at A4, is called the [`Aeolian mode`].  There's an absurdly fancy name for each offset.  This means we get our first seven `Scale` variants for free:
 
 ```rust
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
+#[repr(u8)]
 enum Mode {
-    Aeolian = 5,
-    Dorian = 1,
     Ionian = 0,
-    Locrian = 6,
+    Dorian = 1,
+    Phrygian = 2,
     Lydian = 3,
     Mixolydian = 4,
-    Phrygian = 2,
+    Aeolian = 5,
+    Locrian = 6,
 }
 
 #[derive(Debug)]
@@ -434,8 +446,6 @@ enum Scale {
     Diatonic(Mode),
 }
 ```
-
-I don't know whether to put these alphabetically or numerically and I'm sorry that I probably chose wrong.
 
 ##### Other Scales
 
