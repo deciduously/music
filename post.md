@@ -276,9 +276,7 @@ There are the same number of whole and half intervals, they're just distributed 
 
 ##### Cents
 
-The reason an octave is where the pattern restarts is that we're working in a tuning system called [equal temperment](https://en.wikipedia.org/wiki/Equal_temperament).  This means any two adjacent notes in this system have the same ratio.  There's a reason diatonic scales move up eight keys on a piano, or twelve semitones: the frequency ratio over an octave is 2:1.  Middle C is C4, A5 is thwi
-
-To calculate the value needed in Hertz, we need a more precise way to describe an interval.  A full octave has a frequency ratio of 2:1, meaning a note one octave higher has double the frequency of the lower.  This results in an exponential curve if you were to graph frequencies as they grow.  When working with such a curve there's often a corresponding logarithmic unit that turns that curve into a line.  For musical intervals this unit called a [cent](https://en.wikipedia.org/wiki/Cent_(music)) to represent the ratio between two frequencies.  We've already seen how each octave is divided into 12 semitones:
+The reason an octave is where the pattern restarts is that we're working in a tuning system called [equal temperment](https://en.wikipedia.org/wiki/Equal_temperament).  This means any two adjacent notes in this system have the same ratio.  In such a system, it's quite convenient to work in terms of octaves, an interval over which the frequency ration is 2:1.  This is further divided into 12 semitones of 100 cents each - and we've seen semitones before.
 
 ```txt
 whole, whole, half, whole, whole, whole, half
@@ -295,6 +293,14 @@ const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64;
 ```
 
 The ratio between frequencies separated by a *single* cent is the 1200th root of 2, or 2^1/1200.  You wouldn't be able to hear a distinction between two tones a single cent apart.  The [just-noticeable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents.
+
+A cent is a [logarithmic](https://en.wikipedia.org/wiki/Logarithmic_scale) unit.  Because octaves double each time you increase by single one, the graph is `f(x) = x^2`:
+
+![x_squared](https://thepracticaldev.s3.amazonaws.com/i/mkh095mgcasg1soygrb7.png)
+
+A logarithmic unit maps much better to this sort of function:
+
+![cent graph](https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Music_intervals_frequency_ratio_equal_tempered_pythagorean_comparison.svg/550px-Music_intervals_frequency_ratio_equal_tempered_pythagorean_comparison.svg.png)
 
 Knowing all this we can calculate the frequency in Hertz of a desired pitch if we know both a base frequency and the number of cents to increase by:
 
