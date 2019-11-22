@@ -243,6 +243,8 @@ The cyan key is Middle C, and A440 is highlighted in yellow.  The octaves on an 
 
 A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  The smallest of these intervals on a piano (and most of Western music) is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second or half step.  Take a look back at that piano diagram above - one semitone is the distance between an adjacent white key and black key.  A *whole* step, or a [major second](https://en.wikipedia.org/wiki/Major_second), is equal to two of semitones, or two adjacent white keys that pass over a black key.  For now these are the only intervals we'll need:
 
+// TODO instead of this repre u8 crap, just amkeget_semitonets/get_cents methods
+
 ```rust
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
