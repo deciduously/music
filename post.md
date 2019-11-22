@@ -2,7 +2,7 @@
 title: Teaching Numbers To Sing
 published: false
 description: Learn how to generate sound from numeric data in Rust.
-cover_image: https://thepracticaldev.s3.amazonaws.com/i/t95h10hl48hrtth10gme.jpg
+cover_image: https://thepracticaldev.s3.amazonaws.com/i/iuakwwcexql5u0th7gtm.jpg
 tags: beginners, rust, tutorial, music
 ---
 
@@ -44,7 +44,7 @@ In other words, we're going to teach our [computers](https://en.wikipedia.org/wi
 
 I have two disclaimers:
 
-1. [There are](https://en.wikipedia.org/wiki/Existence) [too many](https://en.wikipedia.org/wiki/Saturated_model) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Blog).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) you're [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) of [person](https://en.wikipedia.org/wiki/Person), set [rules](https://en.wikipedia.org/wiki/Law).
+1. [There are](https://en.wikipedia.org/wiki/Existence) [too many](https://en.wikipedia.org/wiki/Saturated_model) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Blog).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) of [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
 1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest was [high school](https://en.wikipedia.org/wiki/High_school_(North_America)), which was like [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Say_Something_(Justin_Timberlake_song)).
 
 This is (hopefully) a [beginner](https://en.wikipedia.org/wiki/Novice)-level post.  It's not necessarily specific to Rust but also not shy about Rust idioms or added [verbosity](https://en.wikipedia.org/wiki/Verbosity).  Even so, or perhaps because of, it should be pretty readable even if you don't speak Rust - that's the whole point!  I promise I'll (mostly) stop the whole parenthesis thing, too.
@@ -63,11 +63,11 @@ cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",
 
 The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this particular adventure, but that's not to discredit it at all - that write-up and Wikipedia were all I needed to complete this translation with absolutely not a clue how this whole thing worked going in.
 
-Here's a step-by-step video demonstration:
+Here's a step-by-step video demonstration of the [pipeline](https://en.wikipedia.org/wiki/Pipeline_%28Unix%29) in sequence:
 
 {% youtube uLhQQSKhTok %}
 
-We're not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does exactly, and I'm not going to elaborate on what any of these specific steps of the [pipeline](https://en.wikipedia.org/wiki/Pipeline_%28Unix%29) mean.  Nevertheless, it serves as a solid [roadmap](https://en.wikipedia.org/wiki/Plan) for this code.  Each line calls out to some other tool present on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu):
+I've gotta be honest - I didn't even try it myself.  Im'm not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does in this post, and I'm not going to elaborate on what any of these specific steps of the pipeline mean.  Nevertheless, it serves as a solid [roadmap](https://en.wikipedia.org/wiki/Plan) for this program.  Each command of this pipeline calls out to some other tool present on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) to perform a series of operations on some continuous incoming data:
 
 1. `cat /dev/urandom`: Get a stream of random binary data.
 1. `hexdump -v -e '/1 "%u\n"'`: Convert binary to 8-bit base-10 integers (0-255).
@@ -75,7 +75,7 @@ We're not going to do what that [code](https://en.wikipedia.org/wiki/Source_code
 1. `xxd -r -p`: Convert hex numbers back to binary.
 1. `aplay -c 2 -f S32_LE -r 16000`: Play back binary data as sound.
 
-Of this, only step three ends up being pretty much what happens here too - here's what it looks like spread apart:
+Of this, only step 3 ends up being pretty much what happens here too - here's what it looks like spread apart:
 
 ```bash
 split("0,2,4,5,7,9,11,12",a,",");
@@ -176,7 +176,7 @@ Tools like `awk` are terse, but this is merely a `for` loop with some math in th
 
 #### A Little Physics
 
-[Sound](https://en.wikipedia.org/wiki/Sound) is composed physically of [vibrations](https://en.wikipedia.org/wiki/Vibration).  These vibrations cause perturbations in some [medium](https://en.wikipedia.org/wiki/Transmission_medium), and those perturbations are what we experience as sound.  When we're talking about hearing a sound with our ears, the medium is usually air.
+[Sound](https://en.wikipedia.org/wiki/Sound) is composed physically of [vibrations](https://en.wikipedia.org/wiki/Vibration).  These vibrations cause perturbations in some [medium](https://en.wikipedia.org/wiki/Transmission_medium), and those perturbations are what we experience as sound.  When we're talking about [hearing](https://en.wikipedia.org/wiki/Hearing) a sound with our [ears](https://en.wikipedia.org/wiki/Ear), the medium is usually [air](https://en.wikipedia.org/wiki/Atmosphere_of_Earth).
 
 ##### Sine Waves
 
