@@ -89,11 +89,11 @@ $ cargo new music
 
 Open that directory in the environment of your choice.  We'll use three crates:
 
-* [`rand`](https://docs.rs/rand/0.7.2/rand/) - [RNG]((https://en.wikipedia.org/wiki/Random_number_generation))
+* [`rand`](https://docs.rs/rand/0.7.2/rand/) - [RNG](https://en.wikipedia.org/wiki/Random_number_generation)
 * [`hound`](https://github.com/ruuda/hound) - [WAV](https://en.wikipedia.org/wiki/WAV)
 * [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [OUT](https://en.wikipedia.org/wiki/Audio_signal)
 
-We'll use `rand` in place of `[cat] /dev/urandom`, and `hound`/`rodio` will cover [`aplay`](https://linux.die.net/man/1/aplay).
+We'll use `rand` in place of `cat /dev/urandom`, and `hound`/`rodio` will cover [`aplay`](https://linux.die.net/man/1/aplay).
 
 ```diff
   [dependencies]
@@ -113,7 +113,9 @@ use rand::random;
 
 #### Iterator
 
-We can skip the conversion from binary.   This crate can give us random 8-bit integers out of the box.  We can implement a similar result to the first two steps, or `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'` by manually implementing an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html).  This trait is the standard way to represent, well, things that we iterate over.  It's easy to implement manually if a standard collection isn't right.  There's a [rich library](https://doc.rust-lang.org/std/iter/trait.Iterator.html) for types that implement thhis trait that you can take advantage of quickly.   There's only the one method:
+We can skip the conversion from binary.   This crate can give us random 8-bit integers out of the box by ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html)ing a type: `random::<u8>()` to get a random unsigned 8 bit integer with the default generator settings.  See the crate docs for all the various ways to tune this.
+
+We can implement a similar result to the first two steps, or `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'` by manually implementing an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html).  This trait is the standard way to represent, well, things that we iterate over, and this will easily let us represent what's essentially an inifinte list.  It's easy to implement manually if a standard collection isn't right.  There's a [rich library](https://doc.rust-lang.org/std/iter/trait.Iterator.html) for types that implement thhis trait that you can take advantage of quickly.   There's only the one method:
 
 ```rust
 #[derive(Default)]
@@ -145,7 +147,7 @@ fn main() {
 }
 ```
 
-This should print an endless loop of random numbers between 0 and 255 inclusive until you kill the process.
+This should print an endless loop of random numbers between 0 and 255 inclusive until you kill the process.  Be careful messing with this particular `Iterator` - a lot of those library functions we mentioned are really assuming your list is _NOT_ infinite.  This is not [lazily-evaluated](https://en.wikipedia.org/wiki/Lazy_evaluation), so something like `RandomBytes::last()` will sit there and call `next()` until your struct tells it it needs to stop somehow (which it does not ever do).  It does not bode well for anything else you had planned for the rest of this process.
 
 ### Mapping Bytes To Notes
 

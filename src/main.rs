@@ -22,7 +22,6 @@
 
 // THEN - author your own!
 
-use lazy_static::lazy_static;
 use rand::random;
 
 #[derive(Default)]
@@ -109,16 +108,16 @@ impl Mode {
             Aeolian => 5,
             Ionian => 0,
         };
-        let c = self.base_scale();
+        let c = Mode::get_intervals();
         let idx = n as usize + offset % c.len();
         c[idx]
     }
 }
 
 fn main() {
-    let mut rands = RandomBytes::new();
+    let mut rands = RandomBytes::new().last();
     loop {
-        println!("{}", rands.next().unwrap());
+        println!("{}", rands.unwrap());
     }
 
     //let mut pitch = Pitch::default();
