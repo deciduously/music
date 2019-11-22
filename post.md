@@ -30,7 +30,7 @@ In other words, we're going to teach our [computers](https://en.wikipedia.org/wi
   * [Mapping Bytes To Notes](#mapping-bytes-to-notes)
     + [A Little Physics](#a-little-physics)
       - [Sine Waves](#sine-waves)
-      - [Notes](#notes)
+      - [Pitch](#pitch)
     + [A Little Music Theory](#a-little-music-theory)
       - [Scales](#scales)
       - [Cents](#cents)
@@ -129,7 +129,7 @@ use rand::random;
 
 #### Iterator
 
-We can skip the conversion from binary.   This crate can give us random 8-bit integers out of the box by ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html)ing a type: `random::<u8>()` to get a random unsigned 8 bit integer with the default generator settings.  See the crate docs for all the various ways to tune this.
+We can skip the conversion from binary.   This crate can give us random 8-bit integers out of the box by ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html)ing a type: `random::<u8>()` will produce a random [unsigned](https://en.wikipedia.org/wiki/Signedness) [8 bit](https://en.wikipedia.org/wiki/8-bit) integer ([`u8`](https://doc.rust-lang.org/nightly/std/primitive.u8.html)) with the default generator settings.  See the crate docs for all the various ways to tune this.
 
 We can implement a similar result to the first two steps, or `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'` by manually implementing an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html).  This trait is the standard way to represent, well, things that we iterate over, and this will easily let us represent what's essentially an infinite list.  It's easy to implement manually if a standard collection isn't right.  There's a [rich library](https://doc.rust-lang.org/std/iter/trait.Iterator.html) for types that implement this trait that you can take advantage of quickly.   There's only the one method:
 
