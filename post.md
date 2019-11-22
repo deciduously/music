@@ -365,6 +365,8 @@ fn main() {
 
 Let's do one better and just use piano keys:
 
+// TODO this really does need to be a named enum which each valid note - look up a standard notation
+
 ```rust
 #[derive(Debug, Clone, Copy)]
 struct PianoKey {
