@@ -110,7 +110,7 @@ Open that directory in the environment of your choice.  We'll use three crates:
 * [`hound`](https://github.com/ruuda/hound) - [WAV](https://en.wikipedia.org/wiki/WAV)
 * [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [OUT](https://en.wikipedia.org/wiki/Audio_signal)
 
-We'll use `rand` in place of `cat /dev/urandom`, and `hound`/`rodio` will cover [`aplay`](https://linux.die.net/man/1/aplay).  In `Cargo.toml`:
+We'll use `rand` in place of [`cat /dev/urandom`](https://en.wikipedia.org/wiki//dev/random), and `hound`/`rodio` will cover [`aplay`](https://linux.die.net/man/1/aplay).  In `Cargo.toml`:
 
 ```diff
   [dependencies]
@@ -245,9 +245,10 @@ A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (fre
 
 ```rust
 #[derive(Debug, Clone, Copy)]
+#[repr(u8)]
 enum Interval {
-    Min2nd = 1,
-    Maj2nd = 2,
+    Min2 = 1,
+    Maj2 = 2,
 }
 ```
 
@@ -434,7 +435,6 @@ The first scale I laid out, the major scale, is also known as the [`Ionian mode`
 
 ```rust
 #[derive(Debug, Clone, Copy)]
-#[repr(u8)]
 enum Mode {
     Ionian = 0,
     Dorian = 1,

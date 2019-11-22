@@ -104,12 +104,11 @@ impl Default for Pitch {
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 enum Interval {
-    Min2nd = 1,
-    Maj2nd = 2,
+    Min2 = 1,
+    Maj2 = 2,
 }
 
 #[derive(Debug, Clone, Copy)]
-#[repr(u8)]
 enum Mode {
     Ionian = 0,
     Dorian = 1,
@@ -123,7 +122,7 @@ enum Mode {
 impl Mode {
     fn base_intervals() -> impl Iterator {
         use Interval::*;
-        [Maj2nd, Maj2nd, Min2nd, Maj2nd, Maj2nd, Maj2nd, Min2nd].iter()
+        [Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2].iter()
     }
     //fn get_intervals(&self) -> impl Iterator {
     //    let intervals = Mode::base_intervals();
