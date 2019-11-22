@@ -2,6 +2,7 @@
 title: Teaching Numbers To Sing
 published: false
 description: Learn how to generate sound from numeric data in Rust.
+cover_image: https://thepracticaldev.s3.amazonaws.com/i/t95h10hl48hrtth10gme.jpg
 tags: beginners, rust, tutorial, music
 ---
 
@@ -11,9 +12,9 @@ TODO TESTS THROUGHOUT
 
 > Everything is music. When I go home, I throw knickers in the oven and it's music. Crash, boom, bang!
 
-*- [Winona Ryder](https://en.wikipedia.org/wiki/Winona_Ryder) as [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk) on [SNL's Celebrity Rock 'N' Roll Jeopardy!](https://youtu.be/R3V94ZtmdbQ?t=190) - 2002*
+*- [Winona Ryder](https://en.wikipedia.org/wiki/Winona_Ryder) as [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk) on [SNL's Celebrity Rock 'N' Roll Jeopardy!](https://youtu.be/R3V94ZtmdbQ?t=190) - [2002](https://en.wikipedia.org/wiki/2002)*
 
-Let's channel that wacky energy.  In this post, we'll throw something [random](https://en.wikipedia.org/wiki/Random_number_generation) into, well, a [math-oven](https://en.wikipedia.org/wiki/Subroutine) and [*viola*](https://en.wikipedia.org/wiki/Viola), [music](https://en.wikipedia.org/wiki/Music)!  We're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://www.rust-lang.org/), along with a juuust a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).  ¡Vámonos!
+Let's channel that wacky energy.  In this post, we'll throw something [random](https://en.wikipedia.org/wiki/Random_number_generation) into, well, a [math-oven](https://en.wikipedia.org/wiki/Subroutine) and [*viola*](https://en.wikipedia.org/wiki/Viola), [music](https://en.wikipedia.org/wiki/Music)!  We're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://www.rust-lang.org/), backed by a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).  ¡Vámonos!
 
 ## Table of Contents
 
@@ -39,10 +40,10 @@ Let's channel that wacky energy.  In this post, we'll throw something [random](h
 
 I have two disclaimers:
 
-1. There are too many [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) links here.  If you're that kind of [person](https://en.wikipedia.org/wiki/Person), set [rules](https://en.wikipedia.org/wiki/Law).
+1. There are too many [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) links here.  If you're [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) of [person](https://en.wikipedia.org/wiki/Person), set [rules](https://en.wikipedia.org/wiki/Law).
 1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest was [high school](https://en.wikipedia.org/wiki/High_school_(North_America)), which was like ten years ago.  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, say something.
 
-This is (hopefully) a beginner-level post.  It's not necessarily specific to Rust but also not shy about Rust idioms.  Even so, or perhaps because of, it should be pretty readable even if you don't speak Rust (yet) - that's the whole point oif the added verbosity!  I promise I'll (mostly) stop the whole parenthesis thing, too.
+This is (hopefully) a [beginner](https://en.wikipedia.org/wiki/Novice)-level post.  It's not necessarily specific to Rust but also not shy about Rust idioms or added [verbosity](https://en.wikipedia.org/wiki/Verbosity).  Even so, or perhaps because of, it should be pretty readable even if you don't speak Rust - that's the whole point!  I promise I'll (mostly) stop the whole parenthesis thing, too.
 
 ## The Meme
 
@@ -56,11 +57,13 @@ Here's a slightly modified version of the `bash` one-liner at the bottom, taken 
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
 ```
 
-No, just mashing your keyboard will (likely) not yield similar results.  I tried myself so you don't have to.  Here's a step-by-step video demonstration:
+No, just mashing your keyboard will (likely) not yield similar results.  I tried myself so you don't have to.  The link blogpost is considerably more brief and assumes a greater degree of background knowledge than this diatribe, but that's not to discredit it - that write-up and Wikipedia were all I needed to complete this translation with absolutely not a clue how this whole thing worked going in.
+
+Here's a step-by-step video demonstration:
 
 {% youtube uLhQQSKhTok %}
 
-We're not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does exactly, and I'm not going to elaborate on what any of these specific snippets mean.  To learn more about that line specifically, check ut the post, but it does assume a good bit of prior knowledge.  Nevertheless, it serves as a solid [roadmap](https://en.wikipedia.org/wiki/Plan) for this code.  Each line calls out to some other tool present on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu):
+We're not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does exactly, and I'm not going to elaborate on what any of these specific steps of the [pipeline](https://en.wikipedia.org/wiki/Pipeline_%28Unix%29) mean.  Nevertheless, it serves as a solid [roadmap](https://en.wikipedia.org/wiki/Plan) for this code.  Each line calls out to some other tool present on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu):
 
 1. `cat /dev/urandom`: Get a stream of random binary data.
 1. `hexdump -v -e '/1 "%u\n"'`: Convert binary to 8-bit base-10 integers (0-255).
@@ -68,7 +71,7 @@ We're not going to do what that [code](https://en.wikipedia.org/wiki/Source_code
 1. `xxd -r -p`: Convert hex numbers back to binary.
 1. `aplay -c 2 -f S32_LE -r 16000`: Play back binary data as sound.
 
-Of this, only step three ends up being pretty much what happens here too - here's what it looks like as spread apart as I could:
+Of this, only step three ends up being pretty much what happens here too - here's what it looks like spread apart:
 
 ```bash
 split("0,2,4,5,7,9,11,12",a,",");
@@ -77,7 +80,7 @@ for (i = 0; i < 1; i += 0.0001)
            100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))
 ```
 
-Probably still not that helpful at a glance - there's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) - and its written in freakin' [`awk`](https://en.wikipedia.org/wiki/AWK) -  don't beat yourself up if this still doesn't mean much (or literally anything).  We're gonna Rust up the joint and it'll all be clear, I promise.
+Probably still not too helpful at a glance for most - there's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) - and its written in freakin' [`awk`](https://en.wikipedia.org/wiki/AWK) -  don't beat yourself up by an means if this still doesn't mean much (or literally anything).  We're going to model this problem from the ground up in [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)).  As a result this logic will become crystal clear, and we'll be able to extend a lot further with minimal effort.
 
 We can glean a bit of information at a glance, though.  It looks like we're going to tick up floating point values by ten-thousandths, from zero to one, and do math on each one.  Even if you're not a math person, that very sentence alone may have triggered [something](https://en.wikipedia.org/wiki/Unit_circle) from deep within your teenage math textbooks.  If it did, don't sweat it, I'm not going to be drilling you on the radian unit circle values, but we are going to be working with a sine wave.  If it didn't, also don't sweat it, I'm gonna walk us through the whole thing and it's really not painful.
 
@@ -167,17 +170,15 @@ Tools like `awk` are terse, but this is merely a `for` loop with some math in th
 
 #### A Little Physics
 
-[Sound](https://en.wikipedia.org/wiki/Sound) is composed physically of [vibrations](https://en.wikipedia.org/wiki/Vibration).  These vibrations cause perturbances in some [medium](https://en.wikipedia.org/wiki/Transmission_medium), and those perturbations are what we experience as sound.  When we're talking about hearing a sound with our ears, the medium is usually air.
+[Sound](https://en.wikipedia.org/wiki/Sound) is composed physically of [vibrations](https://en.wikipedia.org/wiki/Vibration).  These vibrations cause perturbations in some [medium](https://en.wikipedia.org/wiki/Transmission_medium), and those perturbations are what we experience as sound.  When we're talking about hearing a sound with our ears, the medium is usually air.
 
 ##### Sine Waves
 
-Sound propogates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](https://en.wikipedia.org/wiki/Reality) a sound contains many components but foir this program we can talk about a super-simplified version that can be represented as a single [*sine wave*](https://en.wikipedia.org/wiki/Sine_wave):
+Sound propogates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](https://en.wikipedia.org/wiki/Reality) a sound contains many components but for this program we can talk about a super-simplified version that can be represented as a single [sine wave](https://en.wikipedia.org/wiki/Sine_wave):
 
 ![sine waves](https://upload.wikimedia.org/wikipedia/commons/6/6d/Sine_waves_different_frequencies.svg)
 
-*image: [wikimedia commons](https://en.wikipedia.org/wiki/File:Sine_waves_different_frequencies.svg)*
-
-If you're thinking *but Ben, you CAN mix component frequencies to represent sound waves as sine waves we all do that all the time*, you're correct (and probably smarter than me).  That's really cool stuff and a lot more complicated than what happens in this post.  If that was either turning you {on|off} to this, you can {stop|start} breathing normally.  There will be no signals processed here, just a single frequency [scalar](https://en.wikipedia.org/wiki/Variable_(computer_science)) we modulate.  Maybe next time if I can hack it coherently!
+If you're thinking *but Ben, you CAN mix component frequencies to represent sound waves as sine waves in fact we all do that all the time*, you're [correct in ways I don't personally fully understand](https://en.wikipedia.org/wiki/Digital_signal_processing).  That's really cool stuff and a lot more complicated than what happens in this post.  If that was either turning you {on|off} to this, you can {stop|start} breathing normally.  There will be no signals processed here, just a single frequency [scalar](https://en.wikipedia.org/wiki/Variable_(computer_science)) we modulate.
 
 If the X axis is time, a sine wave represents a recurring action with an analog (or smooth) oscillation between their maximal amplitudes, or distances in either direction from 0.  The frequency is how close together these peaks are, or how frequently this thing occurs.  In simple cases, a sound at a specific pitch is a result of that sound's frequency.  The higher the frequency, or closer together the peaks, the higher the pitch.  The amplitude reflects the volume.
 
@@ -187,11 +188,11 @@ The standard unit for frequency is the [Hertz](https://en.wikipedia.org/wiki/Her
 
 ##### Pitch
 
-Sound is a continuous spectrum of frequency, but when we make music we tend to prefer [notes](https://en.wikipedia.org/wiki/Musical_note) at set frequencies, or pitches.  I'm using  [frequency](https://en.wikipedia.org/wiki/Fundamental_frequency) and [pitch](https://en.wikipedia.org/wiki/Pitch_(music)) interchangeably, because for this application specifically they are, but go Wiki-diving if you want to learn about the distinction (etc).  To start, though, we need some sort of standard, and some of the world has settled on [440Hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO 16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
+Sound is a continuous spectrum of frequency, but when we make music we tend to prefer [notes](https://en.wikipedia.org/wiki/Musical_note) at set frequencies, or pitches.  I'm using  [frequency](https://en.wikipedia.org/wiki/Fundamental_frequency) and [pitch](https://en.wikipedia.org/wiki/Pitch_(music)) interchangeably, because for this application specifically they are, but go Wiki-diving if you want to learn about the distinction and nuance at lay here.  The nature of sound is super cool but super complex and outside of the scope of this post - we just want to hear some numbers sing, we don't need to hear a full orchestra.
+
+To start working with something concrete, we need some sort of standard.   Some of the world has settled on [440Hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO 16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
 
 ![stuttgart](https://i.imgflip.com/3h0y3g.jpg)
-
-*image: I made this on [imgflip.com](https://imgflip.com/) but have no proof of that*
 
 Let's set up a type to represent a pitch:
 
@@ -216,7 +217,7 @@ impl Default for Pitch {
 }
 ```
 
-With this code we can use `Pitch::default()` to get our A440 pitch, or pass an abitrary frequency: `Pitch::new(440.0)`.
+With this code we can use `Pitch::default()` to get our A440 pitch, or pass an arbitrary frequency: `Pitch::new(440.0)`.
 
 Let's see if we can produce this tone.
 
@@ -227,8 +228,6 @@ TODO produce the flat tone - I think it's just gonna be 440*i*Pi
 A440 is the A above Middle C on a piano:
 
 ![piano](https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Piano_Frequencies.svg/2560px-Piano_Frequencies.svg.png)
-
-*image: [wikimedia commons](https://commons.wikimedia.org/wiki/File:Piano_Frequencies.svg)*
 
 The cyan key is Middle C, and A440 is highlighted in yellow.  The octaves on an 88-key piano are numbered as shown, so often A440 is simply denoted "A4" especially when dealing with a keyboard specifically.  You may own a tuner that marks 440Hz/A4 specifically if you're a musician.  This pitch is used for calibrating musical instruments and tuning a group, as well as a baseline constant for calculating frequencies.
 
@@ -465,3 +464,6 @@ TODO Rick & Morty "Human Music" gif
 * Port this to your favorite programming language (second favorite if that's already Rust).
 * Add more scales.
 * Parse sequences of keys to author music.
+
+*Body images are wikimedia commons unless otherwise specified*
+*Cover image from some subreddit, I don't remember*
