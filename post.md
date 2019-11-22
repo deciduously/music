@@ -7,6 +7,8 @@ tags: beginners, rust, tutorial, music
 
 # Everything Is Music
 
+TODO TESTS THROUGHOUT
+
 > Everything is music. When I go home, I throw knickers in the oven and it's music. Crash, boom, bang!
 
 *- [Winona Ryder](https://en.wikipedia.org/wiki/Winona_Ryder) as [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk) on [SNL's Celebrity Rock 'N' Roll Jeopardy!](https://youtu.be/R3V94ZtmdbQ?t=190) - 2002*
@@ -38,7 +40,7 @@ Let's channel that wacky energy.  In this post, we'll throw something [random](h
 I have two disclaimers:
 
 1. There are too many [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) links here.  If you're that kind of [person](https://en.wikipedia.org/wiki/Person), set [rules](https://en.wikipedia.org/wiki/Law).
-1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest was [high school](https://en.wikipedia.org/wiki/High_school_(North_America)), which was like ten years ago, I never got formally introduced to any of what you're about to read.  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, say something.
+1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest was [high school](https://en.wikipedia.org/wiki/High_school_(North_America)), which was like ten years ago.  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, say something.
 
 This is (hopefully) a beginner-level post.  It's not necessarily specific to Rust but also not shy about Rust idioms.  Even so, or perhaps because of, it should be pretty readable even if you don't speak Rust (yet) - that's the whole point oif the added verbosity!  I promise I'll (mostly) stop the whole parenthesis thing, too.
 
@@ -58,7 +60,7 @@ No, just mashing your keyboard will (likely) not yield similar results.  I tried
 
 {% youtube uLhQQSKhTok %}
 
-We're not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does exactly, and I'm not going to elaborate on what any of these specific snippets mean, but it does serve as a solid [roadmap](https://en.wikipedia.org/wiki/Plan).  Each line calls out to some other tool present on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu):
+We're not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does exactly, and I'm not going to elaborate on what any of these specific snippets mean.  To learn more about that line specifically, check ut the post, but it does assume a good bit of prior knowledge.  Nevertheless, it serves as a solid [roadmap](https://en.wikipedia.org/wiki/Plan) for this code.  Each line calls out to some other tool present on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu):
 
 1. `cat /dev/urandom`: Get a stream of random binary data.
 1. `hexdump -v -e '/1 "%u\n"'`: Convert binary to 8-bit base-10 integers (0-255).
@@ -70,12 +72,16 @@ Of this, only step three ends up being pretty much what happens here too - here'
 
 ```bash
 split("0,2,4,5,7,9,11,12",a,",");
-for (i = 0; i < 1; i+= 0.0001)
+for (i = 0; i < 1; i += 0.0001)
     printf("%08X\n",
            100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))
 ```
 
-Don't worry, we're gonna Rust up the joint and it'll all be clear.  We'll actually be able to make it even cooler with minimal effort thanks to aforementional total Rusting.  ¡Vámonos!
+Probably still not that helpful at a glance - there's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) - and its written in freakin' [`awk`](https://en.wikipedia.org/wiki/AWK) -  don't beat yourself up if this still doesn't mean much (or literally anything).  We're gonna Rust up the joint and it'll all be clear, I promise.
+
+We can glean a bit of information at a glance, though.  It looks like we're going to tick up floating point values by ten-thousandths, from zero to one, and do math on each one.  Even if you're not a math person, that very sentence alone may have triggered [something](https://en.wikipedia.org/wiki/Unit_circle) from deep within your teenage math textbooks.  If it did, don't sweat it, I'm not going to be drilling you on the radian unit circle values, but we are going to be working with a sine wave.  If it didn't, also don't sweat it, I'm gonna walk us through the whole thing and it's really not painful.
+
+This code goes a little further than the one-liner can - thank gosh, we hit XXX lines here.  ¡Vámonos!
 
 ## The Program
 
@@ -93,7 +99,7 @@ Open that directory in the environment of your choice.  We'll use three crates:
 * [`hound`](https://github.com/ruuda/hound) - [WAV](https://en.wikipedia.org/wiki/WAV)
 * [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [OUT](https://en.wikipedia.org/wiki/Audio_signal)
 
-We'll use `rand` in place of `cat /dev/urandom`, and `hound`/`rodio` will cover [`aplay`](https://linux.die.net/man/1/aplay).
+We'll use `rand` in place of `cat /dev/urandom`, and `hound`/`rodio` will cover [`aplay`](https://linux.die.net/man/1/aplay).  In `Cargo.toml`:
 
 ```diff
   [dependencies]
@@ -161,13 +167,11 @@ Tools like `awk` are terse, but this is merely a `for` loop with some math in th
 
 #### A Little Physics
 
-Before diving in - I'm using things like [*frequency*](https://en.wikipedia.org/wiki/Fundamental_frequency) and [*pitch*](https://en.wikipedia.org/wiki/Pitch_(music)) interchangeably, because for this application specifically they are, and this is a huge oversimplification of what makes up sound.
-
 [Sound](https://en.wikipedia.org/wiki/Sound) is composed physically of [vibrations](https://en.wikipedia.org/wiki/Vibration).  These vibrations cause perturbances in some [medium](https://en.wikipedia.org/wiki/Transmission_medium), and those perturbations are what we experience as sound.  When we're talking about hearing a sound with our ears, the medium is usually air.
 
 ##### Sine Waves
 
-Sound propogates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](https://en.wikipedia.org/wiki/Reality) a sound contains many components but we can talk about a simplified version that can be represented as a single [*sine wave*](https://en.wikipedia.org/wiki/Sine_wave):
+Sound propogates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](https://en.wikipedia.org/wiki/Reality) a sound contains many components but foir this program we can talk about a super-simplified version that can be represented as a single [*sine wave*](https://en.wikipedia.org/wiki/Sine_wave):
 
 ![sine waves](https://upload.wikimedia.org/wikipedia/commons/6/6d/Sine_waves_different_frequencies.svg)
 
@@ -175,19 +179,15 @@ Sound propogates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](
 
 If you're thinking *but Ben, you CAN mix component frequencies to represent sound waves as sine waves we all do that all the time*, you're correct (and probably smarter than me).  That's really cool stuff and a lot more complicated than what happens in this post.  If that was either turning you {on|off} to this, you can {stop|start} breathing normally.  There will be no signals processed here, just a single frequency [scalar](https://en.wikipedia.org/wiki/Variable_(computer_science)) we modulate.  Maybe next time if I can hack it coherently!
 
-If the X axis is time, a sine wave represents a recurring action with an analog (or smooth) oscillation between their maximal *amplitudes*, or distances in either direction from 0.  The *frequency* is how close together these peaks are, or how frequently this thing occurs.
-
-It makes sense that a vibration propogating through a medium could be represented as such a wave - picture a string vibrating on a guitar.  It wobbles back and forth rapidly, just like this wave's shape.  It stands to reason that the waves generated from this action would correspond to this osciallation at a given point.
-
-In simple cases, a sound at a specific pitch is a result of that sound's frequency.  The higher the frequency, or closer together the peaks, the higher the pitch.
+If the X axis is time, a sine wave represents a recurring action with an analog (or smooth) oscillation between their maximal amplitudes, or distances in either direction from 0.  The frequency is how close together these peaks are, or how frequently this thing occurs.  In simple cases, a sound at a specific pitch is a result of that sound's frequency.  The higher the frequency, or closer together the peaks, the higher the pitch.  The amplitude reflects the volume.
 
 The standard unit for frequency is the [Hertz](https://en.wikipedia.org/wiki/Hertz), abbreviated `Hz`, which measures the *number of cycles per second*.  One cycle here is the distance (or time) between two peaks on the graph:
 
 ![cycle gif](https://media.giphy.com/media/F5rQlfTXqCJ8c/giphy.gif)
 
-##### Notes
+##### Pitch
 
-Sound is a continuous spectrum of frequency, but when we make music we tend to prefer [*notes*](https://en.wikipedia.org/wiki/Musical_note) at set frequencies.  To start, though, we need some sort of standard, and some of the world has settled on [440Hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO 16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
+Sound is a continuous spectrum of frequency, but when we make music we tend to prefer [notes](https://en.wikipedia.org/wiki/Musical_note) at set frequencies, or pitches.  I'm using  [frequency](https://en.wikipedia.org/wiki/Fundamental_frequency) and [pitch](https://en.wikipedia.org/wiki/Pitch_(music)) interchangeably, because for this application specifically they are, but go Wiki-diving if you want to learn about the distinction (etc).  To start, though, we need some sort of standard, and some of the world has settled on [440Hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO 16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
 
 ![stuttgart](https://i.imgflip.com/3h0y3g.jpg)
 
@@ -230,17 +230,25 @@ A440 is the A above Middle C on a piano:
 
 *image: [wikimedia commons](https://commons.wikimedia.org/wiki/File:Piano_Frequencies.svg)*
 
-The cyan key is Middle C, and A440 is highlighted in yellow.
-
-If you're a musician you may own a tuner that marks 440Hz specifically.  This pitch is used for calibrating musical instruments and tuning a group, and we'll use it as a baseline constant for calculating frequencies.
+The cyan key is Middle C, and A440 is highlighted in yellow.  The octaves on an 88-key piano are numbered as shown, so often A440 is simply denoted "A4" especially when dealing with a keyboard specifically.  You may own a tuner that marks 440Hz/A4 specifically if you're a musician.  This pitch is used for calibrating musical instruments and tuning a group, as well as a baseline constant for calculating frequencies.
 
 ##### Scales
 
-A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  The smallest of these intervals is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second.  Here I'll refer to it as a "half" step.  Take a look back at that piano diagram above - one semitone is the distance between an adjacacent white key and black key.  A *whole* step, or a [major second](https://en.wikipedia.org/wiki/Major_second), is equal to two of these, or two adjacant white keys skipping a black.
+A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  The smallest of these intervals on a piano (and most of Western music) is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second.  Here I'll refer to it as a "half" step.  Take a look back at that piano diagram above - one semitone is the distance between an adjacacent white key and black key.  A *whole* step, or a [major second](https://en.wikipedia.org/wiki/Major_second), is equal to two of these, or two adjacant white keys skipping a black key.  For now these are teh only ones we'll need:
 
-Clearly, though, there isn't a black key between every white key.  The piano is designed to play notes from a catagory called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - an octave is 8 notes, and between any two keys that are eight apart there will be the same number of whole and half steps.
+```rust
+#[derive(Debug, Clone, Copy)]
+enum Interval {
+    Min2nd = 1,
+    Maj2nd = 2,
+}
+```
 
-A major scale, also known as [Ionian mode](https://en.m.wikipedia.org/wiki/Mode_(music)), is the baseline scale.  Start at Middle C, the one highlight in cyan above, and count up to the next C key, eight white keys to the left.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get:
+Each variant also carries the number of semitones it represents.
+
+Clearly, there isn't a black key between every white key.  The piano is designed to play notes from a catagory of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern for the whole length.
+
+A major scale is the baseline scale.  Start at Middle C, the one highlighted in cyan above, and count up to the next C key, eight white keys to the left.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get counting up to the next C, when the pattern repeats:
 
 ```txt
 whole, whole, half, whole, whole, whole, half
@@ -248,7 +256,7 @@ whole, whole, half, whole, whole, whole, half
 
 TODO embed sound
 
-There are a few variations of *minor* scale, but for now I'll define the [natural minor scale](https://en.m.wikipedia.org/wiki/Minor_scale#Natural_minor_scale) (a.k.a. Aeolian mode):
+There are a few variations of *minor* scale, but for now I'll define the [natural minor scale](https://en.m.wikipedia.org/wiki/Minor_scale#Natural_minor_scale).  This is what you get if you start at our good old friend A4 and march on up the white keys to A5:
 
 ```txt
 whole, half, whole, whole, half, whole, whole
@@ -259,6 +267,8 @@ TODO embed sound
 There are the same number of whole and half intervals, they're just distributed differently.  You can play a corresponding minor scale using only the white keys by simply starting at the sixth note.  Try counting it out yourself!
 
 ##### Cents
+
+The reason an octave is where the pattern restarts is that we're working in a tuning system called [equal temperment,] For an octave, the frequency ratio is 2:1.  A5 is thwi
 
 To calculate the value needed in Hertz, we need a more precise way to describe an interval.  A full octave has a frequency ratio of 2:1, meaning a note one octave higher has double the frequency of the lower.  This results in an exponential curve if you were to graph frequencies as they grow.  When working with such a curve there's often a corresponding logarithmic unit that turns that curve into a line.  For musical intervals this unit called a [cent](https://en.wikipedia.org/wiki/Cent_(music)) to represent the ratio between two frequencies.  We've already seen how each octave is divided into 12 semitones:
 
@@ -276,7 +286,7 @@ const OCTAVE_SEMITONES: u32 = 12;
 const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64;
 ```
 
-The ratio between frequencies separated by a *single* cent is the 1200th root of 2, or 2^1/1200.  You wouldn't be able to hear a distinction between two tones a single cent apart.  The [Just-noticable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents.
+The ratio between frequencies separated by a *single* cent is the 1200th root of 2, or 2^1/1200.  You wouldn't be able to hear a distinction between two tones a single cent apart.  The [just-noticable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents.
 
 Knowing all this we can calculate the frequency in Hertz of a desired pitch if we know both a base frequency and the number of cents to increase by:
 
@@ -301,6 +311,7 @@ This works out to just shy of 4 cents to cause an increase of 1Hz, more precisel
 
 
 ```rust
+
 fn main() {
     let mut pitch = Pitch::default();
     println!("{:?}", pitch); // Pitch { frequency: 440.0 }
@@ -319,7 +330,7 @@ Instead of adding single cents at a time, add a helper method that just expects 
       fn add_cents(&mut self, cents: Cents) {
           self.frequency *= 2.0f64.powf(cents / OCTAVE_CENTS);
       }
-+     fn add_semitones(&mut self, semitones: u32) {
++     fn add_semitones(&mut self, semitones: i32) {
 +         self.add_cents(semitones as f64 * SEMITONE_CENTS);
 +     }
   }
@@ -336,13 +347,96 @@ fn main() {
 }
 ```
 
+Let's do one better and just use piano keys:
+
+```rust
+#[derive(Debug, Clone, Copy)]
+struct PianoKey {
+    note: u8,
+    octave: u8,
+}
+
+impl PianoKey {
+    fn new(note: u8, octave: u8) -> Self {
+        PianoKey { note, octave }
+    }
+}
+```
+
+We can get them from strings with `std::str::FromStr`:
+
+```rust
+impl FromStr for PianoKey {
+    type Err = io::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use io::{Error, ErrorKind::*};
+        if s.len() != 2 {
+            return Err(Error::new(InvalidInput, "Must be two characters long"));
+        }
+        let mut chars = s.chars();
+        if let Some(note) = chars.next() {
+            let char_note = note as char;
+            if !char_note.is_uppercase() {
+                return Err(Error::new(InvalidData, "First character must be a letter"));
+            } else if let Some(octave) = chars.next() {
+                // Turn octave to integer
+                let integer_octave = octave as u8 - b'0';
+                if integer_octave > 8 {
+                    return Err(Error::new(InvalidData, "Second character must be 0-8"));
+                }
+                // Turn note to integer
+                let integer_note = char_note as u8 - b'A';
+                // Make sure its a real note
+                if integer_note <= 8 {
+                    // Success!!
+                    return Ok(PianoKey::new(integer_note, integer_octave));
+                } else {
+                    return Err(Error::new(InvalidData, "First character must be A-G"));
+                }
+            } else {
+                return Err(Error::new(InvalidInput, "Must be two characters long"));
+            }
+        } else {
+            return Err(Error::new(NotFound, "Input cannot be empty"));
+        }
+    }
+}
+```
+
+This has some error checking to make sure we get a valid key, doesn't handle the special cases where 0 and 8 not actually full octaves - for this demonstration I'm sticking to the middle of the keyboard, but you'll wnat to address that correctly in your app!  Refer to the diagram.
+
+Next, we need a way to conver to a `Pitch`:
+
+```rust
+
+```
+
 ##### Modes
 
-Now we can start defining scales.
+Now we can start defining scales.  We actually get seven of these for free - one for each of the white keys in an octave.  If you count up to one octave higher from any given key, that's a diatonic scale.  These scales are called [`Modes`](https://en.wikipedia.org/wiki/Mode_(music)).
 
-// major : 0,2,4,5,7,9,11,12
+The first scale I laid out, the major scale, is also known as the [`Ionian mode`](https://en.wikipedia.org/wiki/Ionian_mode).  This is the base mode, each other is some offset from this scale.  The natural minor scale, where we started at A4, is called the [`Aeolian mode`].  There's an absurdly fancy name for each offset.  This means we get our first seven `Scale` variants for free:
 
-// minor : 0,2,3,5,7,8,10,12
+```rust
+#[derive(Debug)]
+enum Mode {
+    Aeolian = 5,
+    Dorian = 1,
+    Ionian = 0,
+    Locrian = 6,
+    Lydian = 3,
+    Mixolydian = 4,
+    Phrygian = 2,
+}
+
+#[derive(Debug)]
+enum Scale {
+    Diatonic(Mode),
+}
+```
+
+I don't know whether to put these alphabetically or numerically and I'm sorry that I probably chose wrong.
 
 ##### Other Scales
 
@@ -369,8 +463,5 @@ TODO Rick & Morty "Human Music" gif
 ## Challenges
 
 * Port this to your favorite programming language (second favorite if that's already Rust).
-* Add some more scales.
-* Extend beyond one octave.
-* Don't use `lazy_static` - get more Rusty.
-* Signal processing.
-    - Write a post to teach me signal processing
+* Add more scales.
+* Parse sequences of keys to author music.
