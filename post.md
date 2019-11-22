@@ -89,9 +89,9 @@ $ cargo new music
 
 Open that directory in the environment of your choice.  We'll use three crates:
 
-* [`rand`](https://docs.rs/rand/0.7.2/rand/)
-* [`hound`](https://github.com/ruuda/hound)
-* [`rodio`](https://docs.rs/rodio/0.10.0/rodio/).
+* [`rand`](https://docs.rs/rand/0.7.2/rand/) - [RNG]((https://en.wikipedia.org/wiki/Random_number_generation))
+* [`hound`](https://github.com/ruuda/hound) - [WAV](https://en.wikipedia.org/wiki/WAV)
+* [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [OUT](https://en.wikipedia.org/wiki/Audio_signal)
 
 We'll use `rand` in place of `[cat] /dev/urandom`, and `hound`/`rodio` will cover [`aplay`](https://linux.die.net/man/1/aplay).
 

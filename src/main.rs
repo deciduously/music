@@ -83,18 +83,6 @@ pub enum Interval {
 
 type ScaleIntervals = Vec<Interval>;
 
-lazy_static! {
-    pub static ref MAJOR_SCALE: ScaleIntervals = vec![
-        Interval::Whole,
-        Interval::Whole,
-        Interval::Half,
-        Interval::Whole,
-        Interval::Whole,
-        Interval::Whole,
-        Interval::Half,
-    ];
-}
-
 #[derive(Debug)]
 enum Mode {
     Aeolian,
@@ -102,14 +90,28 @@ enum Mode {
 }
 
 impl Mode {
+    fn get_intervals() -> ScaleIntervals {
+        // TODO this needs to be a method, come here next!
+        // have THIS calculate an impl Iterator (or impl Scale??)
+        vec![
+            Interval::Whole,
+            Interval::Whole,
+            Interval::Half,
+            Interval::Whole,
+            Interval::Whole,
+            Interval::Whole,
+            Interval::Half,
+        ]
+    }
     fn get_interval(&self, n: u8) -> Interval {
         use Mode::*;
         let offset = match self {
             Aeolian => 5,
             Ionian => 0,
         };
-        let idx = n as usize + offset % MAJOR_SCALE.len();
-        MAJOR_SCALE[idx]
+        let c = self.base_scale();
+        let idx = n as usize + offset % c.len();
+        c[idx]
     }
 }
 
