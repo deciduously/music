@@ -34,6 +34,7 @@ In other words, we're going to teach our [computers](https://en.wikipedia.org/wi
     + [A Little Music Theory](#a-little-music-theory)
       - [Scales](#scales)
       - [Cents](#cents)
+      - [Piano Keys](#piano-keys)
       - [Modes](#modes)
       - [Other Scales](#other-scales)
     + [Back To The Bytes](#back-to-the-bytes)
@@ -352,6 +353,8 @@ fn main() {
     println!("{:?}", pitch); // Pitch { frequency: 880.0 } - 2:1 ratio
 }
 ```
+
+##### Piano Keys
 
 Let's do one better and just use piano keys:
 
