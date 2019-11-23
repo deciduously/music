@@ -235,7 +235,7 @@ Let's set up a type to represent a pitch:
 type Hertz = f64;
 const STANDARD_PITCH: Hertz = 440.0;
 
-#[derive[Debug, Clone, Copy]]
+#[derive[Debug, Clone, Copy]
 struct Pitch {
     frequency: Hertz,
 }
@@ -334,7 +334,7 @@ struct Cents(f64);
 struct Semitones(i8);
 ```
 
-I didn't just assign aliases as with `type Hertz = f64`, because I need to re-definine how to convert to and from them with the [`From`](https://doc.rust-lang.org/std/convert/trait.From.html) [trait](https://doc.rust-lang.org/book/ch10-02-traits.html).  For that, I need my very own type, not just an alias of a primitive that already can convert to and from other primitives with the standard logic.  `Semitones` to `Cents` is not the same thing as `i8` to `f4`, we have a conversion factor.   The [tuple struct](https://doc.rust-lang.org/1.37.0/book/ch05-01-defining-structs.html#using-tuple-structs-without-named-fields-to-create-different-types) syntax is perfect for that.  Hertz really is a more general unit of frequency, so it made sense to me to separate that concept from a `Pitch` that can be modulated by cents.
+I didn't just assign aliases as with `type Hertz = f64`, because I need to re-define how to convert to and from these with the [`From`](https://doc.rust-lang.org/std/convert/trait.From.html) [trait](https://doc.rust-lang.org/book/ch10-02-traits.html).  For that, I need my very own type, not just an alias of a primitive that already can convert to and from other primitives with the standard logic.  `Semitones` to `Cents` is not the same thing as `i8` to `f64`, we have a conversion factor.   The [tuple struct](https://doc.rust-lang.org/1.37.0/book/ch05-01-defining-structs.html#using-tuple-structs-without-named-fields-to-create-different-types) syntax is perfect for that.  Hertz really is a more general unit of frequency, so it made sense to me to separate that concept from a `Pitch` that can be modulated by cents.
 
 Now, bear with me - we're going to do a little plumbing to let ourselves work at a higher level of abstraction.  We can give ourselves some conversions to the inner primitive:
 
@@ -400,7 +400,7 @@ impl From<Interval> for Cents {
 }
 ```
 
-Phew!  Lots of code, but now we can operate directly in terms of intervals instead of cents.
+Phew!  Lots of code, but now we can operate directly in terms of intervals.
 
 There's one more step to get to frequencies though.  Remember how Middle C was some crazy fraction, 261.626?  This is because cents are a [logarithmic](https://en.wikipedia.org/wiki/Logarithmic_scale) unit, standardized around the point 440.0.  Because of equal temperament, this 2:1 ratio holds for arbitrarily smaller intervals than octaves as well, where the math isn't always so clean.  Doubling this will get 880.0Hz, every time, but how would we add a semitone?  It's 100 cents, nice and neat, and there are 12 semitones - so we'd need to increase by a 12th of what doubling the number would do: `440 * 2^(1/12)`.  Looks innocuous enough, but my calculator gives me 466.164, Rust gives me 466.1637615180899 - not enough to perceptually matter, but enough that it's important that the standard is the interval ratio and not the specific amount of Hertz to add or subtract.  Those amounts will only be precise in floating point decimal representations at exact octaves from the base note, because that's integral factor after multiplying by 1 in either direction, 2 or 1/2.
 
@@ -420,7 +420,7 @@ This is a much better way to deal with intervals than by frequency deltas.  Know
 
 Here, *a* is the initial frequency in Hertz, *b* is the target frequency, and *n* is the number of cents by which to increase *a*.
 
-It looks like we're going to need to divide some `Cent`s:
+Time for the plumbing.  It looks like we're going to need to divide some `Cents`:
 
 ```rust
 use std::ops::Div;
@@ -542,7 +542,7 @@ enum Accidental {
 }
 ```
 
-There is a character for "natural", `♮`, which cancels this out but to represent a pitch in data we don't need it - that's a string-parsing concern.  The natural symbol is generally used for overriding a [key signature](https://en.wikipedia.org/wiki/Key_signature), which defines the default accidental for all the notes within a scale on [sheet music](https://en.wikipedia.org/wiki/Staff_(music)).  There are a series of accidentals on the margin of the staff that apply to all notes, which is how we ensure we play notes within a single given scale, or [key](https://en.wikipedia.org/wiki/Key_(music)).  However, you may choose to compose a melody that contains a note outside this key.  To cancel it for one written note,  you can write `F♮`.  Our data representation would just store an F in this case, though.
+There is third accidental called "natural", `♮`, which cancels these out.  To represent a pitch in data we don't need it - that's a string-parsing concern.  The natural symbol is generally used for overriding a [key signature](https://en.wikipedia.org/wiki/Key_signature), which defines the default accidental for all the notes within a scale on [sheet music](https://en.wikipedia.org/wiki/Staff_(music)).  There are a series of accidentals on the margin of the staff that apply to all notes, which is how we ensure we play notes within a single given scale, or [key](https://en.wikipedia.org/wiki/Key_(music)).  However, you may choose to compose a melody that contains a note outside this key.  To cancel it for one written note,  you can write `F♮`.  Our data representation would just store an F in this case, though.
 
 The `Default` implementation that the compiler derives from this code corresponds to the official base pitch of this system, C0.  We can use `StandardPitch::default()` to procure one - here's a [playground link](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=dca4808334d51474c03a993bc1f97c03):
 
