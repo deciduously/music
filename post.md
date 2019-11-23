@@ -302,31 +302,6 @@ enum Interval {
 
 Throughout this post I will tend towards over-specifying types like this - we only need `Min2` (half tone) and `Maj2` (whole tone) for now, but at least this way we have a full toolkit to work with should the need arise.
 
-Each variant corresponds to a number of semitones:
-
-```rust
-impl From<Interval> for Semitones {
-    fn from(i: Interval) -> Self {
-        use Interval::*;
-        match i {
-            Unison => 0,
-            Min2 => 1,
-            Maj2 => 2,
-            Min3 => 3,
-            Maj3 => 4,
-            Perfect4 => 5,
-            Tritone => 6,
-            Perfect5 => 7,
-            Min6 => 8,
-            Maj6 => 9,
-            Min7 => 10,
-            Maj7 => 11,
-            Octave => 12,
-        }
-    }
-}
-```
-
 Clearly, there isn't a black key between every white key.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern for the whole length.
 
 A [major scale](https://en.wikipedia.org/wiki/Major_scale) is the baseline scale.  Start at Middle C, the one highlighted in cyan above, and count up to the next C key, eight white keys to the left.  THis is our baseline C-indexed exampled from above, `C D E F G A B C`.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get counting up to the next C, when the pattern repeats.  This totals 12 semitones per octave:
@@ -361,7 +336,7 @@ struct Semitones(i8);
 
 I didn't just assign aliases as with `type Hertz = f64`, because I need to re-definine how to convert to and from them with the [`From`](https://doc.rust-lang.org/std/convert/trait.From.html) [trait](https://doc.rust-lang.org/book/ch10-02-traits.html).  For that, I need my very own type, not just an alias of a primitive that already can convert to and from other primitives with the standard logic.  `Semitones` to `Cents` is not the same thing as `i8` to `f4`, we have a conversion factor.   The [tuple struct](https://doc.rust-lang.org/1.37.0/book/ch05-01-defining-structs.html#using-tuple-structs-without-named-fields-to-create-different-types) syntax is perfect for that.  Hertz really is a more general unit of frequency, so it made sense to me to separate that concept from a `Pitch` that can be modulated by cents.
 
-This does add a level of indirection.  We can give ourselves some conversions to the inner primitive:
+Now, bear with me - we're going to do a little plumbing to let ourselves work at a higher level of abstraction.  We can give ourselves some conversions to the inner primitive:
 
 ```rust
 impl From<Cents> for f64 {
@@ -389,23 +364,45 @@ impl From<Semitones> for Cents {
 }
 ```
 
-We're going to start defining a bunch of operations on our types that can encapsulate our logic.  Add a trait imports - these trais will provide our operators:
+We can also map our `Interval` variants to `Semitones`:
 
 ```rust
-use std::ops::{Add, AddAssign, Mul};
-```
-
-Now we can map intervals to cents:
-
-```rust
-impl From<Interval> for Cents {
+impl From<Interval> for Semitones {
     fn from(i: Interval) -> Self {
-        Semitones::from(i) as f64 * SEMITONE_CENTS
+        use Interval::*;
+        let x = match i {
+            Unison => 0,
+            Min2 => 1,
+            Maj2 => 2,
+            Min3 => 3,
+            Maj3 => 4,
+            Perfect4 => 5,
+            Tritone => 6,
+            Perfect5 => 7,
+            Min6 => 8,
+            Maj6 => 9,
+            Min7 => 10,
+            Maj7 => 11,
+            Octave => 12,
+        };
+        Semitones(x)
     }
 }
 ```
 
-Remember how Middle C was some crazy fraction, 261.626?  This is because cents are a [logarithmic](https://en.wikipedia.org/wiki/Logarithmic_scale) unit, standardized around the point 440.0.  Because of equal temperament, this 2:1 ratio holds for arbitrarily smaller intervals than octaves as well, where the math isn't always so clean.  Doubling this will get 880.0Hz, every time, but how would we add a semitone?  It's 100 cents, nice and neat, and there are 12 semitones - so we'd need to increase by a 12th of what doubling the number would do: `440 * 2^(1/12)`.  Looks innocuous enough, but my calculator gives me 466.164, Rust gives me 466.1637615180899 - not enough to perceptually matter, but enough that it's important that the standard is the interval ratio and not the specific amount of Hertz to add or subtract.  Those amounts will only be precise in floating point decimal representations at exact octaves from the base note, because that's integral factor after multiplying by 1 in either direction, 2 or 1/2.
+With that, it's easy to map `Interval`s to `Cents`:
+
+```rust
+impl From<Interval> for Cents {
+    fn from(i: Interval) -> Self {
+        Semitones::from(i).into()
+    }
+}
+```
+
+Phew!  Lots of code, but now we can operate directly in terms of intervals instead of cents.
+
+There's one more step to get to frequencies though.  Remember how Middle C was some crazy fraction, 261.626?  This is because cents are a [logarithmic](https://en.wikipedia.org/wiki/Logarithmic_scale) unit, standardized around the point 440.0.  Because of equal temperament, this 2:1 ratio holds for arbitrarily smaller intervals than octaves as well, where the math isn't always so clean.  Doubling this will get 880.0Hz, every time, but how would we add a semitone?  It's 100 cents, nice and neat, and there are 12 semitones - so we'd need to increase by a 12th of what doubling the number would do: `440 * 2^(1/12)`.  Looks innocuous enough, but my calculator gives me 466.164, Rust gives me 466.1637615180899 - not enough to perceptually matter, but enough that it's important that the standard is the interval ratio and not the specific amount of Hertz to add or subtract.  Those amounts will only be precise in floating point decimal representations at exact octaves from the base note, because that's integral factor after multiplying by 1 in either direction, 2 or 1/2.
 
 Otherwise stated, the ratio between frequencies separated by a single cent is the 1200th root of 2, or 2^(1/1200).    In decimal, it's about 1.0005777895.  You wouldn't be able to hear a distinction between two tones a single cent apart.  The [just-noticeable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents, or 5*2^(1/1200).  Using this math, it works out to just shy of 4 cents to cause an increase of 1Hz, more precisely around 3.9302 for a base frequency of 440.0.
 
@@ -489,9 +486,7 @@ impl AddAssign<Interval> for Pitch {
         *self += Cents::from(i)
     }
 }
-```
 
-```rust
 fn main() {
     let mut pitch = Pitch::default();
     println!("{:?}", pitch); // Pitch { frequency: 440.0 }
