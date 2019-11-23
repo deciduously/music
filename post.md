@@ -289,8 +289,9 @@ Beyond the twelve 12 semitones in an octave, each semitone is divided into 100 [
 
 ```rust
 type Cents = f64;
+type Semitones = u8;
 const SEMITONE_CENTS: Cents = 100.0;
-const OCTAVE_SEMITONES: u32 = 12;
+const OCTAVE_SEMITONES: Semitones = 12;
 const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64;
 ```
 
@@ -366,21 +367,39 @@ fn main() {
 
 ##### Scientific Pitch Notation
 
-Armed with this knowledge, we can rewrite our `Pitch` type in terms of ratios instead of Hertz, and calculate as needed:
+Armed with this knowledge, we can start manipulating pitches in terms of [Scientific Pitch Notation](https://en.wikipedia.org/wiki/Scientific_pitch_notation), another fancy name for a simple concept.  The piano keybaord above was labelled according to this standard, and it's where we get "A4" from.  A note is composed of three components.  There the note:
 
 ```rust
-#[derive(Debug, Clone, Copy)]
-struct PianoKey {
-    note: u8,
-    octave: u8,
-}
-
-impl PianoKey {
-    fn new(note: u8, octave: u8) -> Self {
-        PianoKey { note, octave }
-    }
+#[derive(Debug)]
+enum Note {
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
 }
 ```
+
+There's optionally one of three modifiers, called `accidentals`:
+
+```rust
+#[derive(Debug)]
+enum Accidental {
+    Flat,
+    Natural,
+    Sharp,
+}
+```
+
+The base of this system is defined as C0:
+
+```rust
+const C_ZERO: Hertz = 16.352;
+```
+
+This is super low - most humans bottom out around 20Hz.  The 88-key piano doesn't even start until A0Note how even though this is a different abstraction for working with pitches, the frequencies baked in to the standard are still pinned to the A440 scale.
 
 We can get them from strings with `std::str::FromStr`:
 
@@ -460,6 +479,22 @@ enum Scale {
 }
 ```
 
+The C mode, Ionian, is the base, so we'll hardcode that sequence:
+
+```txt
+whole, whole, half, whole, whole, whole, half
+  2  +  2   +  1  +   2   +  2  +   2  +  1
+```
+
+```rust
+impl Mode {
+    fn base_intervals() -> impl Iterator {
+        use Interval::*;
+        [Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2].iter()
+    }
+}
+```
+
 ##### Other Scales
 
 Okay, Ben.  Ben, okay.  Okay, Ben.  But what about the pentatonic scale:
@@ -487,6 +522,7 @@ TODO Rick & Morty "Human Music" gif
 * Port this to your favorite programming language (second favorite if that's already Rust).
 * Add more scales.
 * Parse sequences of keys to author music.
+* Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation)
 
 *Body images are wikimedia commons unless otherwise specified*
 *Cover image from some subreddit, I don't remember*

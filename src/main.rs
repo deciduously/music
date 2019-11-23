@@ -21,57 +21,52 @@ impl Iterator for RandomBytes {
 type Hertz = f64;
 const STANDARD_PITCH: Hertz = 440.0;
 const MIDDLE_C: Hertz = 261.626;
+const C_ZERO: Hertz = 16.352;
 
 type Cents = f64;
+type Semitones = i8;
 const SEMITONE_CENTS: Cents = 100.0;
-const OCTAVE_SEMITONES: i32 = 12;
+const OCTAVE_SEMITONES: Semitones = 12;
 const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64; // 1200.0
 
-#[derive(Debug, Clone, Copy)]
-struct PianoKey {
-    note: u8,
+#[derive(Debug)]
+enum Note {
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+}
+
+#[derive(Debug)]
+enum Accidental {
+    Flat,
+    Natural,
+    Sharp,
+}
+
+#[derive(Debug)]
+struct SPN {
+    accidental: Accidental,
+    note: Note,
     octave: u8,
 }
 
-impl PianoKey {
-    fn new(note: u8, octave: u8) -> Self {
-        PianoKey { note, octave }
+impl SPN {
+    fn new(s: &str) -> Self {
+        // TODO
+        Self::default()
     }
 }
 
-impl FromStr for PianoKey {
-    type Err = io::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use io::{Error, ErrorKind::*};
-        if s.len() != 2 {
-            return Err(Error::new(InvalidInput, "Must be two characters long"));
-        }
-        let mut chars = s.chars();
-        if let Some(note) = chars.next() {
-            let char_note = note as char;
-            if !char_note.is_uppercase() {
-                Err(Error::new(InvalidData, "First character must be a letter"))
-            } else if let Some(octave) = chars.next() {
-                // Turn octave to integer
-                let integer_octave = octave as u8 - b'0';
-                if integer_octave > 8 {
-                    return Err(Error::new(InvalidData, "Second character must be 0-8"));
-                }
-                // Turn note to integer
-                let integer_note = char_note as u8 - b'A';
-                // Make sure its a real note
-                if integer_note <= 8 {
-                    // Success!!
-                    Ok(PianoKey::new(integer_note, integer_octave))
-                } else {
-                    Err(Error::new(InvalidData, "First character must be A-G"))
-                }
-            } else {
-                Err(Error::new(InvalidInput, "Must be two characters long"))
-            }
-        } else {
-            Err(Error::new(NotFound, "Input cannot be empty"))
+impl Default for SPN {
+    fn default() -> Self {
+        Self {
+            accidental: Accidental::Natural,
+            note: Note::C,
+            octave: u8::default(),
         }
     }
 }
@@ -88,7 +83,7 @@ impl Pitch {
     fn add_cents(&mut self, cents: Cents) {
         self.frequency *= 2.0f64.powf(cents / OCTAVE_CENTS);
     }
-    fn add_semitones(&mut self, semitones: i32) {
+    fn add_semitones(&mut self, semitones: Semitones) {
         self.add_cents(semitones as f64 * SEMITONE_CENTS);
     }
 }
@@ -163,8 +158,8 @@ fn main() {
     //    println!("{}", rands.next().unwrap());
     //}
 
-    let mut pitch = Pitch::new(STANDARD_PITCH);
+    let mut pitch = Pitch::new(C_ZERO);
     println!("{:?}", pitch);
-    pitch.add_semitones(-OCTAVE_SEMITONES);
+    pitch.add_semitones(9);
     println!("{:?}", pitch);
 }
