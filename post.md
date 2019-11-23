@@ -18,7 +18,7 @@ Let's channel that wacky energy.  In this post, we'll throw something [random](h
 
 In other words, we're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://www.rust-lang.org/), backed by a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).
 
-While the [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover image [procedurally generates](https://en.wikipedia.org/wiki/Procedural_generation) music from random input along a hard-coded single scale, we'll end up with a program that can either procedurally generate music from a large, extensible set of scales or play hand-authored songs created with a rudimentary notation system.
+The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover image [procedurally generates](https://en.wikipedia.org/wiki/Procedural_generation) a melody.  The melody produced will be composed of notes along a single octave of a major scale.  By the end of this post we'll have written a program that can procedurally generate music in number of different kinds of musical scale spanning up and down a whole keyboard, as well play [hand-authored](https://en.wikipedia.org/wiki/Musical_composition) songs created with a rudimentary [notation system](https://en.wikipedia.org/wiki/Musical_notation).
 
 [¡Vámonos!](https://en.wikipedia.org/wiki/Party)
 
@@ -57,7 +57,7 @@ This post was inspired by this meme:
 
 ![the meme](https://i.redd.it/uirqnamnjpz31.jpg)
 
-Here's a slightly modified version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) one-liner at the bottom, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
+Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) one-liner at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
 
 ```bash
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
