@@ -1,7 +1,7 @@
 ---
 title: Teaching Numbers To Sing
 published: false
-description: Learn how to generate sound from numeric data in Rust.
+description: Learn how to procedurally generate melodies in Rust.
 cover_image: https://thepracticaldev.s3.amazonaws.com/i/iuakwwcexql5u0th7gtm.jpg
 tags: beginners, rust, tutorial, music
 ---
@@ -18,6 +18,8 @@ Let's channel that wacky energy.  In this post, we'll throw something [random](h
 
 In other words, we're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://www.rust-lang.org/), backed by a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).
 
+While the [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover image [procedurally generates](https://en.wikipedia.org/wiki/Procedural_generation) music from random input along a hard-coded single scale, we'll end up with a program that can either procedurally generate music from a large, extensible set of scales or play hand-authored songs created with a rudimentary notation system.
+
 [¡Vámonos!](https://en.wikipedia.org/wiki/Party)
 
 ## Table of Contents
@@ -25,9 +27,8 @@ In other words, we're going to teach our [computers](https://en.wikipedia.org/wi
 - [Preamble](#preamble)
 - [The Meme](#the-meme)
 - [The Program](#the-program)
-  * [Random input data](#random-input-data)
-    + [`Iterator`](#iterator)
   * [Mapping Bytes To Notes](#mapping-bytes-to-notes)
+    + [Random Bytes](#random-bytes)
     + [A Little Physics](#a-little-physics)
       - [Sine Waves](#sine-waves)
       - [Pitch](#pitch)
@@ -122,22 +123,39 @@ We'll use `rand` in place of [`cat /dev/urandom`](https://en.wikipedia.org/wiki/
 
 ### Mapping Bytes To Notes
 
-We can actually skip the random byte bit for now - the `rand` crate has us covered later on, but we need to talk abut what that data means here first.  If you're curious, the following snippet 
+#### Random Bytes
+
+When I sat down to tackle this whole thing I wrote this struct first.  The first part of the one-liner is  `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'`, which gets a source of random bytes (8-bit binary values) and shows them to the user formatted as base-10 integers.  The `rand` crate can give us random 8-bit integers out of the box by ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html)ing a type: `random::<u8>()` will produce a random [unsigned](https://en.wikipedia.org/wiki/Signedness) [8 bit](https://en.wikipedia.org/wiki/8-bit) integer ([`u8`](https://doc.rust-lang.org/nightly/std/primitive.u8.html)) with the default generator settings.  The following snippet does the same thing as `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'`:
 
 ```rust
+use rand::random;
 
+#[derive(Default)]
+struct RandomBytes;
+
+impl RandomBytes {
+    fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Iterator for RandomBytes {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(random::<Self::Item>())
+    }
+}
+
+fn main() {
+    let mut rands = RandomBytes::new();
+    loop {
+        println!("{}", rands.next().unwrap());
+    }
+}
 ```
 
-
-The `rand` crate can give us random 8-bit integers out of the box by ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html)ing a type: `random::<u8>()` will produce a random [unsigned](https://en.wikipedia.org/wiki/Signedness) [8 bit](https://en.wikipedia.org/wiki/8-bit) integer ([`u8`](https://doc.rust-lang.org/nightly/std/primitive.u8.html)) with the default generator settings.  I wrote this and never touched it again, but hey.
-
-The note mapping step is the meat of the program - turning our numeric data into something we can hear.  To get from random numbers to sounds we can hear, we need to map each data point to an amplitude.  The relevant section of the `bash` again:
-
-```bash
-awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }'
-```
-
-This is the end goal, but let's start at the way bottom.
+Give that a go with `cargo run` - whee.  There it is.  Random integers 0-255 until you kill the process.  Now delete the whole thing, top to bottom, we're not going to use any of that.  We're going to introduce randomness later on, don't worry, but first we have to get some fundamentals out of the way if we're gonna get this thing done right.  I'm only a little sorry, but hey - at least you spent less time in this particular rabbit hole.  I promise that's the last [red herring](https://en.wikipedia.org/wiki/Red_herring), the rest of the code you should actually add to your file.
 
 #### A Little Physics
 
@@ -216,10 +234,19 @@ A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (fre
 
 ```rust
 #[derive(Debug, Clone, Copy)]
-#[repr(u8)]
 enum Interval {
-    Min2 = 1,
-    Maj2 = 2,
+    Min2,
+    Maj2,
+}
+
+impl Interval {
+    fn semitones(&self) -> Semitones {
+        use Interval::*;
+        match self {
+            Min2 => 1,
+            Maj2 => 2,
+        }
+    }
 }
 ```
 
@@ -383,7 +410,20 @@ impl Default for SPN {
 }
 ```
 
-This is super low - most humans bottom out around 20Hz.  The 88-key piano doesn't even start until A0Note how even though this is a different abstraction for working with pitches, the frequencies baked in to the standard are still pinned to the A440 scale.
+This is super low - most humans bottom out around 20Hz.  The 88-key piano doesn't even start until A0Note how even though this is a different abstraction for working with pitches, the frequencies baked in to the standard are still pinned to the A440 scale.  Do a quick sanity check before abstracting further:
+
+```rust
+fn main() {
+    let mut pitch = Pitch::new(C_ZERO);
+    println!("{:?}", pitch); // Pitch { frequency: 16.352 }
+    pitch.add_semitones(OCTAVE_SEMITONES * 4); // add 4 octaves - C0 -> C4
+    println!("{:?}", pitch); // Pitch { frequency: 261.632 }
+    pitch.add_semitones(9); // C4 -> A4
+    println!("{:?}", pitch); // Pitch { frequency: 440.010821831319 }
+}
+```
+
+Oof.  Damn floating point numbers.  Luckily, even being off by a full Hertz at 440 (~4 cents) is less than the just-noticeable difference of ~5-6 cents, so within the ranges we're working with, that's not wrong enough to care.
 
 We can get them from strings with `std::str::FromStr`:
 
@@ -439,11 +479,24 @@ Next, we need a way to convert a `PianoKey` to a `Pitch`:
 
 ```
 
+Scales are usually defined as an octave of intervals:
+
+```rust
+type Octave = [Interval; 7];
+```
+
+Seven hops gets you to eight pitches including the first and last.  Adding a set of intervals to a pitch should increase it by one octave:
+
+```rust
+
+```
+
 // TODO From/Into
 // TODO FromStr for Pitch that just calls SPN::FromStr
 // TODO Traits for adding different types to pitches
-// TODO Scales that return an iterator of SPN notes one octave long - THIS is where I'll talk about iterators - it should take a base note in SPN and a length, return an impl Iterator that's just a `Vec` or something with iter() on it?  and a definite end?
+// TODO Scales that return an iterator of SPN notes one octave long - THIS is where I'll talk about iterators - it should take a base note in SPN and a length, return an Octave that's just a `Vec` or something with iter() on it?  and a definite end?
 // TODO Go back and compare with the original AWK/one-liner
+// TODO Authoring - Pest? - just take separated characters - accept either Unicode flat OR some other character - you can use 'b', because only the first character is matching a note.  For sharp, ASCII 35 '#' is fine to demand.  Add a character for 
 
 ##### Diatonic Modes
 
@@ -478,9 +531,9 @@ whole, whole, half, whole, whole, whole, half
 
 ```rust
 impl Mode {
-    fn base_intervals() -> impl Iterator {
+    fn base_intervals() -> Octave {
         use Interval::*;
-        [Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2].iter()
+        [Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
     }
 }
 ```

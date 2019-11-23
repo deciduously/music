@@ -97,11 +97,22 @@ impl Default for Pitch {
 }
 
 #[derive(Debug, Clone, Copy)]
-#[repr(u8)]
 enum Interval {
-    Min2 = 1,
-    Maj2 = 2,
+    Min2,
+    Maj2,
 }
+
+impl Interval {
+    fn semitones(&self) -> Semitones {
+        use Interval::*;
+        match self {
+            Min2 => 1,
+            Maj2 => 2,
+        }
+    }
+}
+
+type Octave = [Interval; 7];
 
 #[derive(Debug, Clone, Copy)]
 enum Mode {
@@ -115,9 +126,9 @@ enum Mode {
 }
 
 impl Mode {
-    fn base_intervals() -> impl Iterator {
+    fn base_intervals() -> Octave {
         use Interval::*;
-        [Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2].iter()
+        [Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
     }
     //fn get_intervals(&self) -> impl Iterator {
     //    let intervals = Mode::base_intervals();
@@ -131,7 +142,7 @@ enum Scale {
 }
 
 impl Scale {
-    fn get_intervals(self) -> impl Iterator {
+    fn get_intervals(self) -> Octave {
         // TODO this needs to be a method, come here next!
         // have THIS calculate an impl Iterator (or impl Scale??)
         use Interval::*;
@@ -153,13 +164,10 @@ impl Scale {
 }
 
 fn main() {
-    //let mut rands = RandomBytes::new();
-    //loop {
-    //    println!("{}", rands.next().unwrap());
-    //}
-
     let mut pitch = Pitch::new(C_ZERO);
-    println!("{:?}", pitch);
-    pitch.add_semitones(9);
-    println!("{:?}", pitch);
+    println!("{:?}", pitch); // Pitch { frequency: 16.352 }
+    pitch.add_semitones(OCTAVE_SEMITONES * 4); // add 4 octaves - C0 -> C4
+    println!("{:?}", pitch); // Pitch { frequency: 261.632 }
+    pitch.add_semitones(9); // C4 -> A4
+    println!("{:?}", pitch); //
 }
