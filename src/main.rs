@@ -28,7 +28,7 @@ const SEMITONE_CENTS: Cents = 100.0;
 const OCTAVE_SEMITONES: Semitones = 12; // TODO use Interval::Octave
 const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64; // 1200.0
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Note {
     A,
     B,
@@ -45,20 +45,20 @@ impl Default for Note {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Accidental {
     Flat,
     Sharp,
 }
 
-#[derive(Default, Debug)]
-struct SPN {
+#[derive(Default, Debug, Clone, Copy)]
+struct StandardPitch {
     accidental: Option<Accidental>,
     note: Note,
     octave: u8,
 }
 
-impl SPN {
+impl StandardPitch {
     fn new(s: &str) -> Self {
         Self::default()
     }
