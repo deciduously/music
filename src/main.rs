@@ -1,5 +1,5 @@
 use rand::random;
-use std::{io, str::FromStr};
+use std::ops::{Add, AddAssign, Div, Mul};
 
 #[derive(Default)]
 struct RandomBytes;
@@ -22,11 +22,35 @@ type Hertz = f64;
 const STANDARD_PITCH: Hertz = 440.0;
 const C_ZERO: Hertz = 16.352;
 
-type Cents = f64;
-type Semitones = i8;
-const SEMITONE_CENTS: Cents = 100.0;
-const OCTAVE_SEMITONES: Semitones = 12; // TODO use Interval::Octave
-const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64; // 1200.0
+struct Cents(f64);
+struct Semitones(i8);
+const SEMITONE_CENTS: Cents = Cents(100.0);
+
+impl Div for Cents {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self {
+        Cents(f64::from(self) / f64::from(rhs))
+    }
+}
+
+impl From<Cents> for f64 {
+    fn from(cents: Cents) -> Self {
+        cents.0
+    }
+}
+
+impl From<Semitones> for i8 {
+    fn from(semitones: Semitones) -> Self {
+        semitones.0
+    }
+}
+
+impl From<Semitones> for Cents {
+    fn from(semitones: Semitones) -> Self {
+        Cents(i8::from(semitones) as f64 * f64::from(SEMITONE_CENTS))
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 enum Note {
@@ -64,7 +88,7 @@ impl StandardPitch {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct Pitch {
     frequency: Hertz,
 }
@@ -73,12 +97,6 @@ impl Pitch {
     fn new(frequency: Hertz) -> Self {
         Self { frequency }
     }
-    fn add_cents(&mut self, cents: Cents) {
-        self.frequency *= 2.0f64.powf(cents / OCTAVE_CENTS);
-    }
-    fn add_semitones(&mut self, semitones: Semitones) {
-        self.add_cents(semitones as f64 * SEMITONE_CENTS);
-    }
 }
 
 impl Default for Pitch {
@@ -86,6 +104,24 @@ impl Default for Pitch {
         Self {
             frequency: STANDARD_PITCH,
         }
+    }
+}
+
+impl AddAssign<Cents> for Pitch {
+    fn add_assign(&mut self, cents: Cents) {
+        self.frequency *= 2.0f64.powf((cents / Cents::from(Interval::Octave)).into())
+    }
+}
+
+impl AddAssign<Semitones> for Pitch {
+    fn add_assign(&mut self, semitones: Semitones) {
+        *self += Cents::from(semitones)
+    }
+}
+
+impl AddAssign<Interval> for Pitch {
+    fn add_assign(&mut self, i: Interval) {
+        *self += Cents::from(i)
     }
 }
 
@@ -106,13 +142,10 @@ enum Interval {
     Octave,
 }
 
-impl Interval {
-    fn cents(&self) -> Cents {
-        self.semitones() as f64 * SEMITONE_CENTS
-    }
-    fn semitones(&self) -> Semitones {
+impl From<Interval> for Semitones {
+    fn from(i: Interval) -> Self {
         use Interval::*;
-        match self {
+        let x = match i {
             Unison => 0,
             Min2 => 1,
             Maj2 => 2,
@@ -126,7 +159,14 @@ impl Interval {
             Min7 => 10,
             Maj7 => 11,
             Octave => 12,
-        }
+        };
+        Semitones(x)
+    }
+}
+
+impl From<Interval> for Cents {
+    fn from(i: Interval) -> Self {
+        Semitones::from(i).into()
     }
 }
 
@@ -184,8 +224,10 @@ impl Scale {
 fn main() {
     let mut pitch = Pitch::new(C_ZERO);
     println!("{:?}", pitch); // Pitch { frequency: 16.352 }
-    pitch.add_semitones(OCTAVE_SEMITONES * 4); // add 4 octaves - C0 -> C4
+    for _ in 0..4 {
+        pitch += Semitones::from(Interval::Octave);
+    } // add 4 octaves - C0 -> C4
     println!("{:?}", pitch); // Pitch { frequency: 261.632 }
-    pitch.add_semitones(9); // C4 -> A4
-    println!("{:?}", pitch); //
+    pitch += Interval::Maj6; // C4 -> A4
+    println!("{:?}", pitch); // Pitch { frequency: 440.010821831319 } // close enough
 }

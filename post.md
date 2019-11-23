@@ -16,13 +16,13 @@ TODO TESTS THROUGHOUT
 
 In this post, we'll [throw](https://en.wikipedia.org/wiki/Throwing) something [random](https://en.wikipedia.org/wiki/Random_number_generation) into, [well](https://en.wikipedia.org/wiki/Well), a [math](https://en.wikipedia.org/wiki/Mathematics)-[oven](https://en.wikipedia.org/wiki/Subroutine) and [*viola*](https://en.wikipedia.org/wiki/Viola), [music](https://en.wikipedia.org/wiki/Music)!  We'll just skip the [crash](https://en.wikipedia.org/wiki/Crash_(computing)).
 
-In other words, we're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://www.rust-lang.org/), backed by a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).
+In other words, we're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)), backed by a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).
 
 The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover image [procedurally generates](https://en.wikipedia.org/wiki/Procedural_generation) a [melody](https://en.wikipedia.org/wiki/Melody) using [tools assumed to be present](https://en.wikipedia.org/wiki/Unix_philosophy) on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu).  The melody produced will be composed of notes along a single [octave](https://en.wikipedia.org/wiki/Octave) in a hardcoded [key](https://en.wikipedia.org/wiki/Key_(music)):
 
 {% youtube uLhQQSKhTok %}
 
-By the end of this post we'll have written a program that can procedurally generate music in number of different kinds of musical scale spanning up and down a whole [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard), as well play [hand-authored](https://en.wikipedia.org/wiki/Musical_composition) songs created with a rudimentary [notation system](https://en.wikipedia.org/wiki/Musical_notation), that compiles and runs on [Windows](https://en.wikipedia.org/wiki/Microsoft_Windows), [MacOS](https://en.wikipedia.org/wiki/MacOS), or Linux with no code modification.
+By the end of this post we'll have written a program that can procedurally generate music in number of different kinds of musical scale spanning up and down a whole [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard), as well play [hand-authored](https://en.wikipedia.org/wiki/Musical_composition) songs created with a rudimentary [notation system](https://en.wikipedia.org/wiki/Musical_notation) that compiles and runs on [Windows](https://en.wikipedia.org/wiki/Microsoft_Windows), [MacOS](https://en.wikipedia.org/wiki/MacOS), or Linux with no code modification.
 
 [¡Vámonos!](https://en.wikipedia.org/wiki/Party)
 
@@ -33,49 +33,49 @@ By the end of this post we'll have written a program that can procedurally gener
 - [The Program](#the-program)
   * [Random Bytes](#random-bytes)
   * [Mapping Bytes To Notes](#mapping-bytes-to-notes)
-    + [A Little Physics](#a-little-physics)
-      - [Sine Waves](#sine-waves)
-      - [Pitch](#pitch)
-    + [A Little Music Theory](#a-little-music-theory)
-      - [Scales](#scales)
-      - [Cents](#cents)
-      - [Scientific Pitch Notation](#scientific-pitch-notation)
-      - [Diatonic Modes](#diatonic-modes)
-      - [Other Scales](#other-scales)
-    + [Back To The Bytes](#back-to-the-bytes)
+    - [A Little Physics](#a-little-physics)
+      * [Sine Waves](#sine-waves)
+      * [Pitch](#pitch)
+      * [Singing](#singing)
+    - [A Little Music Theory](#a-little-music-theory)
+      * [Scales](#scales)
+      * [Cents](#cents)
+      * [Scientific Pitch Notation](#scientific-pitch-notation)
+      * [Diatonic Modes](#diatonic-modes)
+      * [Other Scales](#other-scales)
+    - [Back To The Bytes](#back-to-the-bytes)
   * [Listen To Your Files](#listen-to-your-files)
+  * [Write Your Own Tunes](#write-your-own-tunes)
 - [Challenges](#challenges)
 
 ## Preamble
 
 *[top](#table-of-contents)*
 
-This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) who are comfortable solving problems with at least one [imperative language](https://en.wikipedia.org/wiki/Imperative_programming).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).
+This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and up) who are comfortable solving problems with at least one [imperative language](https://en.wikipedia.org/wiki/Imperative_programming).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).  You do not need any prior knowledge of physics or music theory, but there will be a tiny smattering of [elementary algebra](https://en.wikipedia.org/wiki/Elementary_algebra).  I promise it's quick.
 
-There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) Rust throughout this write-up, but don't worry if that's not what you're here for.  You can choose to skip all the code snippets entirely or just skim them for the language-agnostic logic and still come out knowing how it all works.  Rust tends to get verbose, but one positive side-effect of that [verbosity](https://en.wikipedia.org/wiki/Verbosity) is that at least the core of what this code does should be easy to follow even much familiarity with the language.
+There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://www.rust-lang.org/) throughout this write-up, but don't worry if that's not what you're here for.  You can choose to skip all the code snippets entirely and still come out knowing how it all works.  It could also be useful for translating to your (second) favorite programming language.  Rust tends to get verbose, but one positive side-effect of that [verbosity](https://en.wikipedia.org/wiki/Verbosity) is that at least the core of what this code does should be easy to follow even without knowing the language.
 
 I have two disclaimers:
 
-1. [There are](https://en.wikipedia.org/wiki/Existence) [1328](https://en.wikipedia.org/wiki/138_(number)) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Blog).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
+1. [There are](https://en.wikipedia.org/wiki/Existence) [145](https://en.wikipedia.org/wiki/145_(number)) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Blog).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
 1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
 
 ## The Meme
 
 *[top](#table-of-contents)*
 
-This post was inspired by this [meme](https://www.reddit.com/r/linuxmasterrace/comments/dyqri7/like_god_would_have_wanted/):
+This post was inspired by [this](https://www.reddit.com/r/linuxmasterrace/comments/dyqri7/like_god_would_have_wanted/) [meme](https://en.wikipedia.org/wiki/Internet_meme) I saw when I was *attempting* to casually browse [Reddit](https://en.wikipedia.org/wiki/Reddit):
 
 ![the meme](https://i.redd.it/uirqnamnjpz31.jpg)
 
-Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
+I (evidently) couldn't let myself just scroll past that one.  Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
 
 ```bash
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
 ```
 
 The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this one, but that's not to discredit it at all as a great source of information.  That write-up and Wikipedia were all I needed to complete this translation, and I had absolutely not a clue how this whole thing worked going in.  Reading that post and writing this program taught me a lot of the concepts I'm about to walk through for the first time.
-
-If you'd like the challenge of implementing this yourself blind, _stop right here_. Read just that post and try to build this yourself in the language of your choice.  Come back here when you get stuck.  This should all apply to whatever you've got going on by then unless you've gone real funky with it - in which case, show me what you got!  Sounds cool.
 
 I've gotta be honest - I didn't even try the `bash` and immediately dove into the pure Rust solution.  Nevertheless, it serves as a solid [30,000ft](https://en.wikipedia.org/wiki/Flight_level) [roadmap](https://en.wikipedia.org/wiki/Plan):
 
@@ -85,9 +85,11 @@ I've gotta be honest - I didn't even try the `bash` and immediately dove into th
 1. `xxd -r -p`: Convert hex numbers back to binary.
 1. `aplay -c 2 -f S32_LE -r 16000`: Play back binary data as sound.
 
-Don't worry, you don't need to have a clue how any of it works yet if some or all of this is incomprehensible.  I sure didn't.  I'm not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does exactly in this post, and I'm not going to elaborate much on what any of the specific commands in the pipeline mean (read the linked post for that), but by the time we're done, you'll be able to pick apart the whole thing yourself.
+Don't worry, you don't need to have a clue how any of it works yet if some or all of this is incomprehensible.  I sure didn't.  I'm not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does exactly in this post, and I'm not going to elaborate much on what any of the specific commands in the pipeline mean (read the linked post for that).   By the time we're done, you'll be able to pick apart the whole thing yourself anyway.
 
-¡Vámonos!
+If you'd like the challenge of implementing this yourself from scratch, **stop right here**.  There's something about extensively modelling a problem space that kinda takes the mystery out, you know?  Try to build the program I described yourself in the language of your choice.  If you get stuck, this should all apply to whatever you've got going unless you've gone real funky with it - in which case, it sounds cool and you should show me.
+
+[¡Vámonos!](https://en.wikipedia.org/wiki/Party)
 
 ## The Program
 
@@ -101,19 +103,26 @@ Then, spin up a new project:
 $ cargo new music
 ```
 
-Open that directory in the environment of your choice.  We'll use three crates:
+Open that directory in the environment of your choice.  We'll use three crates to replace the functionality not (quickly) found in the Rust standard library:
 
-* [`rand`](https://docs.rs/rand/0.7.2/rand/) - [RNG](https://en.wikipedia.org/wiki/Random_number_generation)
-* [`hound`](https://github.com/ruuda/hound) - [WAV](https://en.wikipedia.org/wiki/WAV)
-* [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [OUT](https://en.wikipedia.org/wiki/Audio_signal)
+* [`rand`](https://docs.rs/rand/0.7.2/rand/) - [Random number generation](https://en.wikipedia.org/wiki/Random_number_generation)
+* [`hound`](https://github.com/ruuda/hound) - [WAV stream creation](https://en.wikipedia.org/wiki/WAV)
+* [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [WAV stream playback](https://en.wikipedia.org/wiki/Audio_signal)
 
-We'll use `rand` in place of [`cat /dev/urandom`](https://en.wikipedia.org/wiki//dev/random), and `hound`/`rodio` will cover [`aplay`](https://linux.die.net/man/1/aplay).  In `Cargo.toml`:
+`rand` is in place of [`cat /dev/urandom`](https://en.wikipedia.org/wiki//dev/random), and `hound`/`rodio` will cover [`aplay`](https://linux.die.net/man/1/aplay).  We also use two other crates for quality-of-life Rust stuff:
+
+* [`lazy_static`](https://github.com/rust-lang-nursery/lazy-static.rs) - [Static](https://en.wikipedia.org/wiki/Static_variable) values with [runtime](https://en.wikipedia.org/wiki/Runtime_(program_lifecycle_phase)) [initialization](https://en.wikipedia.org/wiki/Initialization_(programming))
+* [`regex`](https://docs.rs/regex/1.1.0/regex/) - [Regular expressions](https://en.wikipedia.org/wiki/Regular_expression)
+
+In `Cargo.toml`:
 
 ```toml
 [dependencies]
 
 hound = "3.4"
+lazy_static = "1.4"
 rand = "0.7"
+regex = "1.3"
 rodio = "0.10"
 ```
 
@@ -151,9 +160,9 @@ fn main() {
 }
 ```
 
-Give that a go with `cargo run` - whee.  There it is.  Random integers 0-255 until you kill the process.  Now delete the whole thing, top to bottom, we're not going to use any of that.  Sorry.  That was a little mean, I know.  We're going to use this crate introduce randomness later on, don't worry, but first we have to get some fundamentals out of the way if we're gonna get this thing done right.  At least you spent a little less time than I did in this particular rabbit hole, and now we see we don't need to Linux [userland](https://en.wikipedia.org/wiki/User_space) tools.
+Give that a go with `cargo run` - whee.  There it is.  Random integers 0-255 until you kill the process.  Now delete the whole thing, top to bottom, we're not going to use any of that.  Sorry.  That was a little mean, I know.  We're going to use this crate to introduce randomness later on, don't worry, but first we have to get some fundamentals out of the way if we're gonna get this thing done right.  At least you spent a little less time than I did in this particular rabbit hole, and now we see we don't need no Linux [userland](https://en.wikipedia.org/wiki/User_space) tools.
 
-I promise that's the last [red herring](https://en.wikipedia.org/wiki/Red_herring), the rest of the code you should actually add to your file.
+I promise that's the only [red herring](https://en.wikipedia.org/wiki/Red_herring), the rest of the code you should actually add to your file.
 
 ### Mapping Bytes To Notes
 
@@ -168,7 +177,11 @@ for (i = 0; i < 1; i += 0.0001)
            100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))
 ```
 
-This is probably still not too helpful for most - there's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) (oh, my) - and its written in freakin' [`AWK`](https://en.wikipedia.org/wiki/AWK).  Don't despair if this still doesn't mean much (or literally anything) to you.  We're going to model this problem from the ground up in [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)).  As a result, this logic will become crystal clear, and we'll be able to extend a lot further with minimal effort.
+This is probably still not too helpful for most - there's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) (oh, my) - and its written in freakin' [`AWK`](https://en.wikipedia.org/wiki/AWK).  Don't despair if this still doesn't mean much (or literally anything) to you.  We're going to model this problem from the ground up in [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)).  For a sneak peek, this is our fully abstracted equivalent:
+
+```rust
+TODO
+```
 
 We can glean a bit of information at a glance, though, and depending on your current comfort with this domain you may be able to kind of understand the general idea here.  It looks like we're going to tick up floating point values by ten-thousandths from zero to one (`for (i = 0; i < 1; i += 0.0001)`), and do... I don't know, some math and stuff on each value based on the list `[0,2,4,5,7,9,11,12]`: `100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))` .  After we do the math, we're going to print it out as an 8-digit hex number: `printf("%08X\n",math())` - this [`printf`](https://en.wikipedia.org/wiki/Printf_format_string) formatter means we want a [0-padded](https://en.wikipedia.org/wiki/Npm_(software)#Notable_breakages) number that's 8 digits long in [upper-case](https://en.wikipedia.org/wiki/Letter_case) [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal).  The [base 10](https://en.wikipedia.org/wiki/Decimal) integer [`42`](https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_(42)) would be printed as `0000002A`.
 
@@ -198,7 +211,7 @@ The standard unit for frequency is the [Hertz](https://en.wikipedia.org/wiki/Her
 
 ![cycle gif](https://media.giphy.com/media/F5rQlfTXqCJ8c/giphy.gif)
 
-Recall above that we saw we're going to run a loop like this:  `for (i = 0; i < 1; i += 0.0001)`.  If one were to, say, generate all the points along a single cycle of a sine wave like this one, it sure seems like this loop could get the job done.
+Recall above that we saw we're going to run a loop like this:  `for (i = 0; i < 1; i += 0.0001)`.  If one were to, say, calculate a bunch of points along a single cycle of a sine wave like this one, it sure seems like this loop could get the job done.
 
 In simple cases, a sound at a specific pitch is a result of that sound's frequency.  The higher the frequency, or closer together the peaks, the higher the pitch.
 
@@ -222,6 +235,7 @@ Let's set up a type to represent a pitch:
 type Hertz = f64;
 const STANDARD_PITCH: Hertz = 440.0;
 
+#[derive[Debug, Clone, Copy]]
 struct Pitch {
     frequency: Hertz,
 }
@@ -241,7 +255,11 @@ impl Default for Pitch {
 
 With this code we can use `Pitch::default()` to get our A440 pitch, or pass an arbitrary frequency: `Pitch::new(261.626) // Middle C`.
 
-Let's see if we can produce this tone.
+##### Singing
+
+*[top](#table-of-contents)*
+
+Knowing what frequency to use to produce a given pitch is all well and good, but we need to actually make the sound.
 
 TODO produce the flat tone - I think it's just gonna be 440*i*Pi
 
@@ -282,13 +300,15 @@ enum Interval {
 }
 ```
 
-We can map each variant to semitones:
+Throughout this post I will tend towards over-specifying types like this - we only need `Min2` (half tone) and `Maj2` (whole tone) for now, but at least this way we have a full toolkit to work with should the need arise.
+
+Each variant corresponds to a number of semitones:
 
 ```rust
-impl Interval {
-    fn semitones(&self) -> Semitones {
+impl From<Interval> for Semitones {
+    fn from(i: Interval) -> Self {
         use Interval::*;
-        match self {
+        match i {
             Unison => 0,
             Min2 => 1,
             Maj2 => 2,
@@ -306,10 +326,6 @@ impl Interval {
     }
 }
 ```
-
-// TODO this should be a from block
-
-Each variant of this [`enum`](https://en.wikipedia.org/wiki/Tagged_union#2010s) also carries the number of semitones it represents.
 
 Clearly, there isn't a black key between every white key.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern for the whole length.
 
@@ -336,29 +352,57 @@ There are the same number of whole and half intervals, they're just distributed 
 
 *[top](#table-of-contents)*
 
-Beyond the twelve 12 semitones in an octave, each semitone is divided into 100 [cents](https://en.wikipedia.org/wiki/Cent_(music)).  This means a full octave, representing a 2:1 ratio in frequency, spans 1200 cents.  Go ahead and set up some constants:
+Beyond the twelve 12 semitones in an octave, each semitone is divided into 100 [cents](https://en.wikipedia.org/wiki/Cent_(music)).  This means a full octave, representing a 2:1 ratio in frequency, spans 1200 cents.  Go ahead and set up some types:
 
 ```rust
-type Cents = f64;
-type Semitones = u8;
-const SEMITONE_CENTS: Cents = 100.0;
-const OCTAVE_SEMITONES: Semitones = 12; // TODO REMOVE
-const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64;
+struct Cents(f64);
+struct Semitones(i8);
+```
+
+I didn't just assign aliases as with `type Hertz = f64`, because I need to re-definine how to convert to and from them with the [`From`](https://doc.rust-lang.org/std/convert/trait.From.html) [trait](https://doc.rust-lang.org/book/ch10-02-traits.html).  For that, I need my very own type, not just an alias of a primitive that already can convert to and from other primitives with the standard logic.  `Semitones` to `Cents` is not the same thing as `i8` to `f4`, we have a conversion factor.   The [tuple struct](https://doc.rust-lang.org/1.37.0/book/ch05-01-defining-structs.html#using-tuple-structs-without-named-fields-to-create-different-types) syntax is perfect for that.  Hertz really is a more general unit of frequency, so it made sense to me to separate that concept from a `Pitch` that can be modulated by cents.
+
+This does add a level of indirection.  We can give ourselves some conversions to the inner primitive:
+
+```rust
+impl From<Cents> for f64 {
+    fn from(cents: Cents) -> Self {
+        cents.0
+    }
+}
+
+impl From<Semitones> for i8 {
+    fn from(semitones: Semitones) -> Self {
+        semitones.0
+    }
+}
+```
+
+However, now we can convert between them:
+
+```rust
+const SEMITONE_CENTS: Cents = Cents(100.0);
+
+impl From<Semitones> for Cents {
+    fn from(semitones: Semitones) -> Self {
+        Cents(i8::from(semitones) as f64 * f64::from(SEMITONE_CENTS))
+    }
+}
+```
+
+We're going to start defining a bunch of operations on our types that can encapsulate our logic.  Add a trait imports - these trais will provide our operators:
+
+```rust
+use std::ops::{Add, AddAssign, Mul};
 ```
 
 Now we can map intervals to cents:
 
-TODO this should also be a From block
-
-```diff
-  impl Interval {
-+     fn cents(&self) -> Cents {
-+         self.semitones() as f64 * SEMITONE_CENTS
-+     }
-      fn semitones(&self) -> Semitones {
-          // ..
-      }
-  }
+```rust
+impl From<Interval> for Cents {
+    fn from(i: Interval) -> Self {
+        Semitones::from(i) as f64 * SEMITONE_CENTS
+    }
+}
 ```
 
 Remember how Middle C was some crazy fraction, 261.626?  This is because cents are a [logarithmic](https://en.wikipedia.org/wiki/Logarithmic_scale) unit, standardized around the point 440.0.  Because of equal temperament, this 2:1 ratio holds for arbitrarily smaller intervals than octaves as well, where the math isn't always so clean.  Doubling this will get 880.0Hz, every time, but how would we add a semitone?  It's 100 cents, nice and neat, and there are 12 semitones - so we'd need to increase by a 12th of what doubling the number would do: `440 * 2^(1/12)`.  Looks innocuous enough, but my calculator gives me 466.164, Rust gives me 466.1637615180899 - not enough to perceptually matter, but enough that it's important that the standard is the interval ratio and not the specific amount of Hertz to add or subtract.  Those amounts will only be precise in floating point decimal representations at exact octaves from the base note, because that's integral factor after multiplying by 1 in either direction, 2 or 1/2.
@@ -379,45 +423,51 @@ This is a much better way to deal with intervals than by frequency deltas.  Know
 
 Here, *a* is the initial frequency in Hertz, *b* is the target frequency, and *n* is the number of cents by which to increase *a*.
 
-We can add a method to `Pitch` with this logic:
+It looks like we're going to need to divide some `Cent`s:
 
-```diff
-  impl Pitch {
-      fn new(frequency: Hertz) -> Self {
-          Self { frequency }
-      }
-+     fn add_cents(&mut self, cents: Cents) {
-+         self.frequency *= 2.0f64.powf(cents / OCTAVE_CENTS);
-+     }
-  }
+```rust
+use std::ops::Div;
+
+impl Div for Cents {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self {
+        Cents(f64::from(self) / f64::from(rhs))
+    }
+}
 ```
 
-Lets try to increase by a single Hertz using the value above:
+We now know enough to manipulate a `Pitch`:
 
+```rust
+use std::ops::AddAssign
+
+impl AddAssign<Cents> for Pitch {
+    fn add_assign(&mut self, cents: Cents) {
+        self.frequency *= 2.0f64.powf((cents / Cents::from(Interval::Octave)).into())
+    }
+}
+```
+
+The [`AddAssign`](https://doc.rust-lang.org/std/ops/trait.AddAssign.html) trait gets us the `+=` operator.  Lets try to increase by a single Hertz using the value above:
 
 ```rust
 fn main() {
     let mut pitch = Pitch::default();
     println!("{:?}", pitch); // Pitch { frequency: 440.0 }
-    pitch.add_cents(3.9302); // attempt to add one Hz
+    pitch += Cents(3.9302); // attempt to add one Hz
     println!("{:?}", pitch); // Pitch { frequency: 441.0000105867894 } - close enough
 }
 ```
 
-Instead of adding single cents at a time, add a helper method that just expects a number of semitones:
+Instead of adding single cents at a time, it's easier to work by semitone - luckily that's pretty easy now:
 
-```diff
-  impl Pitch {
-      fn new(frequency: Hertz) -> Self {
-          Self { frequency }
-      }
-      fn add_cents(&mut self, cents: Cents) {
-          self.frequency *= 2.0f64.powf(cents / OCTAVE_CENTS);
-      }
-+     fn add_semitones(&mut self, semitones: i32) {
-+         self.add_cents(semitones as f64 * SEMITONE_CENTS);
-+     }
-  }
+```rust
+impl AddAssign<Semitones> for Pitch {
+    fn add_assign(&mut self, semitones: Semitones) {
+        *self += Cents::from(semitones)
+    }
+}
 ```
 
 That's a lot easier to work with:
@@ -426,8 +476,27 @@ That's a lot easier to work with:
 fn main() {
     let mut pitch = Pitch::default();
     println!("{:?}", pitch); // Pitch { frequency: 440.0 }
-    pitch.add_semitones(OCTAVE_SEMITONES); // add an octave
+    pitch += Semitones::from(Interval::Octave);
     println!("{:?}", pitch); // Pitch { frequency: 880.0 } - 2:1 ratio
+}
+```
+
+Why not just go straight for intervals:
+
+```rust
+impl AddAssign<Interval> for Pitch {
+    fn add_assign(&mut self, i: Interval) {
+        *self += Cents::from(i)
+    }
+}
+```
+
+```rust
+fn main() {
+    let mut pitch = Pitch::default();
+    println!("{:?}", pitch); // Pitch { frequency: 440.0 }
+    pitch += Interval::Min2; // Add a semitone
+    println!("{:?}", pitch); // Pitch { frequency: 466.1637615180899 }
 }
 ```
 
@@ -468,7 +537,7 @@ impl Default for Note {
 }
 ```
 
-There's optionally a `♭` or `#` modifier which lower or raise the note by one semitone, respectively.  These are called [`accidentals`](https://en.wikipedia.org/wiki/Accidental_(music)):
+There's optionally a `♭` or `#` modifier which lower or raise the note by one semitone, respectively.  These are called [accidentals](https://en.wikipedia.org/wiki/Accidental_(music)):
 
 ```rust
 #[derive(Debug, Clone, Copy)]
@@ -489,23 +558,27 @@ println!("{:?}", StandardPitch::default()); // StandardPitch { accidental: None,
 It's defined at a set frequency:
 
 ```rust
-const C_ZERO: Hertz = 16.352;
+const C_ZERO: Hertz = Hertz(16.352);
 ```
 
 This is super low - most humans bottom out around 20Hz.  The 88-key piano's lowest note is up at A0, a 9-semitone [`major sixth`](https://en.wikipedia.org/wiki/Major_sixth) higher.  Note how even though this is a different abstraction for working with pitches, the frequencies baked in to the standard are still pinned to the A440 scale.  Do a quick sanity check before abstracting further:
+
+// TODO this should start with StandardPitch::default()
 
 ```rust
 fn main() {
     let mut pitch = Pitch::new(C_ZERO);
     println!("{:?}", pitch); // Pitch { frequency: 16.352 }
-    pitch.add_semitones(OCTAVE_SEMITONES * 4); // add 4 octaves - C0 -> C4
+    for _ in 0..4 {
+        pitch += Semitones::from(Interval::Octave);
+    } // add 4 octaves - C0 -> C4
     println!("{:?}", pitch); // Pitch { frequency: 261.632 }
-    pitch.add_semitones(9); // C4 -> A4
-    println!("{:?}", pitch); // Pitch { frequency: 440.010821831319 }
+    pitch += Interval::Maj6; // C4 -> A4
+    println!("{:?}", pitch); // Pitch { frequency: 440.0108218313197 } // close enough
 }
 ```
 
-Oof.  Damn floating point numbers.  Luckily, even being off by a full Hertz at 440 (~4 cents) is less than the just-noticeable difference of ~5-6 cents, so within the ranges we're working with, that's not wrong enough to care.
+Luckily, even being off by a full Hertz at 440 (~4 cents) is less than the just-noticeable difference of ~5-6 cents, so within the ranges we're working with that's not wrong enough to care.
 
 We can get them from strings with `std::str::FromStr`.  We should reduce notation like `E#` to `F` as well - there's no such thing as `E#`, in our diatonic scale `E` and `F` are only separated by a semitone.
 
@@ -614,7 +687,7 @@ This is called a [pentatonic scale](https://en.wikipedia.org/wiki/Pentatonic_sca
 
 ```
 
-Two identical notes are called a [unison](https://en.wikipedia.org/wiki/Unison), with 0 cents.  These intervals are defined within a single octave, so any of them apply across octaves as well - A4 and A5 are in unison just like A4 and another A4, and C4 and A5 is still a major sixth.  The terms "major", "minor", and "perfect" are not arbitrary, but that discussion is outside the scope of this post.  I will note that the [tritone](https://en.wikipedia.org/wiki/Tritone), representing 3 whole tones or 6 semitones like `F-B`, is the only one that's none of the three.  If you're into the mathy, music theory pattern parts of this exploration, I recommend [harmony]/[dissonance](https://en.wikipedia.org/wiki/Consonance_and_dissonance) for your next rabbit hole.  The tritone takes a leading role, and to hear it in action you should check out what the [Locrian mode](https://en.wikipedia.org/wiki/Locrian_mode) we defined sounds like with this program.  The C major scale has, well, a perfect fifth at the fifth position, and the Locrian mode has a tritone.
+Two identical notes are called a [unison](https://en.wikipedia.org/wiki/Unison), with 0 cents.  These intervals are defined within a single octave, so any of them apply across octaves as well - A4 and A5 are in unison just like A4 and another A4, and C4 and A5 is still a major sixth.  The terms "major", "minor", and "perfect" are not arbitrary, but that discussion is outside the scope of this post.  I will note that the [tritone](https://en.wikipedia.org/wiki/Tritone), representing 3 whole tones or 6 semitones like `F-B`, is the only one that's none of the three.  If you're into the mathy, music theory pattern parts of this exploration, I recommend [harmony](https://en.wikipedia.org/wiki/Harmony) for your next rabbit hole.  The tritone takes a leading role in [dissonance](https://en.wikipedia.org/wiki/Consonance_and_dissonance), and to hear it in action you should check out what the [Locrian mode](https://en.wikipedia.org/wiki/Locrian_mode) we defined sounds like with this program.  The C major scale has a perfect fifth, 5 semitones at the [dominant](https://en.wikipedia.org/wiki/Dominant_(music)) scale [degree](https://en.wikipedia.org/wiki/Degree_(music)) - and the Locrian mode has a tritone which is one extra semitone.
 
 This scale actually corresponds to playing just the black keys on a piano, skipping all the white keys.
 
@@ -633,6 +706,10 @@ You know what else is a stream of bytes?  Literally everything else.  Who needs 
 TODO maybe?  maybe not?  
 
 TODO Rick & Morty "Human Music" gif
+
+### Write Your Own Tunes
+
+*[top](#table-of-contents)*
 
 ## Challenges
 
