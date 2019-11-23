@@ -46,11 +46,10 @@ While the [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the co
 
 I have two disclaimers:
 
-1. [There are](https://en.wikipedia.org/wiki/Existence) [too many](https://en.wikipedia.org/wiki/Saturated_model) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Blog).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
+1. [There are](https://en.wikipedia.org/wiki/Existence) [102](https://en.wikipedia.org/wiki/102_(number)) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Blog).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
 1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](hhttps://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
 
-
-This is (hopefully) a [beginner](https://en.wikipedia.org/wiki/Novice)-level post.  It's not necessarily specific to Rust but also not shy about Rust idioms or added [verbosity](https://en.wikipedia.org/wiki/Verbosity).  Even so, or perhaps because of, it should be pretty readable even if you don't speak Rust - that's the whole point!  I promise I'll (mostly) stop the whole parenthesis thing, too.
+This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) who are comfortable solving problems with at least one [imperative language](https://en.wikipedia.org/wiki/Imperative_programming).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the basic building blocks of building a program.  There's a large amount of fairly idiomatic Rust throughout this write-up, but don't worry if that's not what you're here for.  My aim is that you can choose to skip all the code snippets entirely, or just skim for the language-agnostic logic, and still find this guide useful.  Rust tends to get verbose, but one side-effect of that [verbosity](https://en.wikipedia.org/wiki/Verbosity) is that this code should be readable and easy to follow even without a ton of familiarity going in.
 
 ## The Meme
 
@@ -183,9 +182,13 @@ In simple cases, a sound at a specific pitch is a result of that sound's frequen
 
 Sound is a continuous spectrum of frequency, but when we make music we tend to prefer [notes](https://en.wikipedia.org/wiki/Musical_note) at set frequencies, or pitches.  I'm using  [frequency](https://en.wikipedia.org/wiki/Fundamental_frequency) and [pitch](https://en.wikipedia.org/wiki/Pitch_(music)) interchangeably, because for this application specifically they are, but go Wiki-diving if you want to learn about the distinction and nuance at play here.  The nature of sound is super cool but super complex and outside of the scope of this post - we just want to hear some numbers sing, we don't need to hear a full orchestra.
 
-One of the super cool things about it is the [octave](https://en.wikipedia.org/wiki/Octave).  Octaves just sound related, you know?  It turns out the relationship is physical - to increase any pitch by an octave, you double the frequency.
+One of the super cool things about it is the [octave](https://en.wikipedia.org/wiki/Octave).  Octaves just sound related, you know?
 
-To start working with something concrete, we need some sort of standard.   Some of the world has settled on [440Hz](https://en.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO](https://en.wikipedia.org/wiki/International_Organization_for_Standardization) [16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
+// TODO embed octave sound
+
+It turns out the relationship is physical - to increase any pitch by an octave, you double the frequency.  It turns out, though, that this fixed ratio actually holds for any arbitrary smaller or larger interval as well.  This system is called ["equal temperament"](https://en.wikipedia.org/wiki/Equal_temperament) - every pair of adjacent notes has the same ratio, regardless of how you define "adjacent".  To get halfway to the next octave, you multiply by 1.5 instead of 2.
+
+To start working with concrete numbers, we need some sort of standard to base everything around.   Some of the world has settled on [440Hz](https://en.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO](https://en.wikipedia.org/wiki/International_Organization_for_Standardization) [16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
 
 ![stuttgart](https://i.imgflip.com/3h0y3g.jpg)
 
@@ -249,6 +252,8 @@ impl Interval {
     }
 }
 ```
+
+// TODO this should be a from block
 
 Each variant of this [`enum`](https://en.wikipedia.org/wiki/Tagged_union#2010s) also carries the number of semitones it represents.
 
@@ -497,6 +502,7 @@ Seven hops gets you to eight pitches including the first and last.  Adding a set
 // TODO Scales that return an iterator of SPN notes one octave long - THIS is where I'll talk about iterators - it should take a base note in SPN and a length, return an Octave that's just a `Vec` or something with iter() on it?  and a definite end?
 // TODO Go back and compare with the original AWK/one-liner
 // TODO Authoring - Pest? - just take separated characters - accept either Unicode flat OR some other character - you can use 'b', because only the first character is matching a note.  For sharp, ASCII 35 '#' is fine to demand.  Add a character for 
+// TODO dependent types could verify scale intervals
 
 ##### Diatonic Modes
 
