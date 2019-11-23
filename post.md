@@ -63,7 +63,7 @@ Here's a slightly modified version of the [`bash`](https://en.wikipedia.org/wiki
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
 ```
 
-The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this particular adventure, but that's not to discredit it at all - that write-up and Wikipedia were all I needed to complete this translation with absolutely not a clue how this whole thing worked going in.  If you'd like the challenge of implementing this yourself blind, stop right here. Read just that, try it yourself in the language of your choice, come back when you get stuck.  The stuff here should apply to whatever you've got unless you've gone real funky.  This post does extend that functionality, so, you know, maybe still come back anyway.
+The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this one, but that's not to discredit it at all.  That write-up and Wikipedia were all I needed to complete this translation with absolutely not a clue how this whole thing worked going in.  If you'd like the challenge of implementing this yourself blind, _stop right here_. Read just that post and try to build this yourself in the language of your choice.  Come back here when you get stuck.  This should apply to whatever you've got going on by then unless you've gone real funky with it.  This post does extend the functionality of the one-liner (you'd hope, at XXX lines), so, you know, maybe still come back anyway.
 
 Here's a step-by-step video demonstration of that [pipeline](https://en.wikipedia.org/wiki/Pipeline_%28Unix%29) in sequence:
 
@@ -88,11 +88,9 @@ for (i = 0; i < 1; i += 0.0001)
 
 This is probably still not too helpful for most - there's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) (oh, my) - and its written in freakin' [`AWK`](https://en.wikipedia.org/wiki/AWK).  Don't despair if this still doesn't mean much (or literally anything) to you.  We're going to model this problem from the ground up in [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)).  As a result, this logic will become crystal clear, and we'll be able to extend a lot further with minimal effort.
 
-We can glean a bit of information at a glance, though, and depending on your current comfort with this domain you may be able to kind of understand the general idea here.  It looks like we're going to tick up floating point values by ten-thousandths from zero to one (`for (i = 0; i < 1; i += 0.0001)`), and do... I don't know, some math and stuff on each value based on the list `[0,2,4,5,7,9,11,12]`: `100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))` .
+We can glean a bit of information at a glance, though, and depending on your current comfort with this domain you may be able to kind of understand the general idea here.  It looks like we're going to tick up floating point values by ten-thousandths from zero to one (`for (i = 0; i < 1; i += 0.0001)`), and do... I don't know, some math and stuff on each value based on the list `[0,2,4,5,7,9,11,12]`: `100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))` .  After we do the math, we're going to print it out as an 8-digit hex number: `printf("%08X\n",math())` - this [`printf`](https://en.wikipedia.org/wiki/Printf_format_string) formatter means we want a [0-padded](https://en.wikipedia.org/wiki/Npm_(software)#Notable_breakages) number that's 8 digits long in [upper-case](https://en.wikipedia.org/wiki/Letter_case) [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal).  The [base 10](https://en.wikipedia.org/wiki/Decimal) integer [`42`](https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_(42)) would be printed as `0000002A`.
 
-Even if you're not a math person, this alone may have triggered [something](https://en.wikipedia.org/wiki/Unit_circle) from deep within your teenage math textbooks.  If it did, don't sweat it, I'm not going to be drilling you on the [radian](https://en.wikipedia.org/wiki/Radian) unit circle values, but we are going to be working with a sine wave.  If it didn't, also don't sweat it, I'm gonna walk us through the whole thing and it's really not painful.  After we do the math, we're going to print it out as an 8-digit hex number: `printf("%08X\n",math())` - this [`printf`](https://en.wikipedia.org/wiki/Printf_format_string) formatter means we want a [0-padded](https://en.wikipedia.org/wiki/Npm_(software)#Notable_breakages) number that's 8 digits long in [upper-case](https://en.wikipedia.org/wiki/Letter_case) [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal).  Te [base 10] integer [`42`](https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_(42)) would be printed as `0000002A`.
-
-This code goes a little further than the one-liner can - thank gosh, we hit XXX lines here.  ¡Vámonos!
+¡Vámonos!
 
 ## The Program
 
@@ -204,7 +202,7 @@ Sound is a continuous spectrum of frequency, but when we make music we tend to p
 
 One of the super cool things about it is the [octave](https://en.wikipedia.org/wiki/Octave).  Octaves just sound related, you know?  It turns out the relationship is physical - to increase any pitch by an octave, you double the frequency.
 
-To start working with something concrete, we need some sort of standard.   Some of the world has settled on [440Hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO](https://en.wikipedia.org/wiki/International_Organization_for_Standardization) [16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
+To start working with something concrete, we need some sort of standard.   Some of the world has settled on [440Hz](https://en.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO](https://en.wikipedia.org/wiki/International_Organization_for_Standardization) [16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
 
 ![stuttgart](https://i.imgflip.com/3h0y3g.jpg)
 
@@ -273,7 +271,7 @@ whole, whole, half, whole, whole, whole, half
 
 TODO embed sound
 
-There are a few variations of *minor* scale, but for now I'll define the [natural minor scale](https://en.m.wikipedia.org/wiki/Minor_scale#Natural_minor_scale).  This is what you get if you start at our good old friend A4 and march on up the white keys to A5:
+There are a few variations of *minor* scale, but for now I'll define the [natural minor scale](https://en.wikipedia.org/wiki/Minor_scale#Natural_minor_scale).  This is what you get if you start at our good old friend A4 and march on up the white keys to A5:
 
 ```txt
 whole, half, whole, whole, half, whole, whole
