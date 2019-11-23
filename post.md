@@ -110,7 +110,7 @@ Open that directory in the environment of your choice.  We'll use three crates:
 
 We'll use `rand` in place of [`cat /dev/urandom`](https://en.wikipedia.org/wiki//dev/random), and `hound`/`rodio` will cover [`aplay`](https://linux.die.net/man/1/aplay).  In `Cargo.toml`:
 
-```diff
+```toml
   [dependencies]
 
 + hound = "3.4"
@@ -118,61 +118,26 @@ We'll use `rand` in place of [`cat /dev/urandom`](https://en.wikipedia.org/wiki/
 + rodio = "0.10"
 ```
 
-### Random input data
 
-This crate is quite featureful, but we're keeping it simple.  Add an import to the top of `src/main.rs`:
-
-```rust
-use rand::random;
-```
-
-#### Iterator
-
-We can skip the conversion from binary.   This crate can give us random 8-bit integers out of the box by ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html)ing a type: `random::<u8>()` will produce a random [unsigned](https://en.wikipedia.org/wiki/Signedness) [8 bit](https://en.wikipedia.org/wiki/8-bit) integer ([`u8`](https://doc.rust-lang.org/nightly/std/primitive.u8.html)) with the default generator settings.  See the crate docs for all the various ways to tune this.
-
-We can implement a similar result to the first two steps, or `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'` by manually implementing an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html).  This trait is the standard way to represent, well, things that we iterate over, and this will easily let us represent what's essentially an infinite list.  It's easy to implement manually if a standard collection isn't right.  There's a [rich library](https://doc.rust-lang.org/std/iter/trait.Iterator.html) for types that implement this trait that you can take advantage of quickly.   There's only the one method:
-
-```rust
-#[derive(Default)]
-struct RandomBytes;
-
-impl RandomBytes {
-    fn new() -> Self {
-        Self::default()
-    }
-}
-
-impl Iterator for RandomBytes {
-    type Item = u8;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        Some(random::<Self::Item>())
-    }
-}
-```
-
-This struct itself doesn't need to store any [state](https://en.wikipedia.org/wiki/State_(computer_science)).  We just always want to produce the next value by calling `rand::random()`, specified with the associated type of this iterator.  I set `Item` to `u8`, so calling `Random::Input::next()` will always return a `random::<u8>()` - there's no `None` branch, just `Some(x)`.  That means `unwrap()` is always safe to call on this iterator, it won't panic.  You can take it for a spin with this driver code:
-
-```rust
-fn main() {
-    let mut rands = RandomBytes::new();
-    loop {
-        println!("{}", rands.next().unwrap());
-    }
-}
-```
-
-This should print an endless loop of random numbers between 0 and 255 inclusive until you kill the process.  Be careful messing with this particular `Iterator` - a lot of those library functions we mentioned are really assuming your list is _NOT_ infinite.  This is not [lazily-evaluated](https://en.wikipedia.org/wiki/Lazy_evaluation), so something like `RandomBytes::last()` will sit there and call `next()` until your struct tells it it needs to stop somehow (which it does not ever do).  It does not bode well for anything else you had planned for the rest of this process.
 
 ### Mapping Bytes To Notes
 
-This is the meat of the program - turning our numeric data into something we can hear.  To get from random numbers to sounds we can hear, we need to map each data point to an amplitude.  The relevant section of the `bash` again:
+We can actually skip the random byte bit for now - the `rand` crate has us covered later on, but we need to talk abut what that data means here first.  If you're curious, the following snippet 
+
+```rust
+
+```
+
+
+The `rand` crate can give us random 8-bit integers out of the box by ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html)ing a type: `random::<u8>()` will produce a random [unsigned](https://en.wikipedia.org/wiki/Signedness) [8 bit](https://en.wikipedia.org/wiki/8-bit) integer ([`u8`](https://doc.rust-lang.org/nightly/std/primitive.u8.html)) with the default generator settings.  I wrote this and never touched it again, but hey.
+
+The note mapping step is the meat of the program - turning our numeric data into something we can hear.  To get from random numbers to sounds we can hear, we need to map each data point to an amplitude.  The relevant section of the `bash` again:
 
 ```bash
 awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }'
 ```
 
-Tools like `awk` are terse, but this is merely a `for` loop with some math in the body.
+This is the end goal, but let's start at the way bottom.
 
 #### A Little Physics
 
@@ -184,13 +149,13 @@ Sound propagates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](
 
 ![sine waves](https://upload.wikimedia.org/wikipedia/commons/6/6d/Sine_waves_different_frequencies.svg)
 
-If you're thinking *but Ben, you CAN mix component frequencies to represent sound waves as sine waves in fact we all do that all the time*, you're [correct in ways I don't personally fully understand](https://en.wikipedia.org/wiki/Signal_processing).  That's really cool stuff and a lot more complicated than what happens in this post.  If that was either turning you {on|off} to this, you can {stop|start} breathing normally.  There will be no signals processed here, just a single frequency [scalar](https://en.wikipedia.org/wiki/Variable_(computer_science)) we modulate.
+If you're thinking *but Ben, you CAN mix component frequencies to represent sound waves as sine waves in fact we all do that all the time*, you're [correct in ways I don't personally fully understand](https://en.wikipedia.org/wiki/Signal_processing).  That's really cool stuff and a lot more complicated than what happens in this post.  If that was either turning you {off|on} to this, you can {start|stop} breathing normally.  There will be no signals processed here, just a single frequency [scalar](https://en.wikipedia.org/wiki/Variable_(computer_science)) we modulate.
 
 If the X axis is time, a sine wave represents a recurring action with an analog (or smooth) oscillation.  There are two interesting properties: the amplitude, which measures the deviation from the 0 axis at the peaks (how high the peaks are), and the frequency, which is how close together these peaks are, or how frequently this recurring thing happens.
 
 ##### Pitch
 
-The standard unit for frequency is the [Hertz](https://en.wikipedia.org/wiki/Hertz), abbreviated `Hz`, which measures the *number of cycles per second*.  One cycle here is the distance (or time) between two peaks on the graph:
+The standard unit for frequency is the [Hertz](https://en.wikipedia.org/wiki/Hertz), abbreviated `Hz`, which measures the *number of cycles per second*.  One cycle here is the distance (or time) between two peaks on the graph, or the time it takes to go all the way around the circle once:
 
 ![cycle gif](https://media.giphy.com/media/F5rQlfTXqCJ8c/giphy.gif)
 
@@ -391,10 +356,31 @@ enum Accidental {
 }
 ```
 
-The base of this system is defined as C0:
+A given pitch has one of each:
+
+```rust
+#[derive(Debug)]
+struct SPN {
+    accidental: Accidental,
+    note: Note,
+    octave: u8,
+}
+```
+
+The base of this system is defined as C0, with a set frequency:
 
 ```rust
 const C_ZERO: Hertz = 16.352;
+
+impl Default for SPN {
+    fn default() -> Self {
+        Self {
+            accidental: Accidental::Natural,
+            note: Note::C,
+            octave: u8::default(),
+        }
+    }
+}
 ```
 
 This is super low - most humans bottom out around 20Hz.  The 88-key piano doesn't even start until A0Note how even though this is a different abstraction for working with pitches, the frequencies baked in to the standard are still pinned to the A440 scale.
@@ -452,6 +438,12 @@ Next, we need a way to convert a `PianoKey` to a `Pitch`:
 ```rust
 
 ```
+
+// TODO From/Into
+// TODO FromStr for Pitch that just calls SPN::FromStr
+// TODO Traits for adding different types to pitches
+// TODO Scales that return an iterator of SPN notes one octave long - THIS is where I'll talk about iterators - it should take a base note in SPN and a length, return an impl Iterator that's just a `Vec` or something with iter() on it?  and a definite end?
+// TODO Go back and compare with the original AWK/one-liner
 
 ##### Diatonic Modes
 
