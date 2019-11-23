@@ -34,7 +34,7 @@ In other words, we're going to teach our [computers](https://en.wikipedia.org/wi
     + [A Little Music Theory](#a-little-music-theory)
       - [Scales](#scales)
       - [Cents](#cents)
-      - [Piano Keys](#piano-keys)
+      - [Scientific Pitch Notation](#scientific-pitch-notation)
       - [Diatonic Modes](#diatonic-modes)
       - [Other Scales](#other-scales)
     + [Back To The Bytes](#back-to-the-bytes)
@@ -46,7 +46,7 @@ In other words, we're going to teach our [computers](https://en.wikipedia.org/wi
 I have two disclaimers:
 
 1. [There are](https://en.wikipedia.org/wiki/Existence) [too many](https://en.wikipedia.org/wiki/Saturated_model) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Blog).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
-1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Say_Something_(Justin_Timberlake_song)).
+1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](hhttps://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
 
 
 This is (hopefully) a [beginner](https://en.wikipedia.org/wiki/Novice)-level post.  It's not necessarily specific to Rust but also not shy about Rust idioms or added [verbosity](https://en.wikipedia.org/wiki/Verbosity).  Even so, or perhaps because of, it should be pretty readable even if you don't speak Rust - that's the whole point!  I promise I'll (mostly) stop the whole parenthesis thing, too.
@@ -245,7 +245,7 @@ A440 is the A above Middle C on a piano:
 
 The cyan key is Middle C, and A440 is highlighted in yellow.  The octaves on an 88-key piano are numbered as shown, so often A440 is simply denoted "A4" especially when dealing with a keyboard specifically.  You may own a tuner that marks 440Hz/A4 specifically if you're a musician.  This pitch is used for calibrating musical instruments and tuning a group, as well as a baseline constant for calculating frequencies.
 
-Note how each octave starts at C, not A, so A4 is actually higher in pitch than C4 - octaves are "C-indexed".
+Note how each octave starts at C, not A, so A4 is actually higher in pitch than C4.  Octaves are "C-indexed" and base 8: `C D E F G A B C`.
 
 ##### Scales
 
@@ -264,7 +264,7 @@ Each variant of this [`enum`](https://en.wikipedia.org/wiki/Tagged_union#2010s) 
 
 Clearly, there isn't a black key between every white key.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern for the whole length.
 
-A [major scale]() is the baseline scale.  Start at Middle C, the one highlighted in cyan above, and count up to the next C key, eight white keys to the left.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get counting up to the next C, when the pattern repeats.  This totals 12 semitones per octave:
+A [major scale](https://en.wikipedia.org/wiki/Major_scale) is the baseline scale.  Start at Middle C, the one highlighted in cyan above, and count up to the next C key, eight white keys to the left.  THis is our baseline C-indexed exampled from above, `C D E F G A B C`.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get counting up to the next C, when the pattern repeats.  This totals 12 semitones per octave:
 
 ```txt
 whole, whole, half, whole, whole, whole, half
@@ -364,9 +364,9 @@ fn main() {
 }
 ```
 
-##### Piano Keys
+##### Scientific Pitch Notation
 
-Let's do one better and just use piano keys:
+Armed with this knowledge, we can rewrite our `Pitch` type in terms of ratios instead of Hertz, and calculate as needed:
 
 ```rust
 #[derive(Debug, Clone, Copy)]
