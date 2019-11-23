@@ -163,8 +163,8 @@ fn main() {
     //    println!("{}", rands.next().unwrap());
     //}
 
-    let mut pitch = Pitch::new(MIDDLE_C);
+    let mut pitch = Pitch::new(STANDARD_PITCH);
     println!("{:?}", pitch);
-    pitch.add_semitones(OCTAVE_SEMITONES);
+    pitch.add_semitones(-OCTAVE_SEMITONES);
     println!("{:?}", pitch);
 }

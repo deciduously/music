@@ -35,7 +35,7 @@ In other words, we're going to teach our [computers](https://en.wikipedia.org/wi
       - [Scales](#scales)
       - [Cents](#cents)
       - [Piano Keys](#piano-keys)
-      - [Modes](#modes)
+      - [Diatonic Modes](#diatonic-modes)
       - [Other Scales](#other-scales)
     + [Back To The Bytes](#back-to-the-bytes)
   * [Listen To Your Files](#listen-to-your-files)
@@ -186,17 +186,23 @@ Sound propagates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](
 
 ![sine waves](https://upload.wikimedia.org/wikipedia/commons/6/6d/Sine_waves_different_frequencies.svg)
 
-If you're thinking *but Ben, you CAN mix component frequencies to represent sound waves as sine waves in fact we all do that all the time*, you're [correct in ways I don't personally fully understand](https://en.wikipedia.org/wiki/Digital_signal_processing).  That's really cool stuff and a lot more complicated than what happens in this post.  If that was either turning you {on|off} to this, you can {stop|start} breathing normally.  There will be no signals processed here, just a single frequency [scalar](https://en.wikipedia.org/wiki/Variable_(computer_science)) we modulate.
+If you're thinking *but Ben, you CAN mix component frequencies to represent sound waves as sine waves in fact we all do that all the time*, you're [correct in ways I don't personally fully understand](https://en.wikipedia.org/wiki/Signal_processing).  That's really cool stuff and a lot more complicated than what happens in this post.  If that was either turning you {on|off} to this, you can {stop|start} breathing normally.  There will be no signals processed here, just a single frequency [scalar](https://en.wikipedia.org/wiki/Variable_(computer_science)) we modulate.
 
-If the X axis is time, a sine wave represents a recurring action with an analog (or smooth) oscillation between their maximal amplitudes, or distances in either direction from 0.  The frequency is how close together these peaks are, or how frequently this thing occurs.  In simple cases, a sound at a specific pitch is a result of that sound's frequency.  The higher the frequency, or closer together the peaks, the higher the pitch.  The amplitude reflects the volume.
+If the X axis is time, a sine wave represents a recurring action with an analog (or smooth) oscillation.  There are two interesting properties: the amplitude, which measures the deviation from the 0 axis at the peaks (how high the peaks are), and the frequency, which is how close together these peaks are, or how frequently this recurring thing happens.
+
+##### Pitch
 
 The standard unit for frequency is the [Hertz](https://en.wikipedia.org/wiki/Hertz), abbreviated `Hz`, which measures the *number of cycles per second*.  One cycle here is the distance (or time) between two peaks on the graph:
 
 ![cycle gif](https://media.giphy.com/media/F5rQlfTXqCJ8c/giphy.gif)
 
-##### Pitch
+In simple cases, a sound at a specific pitch is a result of that sound's frequency.  The higher the frequency, or closer together the peaks, the higher the pitch.
 
-Sound is a continuous spectrum of frequency, but when we make music we tend to prefer [notes](https://en.wikipedia.org/wiki/Musical_note) at set frequencies, or pitches.  I'm using  [frequency](https://en.wikipedia.org/wiki/Fundamental_frequency) and [pitch](https://en.wikipedia.org/wiki/Pitch_(music)) interchangeably, because for this application specifically they are, but go Wiki-diving if you want to learn about the distinction and nuance at lay here.  The nature of sound is super cool but super complex and outside of the scope of this post - we just want to hear some numbers sing, we don't need to hear a full orchestra.
+![frequency](https://upload.wikimedia.org/wikipedia/commons/e/ea/Wave_frequency.gif)
+
+Sound is a continuous spectrum of frequency, but when we make music we tend to prefer [notes](https://en.wikipedia.org/wiki/Musical_note) at set frequencies, or pitches.  I'm using  [frequency](https://en.wikipedia.org/wiki/Fundamental_frequency) and [pitch](https://en.wikipedia.org/wiki/Pitch_(music)) interchangeably, because for this application specifically they are, but go Wiki-diving if you want to learn about the distinction and nuance at play here.  The nature of sound is super cool but super complex and outside of the scope of this post - we just want to hear some numbers sing, we don't need to hear a full orchestra.
+
+One of the super cool things about it is the [octave](https://en.wikipedia.org/wiki/Octave).  Octaves just sound related, you know?  It turns out the relationship is physical - to increase any pitch by an octave, you double the frequency.
 
 To start working with something concrete, we need some sort of standard.   Some of the world has settled on [440Hz](https://en.m.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO](https://en.wikipedia.org/wiki/International_Organization_for_Standardization) [16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
 
@@ -225,7 +231,7 @@ impl Default for Pitch {
 }
 ```
 
-With this code we can use `Pitch::default()` to get our A440 pitch, or pass an arbitrary frequency: `Pitch::new(440.0)`.
+With this code we can use `Pitch::default()` to get our A440 pitch, or pass an arbitrary frequency: `Pitch::new(261.626) // Middle C`.
 
 Let's see if we can produce this tone.
 
@@ -239,11 +245,11 @@ A440 is the A above Middle C on a piano:
 
 The cyan key is Middle C, and A440 is highlighted in yellow.  The octaves on an 88-key piano are numbered as shown, so often A440 is simply denoted "A4" especially when dealing with a keyboard specifically.  You may own a tuner that marks 440Hz/A4 specifically if you're a musician.  This pitch is used for calibrating musical instruments and tuning a group, as well as a baseline constant for calculating frequencies.
 
+Note how each octave starts at C, not A, so A4 is actually higher in pitch than C4 - octaves are "C-indexed".
+
 ##### Scales
 
 A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  The smallest of these intervals on a piano (and most of Western music) is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second or half step.  Take a look back at that piano diagram above - one semitone is the distance between an adjacent white key and black key.  A *whole* step, or a [major second](https://en.wikipedia.org/wiki/Major_second), is equal to two of semitones, or two adjacent white keys that pass over a black key.  For now these are the only intervals we'll need:
-
-// TODO instead of this repre u8 crap, just amkeget_semitonets/get_cents methods
 
 ```rust
 #[derive(Debug, Clone, Copy)]
@@ -256,12 +262,13 @@ enum Interval {
 
 Each variant of this [`enum`](https://en.wikipedia.org/wiki/Tagged_union#2010s) also carries the number of semitones it represents.
 
-Clearly, there isn't a black key between every white key.  The piano is designed to play notes from a catagory of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern for the whole length.
+Clearly, there isn't a black key between every white key.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern for the whole length.
 
-A major scale is the baseline scale.  Start at Middle C, the one highlighted in cyan above, and count up to the next C key, eight white keys to the left.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get counting up to the next C, when the pattern repeats:
+A [major scale]() is the baseline scale.  Start at Middle C, the one highlighted in cyan above, and count up to the next C key, eight white keys to the left.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get counting up to the next C, when the pattern repeats.  This totals 12 semitones per octave:
 
 ```txt
 whole, whole, half, whole, whole, whole, half
+  2  +  2   +  1  +   2   +  2  +   2  +  1   =  12  
 ```
 
 TODO embed sound
@@ -278,14 +285,7 @@ There are the same number of whole and half intervals, they're just distributed 
 
 ##### Cents
 
-The reason an octave is where the pattern restarts is that we're working in a tuning system called [equal temperment](https://en.wikipedia.org/wiki/Equal_temperament).  This means any two adjacent notes in this system have the same ratio.  In such a system, it's quite convenient to work in terms of octaves, an interval over which the frequency ration is 2:1.  This is further divided into 12 semitones of 100 cents each - and we've seen semitones before.
-
-```txt
-whole, whole, half, whole, whole, whole, half
-  2  +  2   +  1  +   2   +  2  +   2  +  1   =  12  
-```
-
-Each semitone is defined as 100 cents meaning a full octave spans 1200 cents.  Go ahead and set up some constants:
+Beyond the twelve 12 semitones in an octave, each semitone is divided into 100 [cents](https://en.wikipedia.org/wiki/Cent_(music)).  This means a full octave, representing a 2:1 ratio in frequency, spans 1200 cents.  Go ahead and set up some constants:
 
 ```rust
 type Cents = f64;
@@ -294,21 +294,23 @@ const OCTAVE_SEMITONES: u32 = 12;
 const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64;
 ```
 
-The ratio between frequencies separated by a *single* cent is the 1200th root of 2, or 2^1/1200.  You wouldn't be able to hear a distinction between two tones a single cent apart.  The [just-noticeable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents.
+Remember how Middle C was some crazy fraction, 261.626?  This is because cents are a [logarithmic](https://en.wikipedia.org/wiki/Logarithmic_scale) unit, standardized around the point 440.0.  Because of equal temperament, this 2:1 ratio holds for arbitrarily smaller intervals than octaves as well, where the math isn't always so clean.  Doubling this will get 880.0Hz, every time, but how would we add a semitone?  It's 100 cents, nice and neat, and there are 12 semitones - so we'd need to increase by a 12th of what doubling the number would do: `440 * 2^(1/12)`.  Looks innocuous enough, but my calculator gives me 466.164, Rust gives me 466.1637615180899 - not enough to perceptually matter, but enough that it's important that the standard is the interval ratio and not the specific amount of Hertz to add or subtract.  Those amounts will only be precise in floating point decimal representations at exact octaves from the base note, because that's integral factor after multiplying by 1 in either direction, 2 or 1/2.
 
-A cent is a [logarithmic](https://en.wikipedia.org/wiki/Logarithmic_scale) unit.  Because octaves double each time you increase by single one, the graph is `f(x) = x^2`:
+Otherwise stated, the ratio between frequencies separated by a single cent is the 1200th root of 2, or 2^(1/1200).    In decimal, it's about 1.0005777895.  You wouldn't be able to hear a distinction between two tones a single cent apart.  The [just-noticeable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents, or 5*2^(1/1200).  Using this math, it works out to just shy of 4 cents to cause an increase of 1Hz, more precisely around 3.9302 for a base frequency of 440.0.
+
+Logarithmic units are helpful when the range of the y axis, in our case frequency, increases exponentially.  We know the graph of frequency to pitch does because to jump by any single octave, we double what we have - we're multiplying at each step, not adding (which results in a linear graph).  If A4 is 440Hz, A5 is 880Hz, and by A6 we're already at 1,760Hz.  The graph `f(x) = x^2` looks like this:
 
 ![x_squared](https://thepracticaldev.s3.amazonaws.com/i/mkh095mgcasg1soygrb7.png)
 
-A logarithmic unit maps much better to this sort of function:
+A [logarithm](https://en.wikipedia.org/wiki/Logarithm) is the inverse of an [exponent](https://en.wikipedia.org/wiki/Exponentiation).  Our ratio had an exponent that was "1 divided by n", which is the inverse of raising something to the power of "n divided by 1", such as squaring it (n=2).  This is otherwise written as an "nth root", in the case of a cent *n* being 1,200.  This counteracts the rapid growing curve we get by constantly squaring the frequency into a more linear scaled subdivision between octaves:
 
 ![cent graph](https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Music_intervals_frequency_ratio_equal_tempered_pythagorean_comparison.svg/550px-Music_intervals_frequency_ratio_equal_tempered_pythagorean_comparison.svg.png)
 
-Knowing all this we can calculate the frequency in Hertz of a desired pitch if we know both a base frequency and the number of cents to increase by:
+This is a much better way to deal with intervals than by frequency deltas.  Knowing all this we can translate back to the frequency in Hertz of a desired pitch if we know both a base frequency and the number of cents to increase by:
 
 ![cents formula](https://wikimedia.org/api/rest_v1/media/math/render/svg/920411bb22d357b13f69a76fa33557c707f7cb57)
 
-Here, *a* is the initial frequency in Hertz, `b` is the target frequency, and *n* is the number of cents by which to increase `a`.
+Here, *a* is the initial frequency in Hertz, *b* is the target frequency, and *n* is the number of cents by which to increase *a*.
 
 We can add a method to `Pitch` with this logic:
 
@@ -323,11 +325,10 @@ We can add a method to `Pitch` with this logic:
   }
 ```
 
-This works out to just shy of 4 cents to cause an increase of 1Hz, more precisely around 3.9302 for a base frequency of 440:
+Lets try to increase by a single Hertz using the value above:
 
 
 ```rust
-
 fn main() {
     let mut pitch = Pitch::default();
     println!("{:?}", pitch); // Pitch { frequency: 440.0 }
@@ -366,8 +367,6 @@ fn main() {
 ##### Piano Keys
 
 Let's do one better and just use piano keys:
-
-// TODO this really does need to be a named enum which each valid note - look up a standard notation
 
 ```rust
 #[derive(Debug, Clone, Copy)]
@@ -437,9 +436,9 @@ Next, we need a way to convert a `PianoKey` to a `Pitch`:
 
 ```
 
-##### Modes
+##### Diatonic Modes
 
-Now we can start defining scales.  We actually get seven of these for free - one for each of the white keys in an octave.  If you count up to one octave higher from any given key, that's a diatonic scale.  These scales are called [`Modes`](https://en.wikipedia.org/wiki/Mode_(music)).
+Now we can start defining scales.  If you count up to one octave higher from any given key using just successive white keys, that's a diatonic scale no matter which note you start from.  These scales are called [`Modes`](https://en.wikipedia.org/wiki/Mode_(music)#Modern_modes).
 
 The first scale I laid out, the major scale, is also known as the [`Ionian mode`](https://en.wikipedia.org/wiki/Ionian_mode).  This is the base mode, each other is some offset from this scale.  The natural minor scale, where we started at A4, is called the [`Aeolian mode`].  There's an absurdly fancy name for each offset.  This means we get our first seven `Scale` variants for free:
 
