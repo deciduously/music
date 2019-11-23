@@ -18,7 +18,7 @@ Let's channel that wacky energy.  In this post, we'll throw something [random](h
 
 In other words, we're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://www.rust-lang.org/), backed by a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).
 
-The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover image [procedurally generates](https://en.wikipedia.org/wiki/Procedural_generation) a melody.  The melody produced will be composed of notes along a single octave of a major scale.  By the end of this post we'll have written a program that can procedurally generate music in number of different kinds of musical scale spanning up and down a whole keyboard, as well play [hand-authored](https://en.wikipedia.org/wiki/Musical_composition) songs created with a rudimentary [notation system](https://en.wikipedia.org/wiki/Musical_notation).
+The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover image [procedurally generates](https://en.wikipedia.org/wiki/Procedural_generation) a melody.  The melody produced will be composed of notes along a single octave of a hardcoded scale.  By the end of this post we'll have written a program that can procedurally generate music in number of different kinds of musical scale spanning up and down a whole keyboard, as well play [hand-authored](https://en.wikipedia.org/wiki/Musical_composition) songs created with a rudimentary [notation system](https://en.wikipedia.org/wiki/Musical_notation).
 
 [¡Vámonos!](https://en.wikipedia.org/wiki/Party)
 
@@ -63,13 +63,15 @@ Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
 ```
 
-The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this one, but that's not to discredit it at all.  That write-up and Wikipedia were all I needed to complete this translation with absolutely not a clue how this whole thing worked going in.  If you'd like the challenge of implementing this yourself blind, _stop right here_. Read just that post and try to build this yourself in the language of your choice.  Come back here when you get stuck.  This should apply to whatever you've got going on by then unless you've gone real funky with it.  This post does extend the functionality of the one-liner (you'd hope, at XXX lines), so, you know, maybe still come back anyway.
-
 Here's a step-by-step video demonstration of that [pipeline](https://en.wikipedia.org/wiki/Pipeline_%28Unix%29) in sequence:
 
 {% youtube uLhQQSKhTok %}
 
-I've gotta be honest - I didn't even try it myself.  I'm not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does in this post, and I'm not going to elaborate on what any of these specific steps of the pipeline mean.  We're immediately diving into a pure Rust solution.  Nevertheless, it serves as a solid [roadmap](https://en.wikipedia.org/wiki/Plan).  Each command of this pipeline calls out to some other tool present on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) to perform a series of operations on some continuous incoming data:
+The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this one, but that's not to discredit it at all as a great source of information.  That write-up and Wikipedia were all I needed to complete this translation, and I had absolutely not a clue how this whole thing worked going in.  Reading that post and writing this program taught me a lot of the concepts I'm about to walk through for the first time.
+
+If you'd like the challenge of implementing this yourself blind, _stop right here_. Read just that post and try to build this yourself in the language of your choice.  Come back here when you get stuck.  This should all apply to whatever you've got going on by then unless you've gone real funky with it - in which case, show me what you got!  Sounds cool.
+
+I've gotta be honest - I didn't even try the `bash` myself.  I'm not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does in this post, and I'm not going to elaborate on what any of the specific commands in the pipeline mean.  This post is about the pure Rust solution.  Nevertheless, it serves as a solid [roadmap](https://en.wikipedia.org/wiki/Plan).  Each command of this pipeline calls out to some other tool present on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) to perform a series of operations:
 
 1. `cat /dev/urandom`: Get a stream of random binary data.
 1. `hexdump -v -e '/1 "%u\n"'`: Convert binary to 8-bit base-10 integers (0-255).
@@ -77,7 +79,7 @@ I've gotta be honest - I didn't even try it myself.  I'm not going to do what th
 1. `xxd -r -p`: Convert hex numbers back to binary.
 1. `aplay -c 2 -f S32_LE -r 16000`: Play back binary data as sound.
 
-Of this, only step 3 ends up being pretty much what happens here too - here's what it looks like spread apart:
+While each step at least somewhat applies to this implementation, step three specifically is more or less exactly where we end up here, too.  Let's take a closer look:
 
 ```bash
 split("0,2,4,5,7,9,11,12",a,",");
@@ -86,7 +88,7 @@ for (i = 0; i < 1; i += 0.0001)
            100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))
 ```
 
-This is probably still not too helpful for most - there's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) (oh, my) - and its written in freakin' [`AWK`](https://en.wikipedia.org/wiki/AWK).  Don't despair if this still doesn't mean much (or literally anything) to you.  We're going to model this problem from the ground up in [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)).  As a result, this logic will become crystal clear, and we'll be able to extend a lot further with minimal effort.
+This is probably still not too helpful for most.  There's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) (oh, my) - and its written in freakin' [`AWK`](https://en.wikipedia.org/wiki/AWK).  Don't despair if this still doesn't mean much (or literally anything) to you.  We're going to model this problem from the ground up in [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)).  Through the process of modelling each component their relationships this logic will become crystal clear - you'll be able to read and understand this whole one-liner just fine at the end - and we'll be able to extend a lot further with minimal effort.
 
 We can glean a bit of information at a glance, though, and depending on your current comfort with this domain you may be able to kind of understand the general idea here.  It looks like we're going to tick up floating point values by ten-thousandths from zero to one (`for (i = 0; i < 1; i += 0.0001)`), and do... I don't know, some math and stuff on each value based on the list `[0,2,4,5,7,9,11,12]`: `100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))` .  After we do the math, we're going to print it out as an 8-digit hex number: `printf("%08X\n",math())` - this [`printf`](https://en.wikipedia.org/wiki/Printf_format_string) formatter means we want a [0-padded](https://en.wikipedia.org/wiki/Npm_(software)#Notable_breakages) number that's 8 digits long in [upper-case](https://en.wikipedia.org/wiki/Letter_case) [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal).  The [base 10](https://en.wikipedia.org/wiki/Decimal) integer [`42`](https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_(42)) would be printed as `0000002A`.
 
@@ -544,15 +546,37 @@ impl Mode {
 }
 ```
 
-##### Other Scales
+We've seen something like this somewhere before:
 
-Okay, Ben.  Ben, okay.  Okay, Ben.  But what about the pentatonic scale:
+```bash
+split("0,2,4,5,7,9,11,12",a,",");
+```
+
+What if we represent this octave as a series of offsets:
 
 ```txt
+whole, whole, half, whole, whole, whole, half
+  2  +  2   +  1  +   2   +  2  +   2  +  1
+0    2     4      5      7       9    11     12
+```
+
+Aha!  It's was a major scale over one octave this whole time.
+
+##### Other Scales
+
+Okay, Ben.  Ben, okay.  Okay, Ben.  That's the version from the blog post, great.  The line from the meme image has something different:
+
+```bash
+split("4,5,7,11",a,",");
+```
+
+This is called a [pentatonic scale](https://en.wikipedia.org/wiki/Pentatonic_scale), as opposed to a diatonic scale, as it only has five tones per octave defined by four intervals.  These tones are further apart than a major second - we're going to need some more intervals:
+
+```rust
 
 ```
 
-This corresponds to playing just the black keys on a piano, starting from 
+This scale actually corresponds to playing just the black keys on a piano, skipping all the white keys.
 
 Alright.  Back to the bytes.
 
