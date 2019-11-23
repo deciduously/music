@@ -20,13 +20,12 @@ impl Iterator for RandomBytes {
 
 type Hertz = f64;
 const STANDARD_PITCH: Hertz = 440.0;
-const MIDDLE_C: Hertz = 261.626;
 const C_ZERO: Hertz = 16.352;
 
 type Cents = f64;
 type Semitones = i8;
 const SEMITONE_CENTS: Cents = 100.0;
-const OCTAVE_SEMITONES: Semitones = 12;
+const OCTAVE_SEMITONES: Semitones = 12; // TODO use Interval::Octave
 const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64; // 1200.0
 
 #[derive(Debug)]
@@ -40,34 +39,28 @@ enum Note {
     G,
 }
 
-#[derive(Debug)]
-enum Accidental {
-    Flat,
-    Natural,
-    Sharp,
+impl Default for Note {
+    fn default() -> Self {
+        Note::C
+    }
 }
 
 #[derive(Debug)]
+enum Accidental {
+    Flat,
+    Sharp,
+}
+
+#[derive(Default, Debug)]
 struct SPN {
-    accidental: Accidental,
+    accidental: Option<Accidental>,
     note: Note,
     octave: u8,
 }
 
 impl SPN {
     fn new(s: &str) -> Self {
-        // TODO
         Self::default()
-    }
-}
-
-impl Default for SPN {
-    fn default() -> Self {
-        Self {
-            accidental: Accidental::Natural,
-            note: Note::C,
-            octave: u8::default(),
-        }
     }
 }
 
@@ -98,16 +91,41 @@ impl Default for Pitch {
 
 #[derive(Debug, Clone, Copy)]
 enum Interval {
+    Unison,
     Min2,
     Maj2,
+    Min3,
+    Maj3,
+    Perfect4,
+    Tritone,
+    Perfect5,
+    Min6,
+    Maj6,
+    Min7,
+    Maj7,
+    Octave,
 }
 
 impl Interval {
+    fn cents(&self) -> Cents {
+        self.semitones() as f64 * SEMITONE_CENTS
+    }
     fn semitones(&self) -> Semitones {
         use Interval::*;
         match self {
+            Unison => 0,
             Min2 => 1,
             Maj2 => 2,
+            Min3 => 3,
+            Maj3 => 4,
+            Perfect4 => 5,
+            Tritone => 6,
+            Perfect5 => 7,
+            Min6 => 8,
+            Maj6 => 9,
+            Min7 => 10,
+            Maj7 => 11,
+            Octave => 12,
         }
     }
 }

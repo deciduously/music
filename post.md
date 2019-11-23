@@ -14,11 +14,15 @@ TODO TESTS THROUGHOUT
 
 *- [Winona Ryder](https://en.wikipedia.org/wiki/Winona_Ryder) as [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk) on [SNL](https://en.wikipedia.org/wiki/Saturday_Night_Live)'s [Celebrity Rock 'N' Roll Jeopardy!](https://en.wikipedia.org/wiki/Celebrity_Jeopardy!_(Saturday_Night_Live)) - [2002](https://en.wikipedia.org/wiki/2002) - [YouTube](https://youtu.be/R3V94ZtmdbQ?t=190)*
 
-Let's channel that wacky energy.  In this post, we'll throw something [random](https://en.wikipedia.org/wiki/Random_number_generation) into, well, a [math-oven](https://en.wikipedia.org/wiki/Subroutine) and [*viola*](https://en.wikipedia.org/wiki/Viola), [music](https://en.wikipedia.org/wiki/Music)!
+Let's channel that wacky energy.  In this post, we'll throw something [random](https://en.wikipedia.org/wiki/Random_number_generation) into, well, a [math](https://en.wikipedia.org/wiki/Mathematics)-[oven](https://en.wikipedia.org/wiki/Subroutine) and [*viola*](https://en.wikipedia.org/wiki/Viola), [music](https://en.wikipedia.org/wiki/Music)!
 
 In other words, we're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://www.rust-lang.org/), backed by a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).
 
-The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover image [procedurally generates](https://en.wikipedia.org/wiki/Procedural_generation) a melody.  The melody produced will be composed of notes along a single octave of a hardcoded scale.  By the end of this post we'll have written a program that can procedurally generate music in number of different kinds of musical scale spanning up and down a whole keyboard, as well play [hand-authored](https://en.wikipedia.org/wiki/Musical_composition) songs created with a rudimentary [notation system](https://en.wikipedia.org/wiki/Musical_notation).
+The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover image [procedurally generates](https://en.wikipedia.org/wiki/Procedural_generation) a [melody](https://en.wikipedia.org/wiki/Melody) using [tools assumed to be present](https://en.wikipedia.org/wiki/Unix_philosophy) on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu).  The melody produced will be composed of notes along a single [octave](https://en.wikipedia.org/wiki/Octave) of a hardcoded [scale](https://en.wikipedia.org/wiki/Scale_(music)).
+
+{% youtube uLhQQSKhTok %}
+
+By the end of this post we'll have written a program that can procedurally generate music in number of different kinds of musical scale spanning up and down a whole [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard), as well play [hand-authored](https://en.wikipedia.org/wiki/Musical_composition) songs created with a rudimentary [notation system](https://en.wikipedia.org/wiki/Musical_notation), that compiles and runs on [Windows](https://en.wikipedia.org/wiki/Microsoft_Windows), [MacOS](https://en.wikipedia.org/wiki/MacOS), or Linux with no code modification.
 
 [¡Vámonos!](https://en.wikipedia.org/wiki/Party)
 
@@ -44,12 +48,14 @@ The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover im
 
 ## Preamble
 
+This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) who are comfortable solving problems with at least one [imperative language](https://en.wikipedia.org/wiki/Imperative_programming).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).
+
+There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) Rust throughout this write-up, but don't worry if that's not what you're here for.  You can choose to skip all the code snippets entirely or just skim them for the language-agnostic logic and still come out knowing how it all works.  Rust tends to get verbose, but one positive side-effect of that [verbosity](https://en.wikipedia.org/wiki/Verbosity) is that at least the core of what this code does should be easy to follow even much familiarity with the language.
+
 I have two disclaimers:
 
-1. [There are](https://en.wikipedia.org/wiki/Existence) [102](https://en.wikipedia.org/wiki/102_(number)) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Blog).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
-1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](hhttps://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
-
-This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) who are comfortable solving problems with at least one [imperative language](https://en.wikipedia.org/wiki/Imperative_programming).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the basic building blocks of building a program.  There's a large amount of fairly idiomatic Rust throughout this write-up, but don't worry if that's not what you're here for.  My aim is that you can choose to skip all the code snippets entirely, or just skim for the language-agnostic logic, and still find this guide useful.  Rust tends to get verbose, but one side-effect of that [verbosity](https://en.wikipedia.org/wiki/Verbosity) is that this code should be readable and easy to follow even without a ton of familiarity going in.
+1. [There are](https://en.wikipedia.org/wiki/Existence) [129](https://en.wikipedia.org/wiki/129_(number)) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Blog).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
+1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
 
 ## The Meme
 
@@ -57,21 +63,17 @@ This post was inspired by this meme:
 
 ![the meme](https://i.redd.it/uirqnamnjpz31.jpg)
 
-Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) one-liner at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
+Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
 
 ```bash
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
 ```
 
-Here's a step-by-step video demonstration of that [pipeline](https://en.wikipedia.org/wiki/Pipeline_%28Unix%29) in sequence:
-
-{% youtube uLhQQSKhTok %}
-
 The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this one, but that's not to discredit it at all as a great source of information.  That write-up and Wikipedia were all I needed to complete this translation, and I had absolutely not a clue how this whole thing worked going in.  Reading that post and writing this program taught me a lot of the concepts I'm about to walk through for the first time.
 
 If you'd like the challenge of implementing this yourself blind, _stop right here_. Read just that post and try to build this yourself in the language of your choice.  Come back here when you get stuck.  This should all apply to whatever you've got going on by then unless you've gone real funky with it - in which case, show me what you got!  Sounds cool.
 
-I've gotta be honest - I didn't even try the `bash` myself.  I'm not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does in this post, and I'm not going to elaborate on what any of the specific commands in the pipeline mean.  This post is about the pure Rust solution.  Nevertheless, it serves as a solid [roadmap](https://en.wikipedia.org/wiki/Plan).  Each command of this pipeline calls out to some other tool present on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) to perform a series of operations:
+I've gotta be honest - I didn't even try the `bash` myself.  I'm not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does exactly in this post, and I'm not going to elaborate on what any of the specific commands in the pipeline mean.  This post is about the pure Rust solution.  Nevertheless, it serves as a solid [roadmap](https://en.wikipedia.org/wiki/Plan):
 
 1. `cat /dev/urandom`: Get a stream of random binary data.
 1. `hexdump -v -e '/1 "%u\n"'`: Convert binary to 8-bit base-10 integers (0-255).
@@ -88,7 +90,7 @@ for (i = 0; i < 1; i += 0.0001)
            100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))
 ```
 
-This is probably still not too helpful for most.  There's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) (oh, my) - and its written in freakin' [`AWK`](https://en.wikipedia.org/wiki/AWK).  Don't despair if this still doesn't mean much (or literally anything) to you.  We're going to model this problem from the ground up in [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)).  Through the process of modelling each component their relationships this logic will become crystal clear - you'll be able to read and understand this whole one-liner just fine at the end - and we'll be able to extend a lot further with minimal effort.
+This is probably still not too helpful at first glance unless you already kind of know what's going on - I sure didn't.  There's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) (oh, my) - and its written in freakin' [`AWK`](https://en.wikipedia.org/wiki/AWK).  Don't despair if this still doesn't mean much (or literally anything) to you.  We're going to model this problem from the ground up in [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)).  Through the process of modelling each component their relationships this logic will become crystal clear - you'll be able to read and understand this whole one-liner just fine at the end - and we'll be able to extend a lot further with minimal effort.
 
 We can glean a bit of information at a glance, though, and depending on your current comfort with this domain you may be able to kind of understand the general idea here.  It looks like we're going to tick up floating point values by ten-thousandths from zero to one (`for (i = 0; i < 1; i += 0.0001)`), and do... I don't know, some math and stuff on each value based on the list `[0,2,4,5,7,9,11,12]`: `100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))` .  After we do the math, we're going to print it out as an 8-digit hex number: `printf("%08X\n",math())` - this [`printf`](https://en.wikipedia.org/wiki/Printf_format_string) formatter means we want a [0-padded](https://en.wikipedia.org/wiki/Npm_(software)#Notable_breakages) number that's 8 digits long in [upper-case](https://en.wikipedia.org/wiki/Letter_case) [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal).  The [base 10](https://en.wikipedia.org/wiki/Decimal) integer [`42`](https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_(42)) would be printed as `0000002A`.
 
@@ -178,6 +180,8 @@ The standard unit for frequency is the [Hertz](https://en.wikipedia.org/wiki/Her
 
 ![cycle gif](https://media.giphy.com/media/F5rQlfTXqCJ8c/giphy.gif)
 
+Recall above that we saw we're going to run a loop like this:  `for (i = 0; i < 1; i += 0.0001)`.  If one were to, say, generate all the points along a single cycle of a sine wave like this one, it sure seems like this loop could get the job done.
+
 In simple cases, a sound at a specific pitch is a result of that sound's frequency.  The higher the frequency, or closer together the peaks, the higher the pitch.
 
 ![frequency](https://upload.wikimedia.org/wikipedia/commons/e/ea/Wave_frequency.gif)
@@ -235,21 +239,47 @@ Note how each octave starts at C, not A, so A4 is actually higher in pitch than 
 
 ##### Scales
 
-A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  The smallest of these intervals on a piano (and most of Western music) is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second or half step.  Take a look back at that piano diagram above - one semitone is the distance between an adjacent white key and black key.  A *whole* step, or a [major second](https://en.wikipedia.org/wiki/Major_second), is equal to two of semitones, or two adjacent white keys that pass over a black key.  For now these are the only intervals we'll need:
+A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  The smallest of these intervals on a piano (and most of Western music) is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second or half step.  Take a look back at that piano diagram above - one semitone is the distance between an adjacent white key and black key.  A *whole* step, or a [major second](https://en.wikipedia.org/wiki/Major_second), is equal to two of semitones, or two adjacent white keys that pass over a black key.  There's a name for [each interval](https://en.wikipedia.org/wiki/Interval_(music)#Main_intervals) of semitones in an octave:
 
 ```rust
 #[derive(Debug, Clone, Copy)]
 enum Interval {
+    Unison,
     Min2,
     Maj2,
+    Min3,
+    Maj3,
+    Perfect4,
+    Tritone,
+    Perfect5,
+    Min6,
+    Maj6,
+    Min7,
+    Maj7,
+    Octave,
 }
+```
 
+We can map each variant to semitones:
+
+```rust
 impl Interval {
     fn semitones(&self) -> Semitones {
         use Interval::*;
         match self {
+            Unison => 0,
             Min2 => 1,
             Maj2 => 2,
+            Min3 => 3,
+            Maj3 => 4,
+            Perfect4 => 5,
+            Tritone => 6,
+            Perfect5 => 7,
+            Min6 => 8,
+            Maj6 => 9,
+            Min7 => 10,
+            Maj7 => 11,
+            Octave => 12,
         }
     }
 }
@@ -288,8 +318,23 @@ Beyond the twelve 12 semitones in an octave, each semitone is divided into 100 [
 type Cents = f64;
 type Semitones = u8;
 const SEMITONE_CENTS: Cents = 100.0;
-const OCTAVE_SEMITONES: Semitones = 12;
+const OCTAVE_SEMITONES: Semitones = 12; // TODO REMOVE
 const OCTAVE_CENTS: Cents = SEMITONE_CENTS * OCTAVE_SEMITONES as f64;
+```
+
+Now we can map intervals to cents:
+
+TODO this should also be a From block
+
+```diff
+  impl Interval {
++     fn cents(&self) -> Cents {
++         self.semitones() as f64 * SEMITONE_CENTS
++     }
+      fn semitones(&self) -> Semitones {
+          // ..
+      }
+  }
 ```
 
 Remember how Middle C was some crazy fraction, 261.626?  This is because cents are a [logarithmic](https://en.wikipedia.org/wiki/Logarithmic_scale) unit, standardized around the point 440.0.  Because of equal temperament, this 2:1 ratio holds for arbitrarily smaller intervals than octaves as well, where the math isn't always so clean.  Doubling this will get 880.0Hz, every time, but how would we add a semitone?  It's 100 cents, nice and neat, and there are 12 semitones - so we'd need to increase by a 12th of what doubling the number would do: `440 * 2^(1/12)`.  Looks innocuous enough, but my calculator gives me 466.164, Rust gives me 466.1637615180899 - not enough to perceptually matter, but enough that it's important that the standard is the interval ratio and not the specific amount of Hertz to add or subtract.  Those amounts will only be precise in floating point decimal representations at exact octaves from the base note, because that's integral factor after multiplying by 1 in either direction, 2 or 1/2.
@@ -364,7 +409,7 @@ fn main() {
 
 ##### Scientific Pitch Notation
 
-Armed with this knowledge, we can start manipulating pitches in terms of [Scientific Pitch Notation](https://en.wikipedia.org/wiki/Scientific_pitch_notation), another fancy name for a simple concept.  The piano keybaord above was labelled according to this standard, and it's where we get "A4" from.  A note is composed of three components.  There the note:
+Armed with this knowledge, we can start manipulating pitches in terms of [Scientific Pitch Notation](https://en.wikipedia.org/wiki/Scientific_pitch_notation), another fancy name for a simple concept.  The piano keybaord above was labelled according to this standard, and it's where we get "A4" from.  A note is composed of three components.  Theres a note:
 
 ```rust
 #[derive(Debug)]
@@ -377,47 +422,50 @@ enum Note {
     F,
     G,
 }
+
+impl Default for Note {
+    fn default() -> Self {
+        Note::C
+    }
+}
 ```
 
-There's optionally one of three modifiers, called `accidentals`:
+There's optionally a `♭` or `#` modifier which lower or raise the note by one semitone, respectively.  These are called [`accidentals`](https://en.wikipedia.org/wiki/Accidental_(music)):
 
 ```rust
 #[derive(Debug)]
 enum Accidental {
     Flat,
-    Natural,
     Sharp,
 }
 ```
 
-A given pitch has one of each:
+There is a character for "natural", `♮`, which cancels this out but to represent a pitch in data we don't need it - that's a string-parsing concern.  The natural symbol is generally used for overriding a [key signature](https://en.wikipedia.org/wiki/Key_signature), which defines the default accidental for all the notes within a scale on [sheet music](https://en.wikipedia.org/wiki/Staff_(music)).  There are a series of accidentals on the margin of the staff that apply to all notes, which is how we ensure we play notes within a single given scale, or [key](https://en.wikipedia.org/wiki/Key_(music)).  However, you may choose to compose a melody that contains a note outside this key.  To cancel it for one written note,  you can write `F♮`.  Our data representation would just store an F in this case, though.
+
+A given pitch tracks each component:
 
 ```rust
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct SPN {
-    accidental: Accidental,
+    accidental: Option<Accidental>,
     note: Note,
     octave: u8,
 }
 ```
 
-The base of this system is defined as C0, with a set frequency:
+The `Default` implementation that the compiler derives from this code corresponds to the official base pitch of this system, C0.  We can use `SPN::default()` to procure one - here's a [playground link](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=dca4808334d51474c03a993bc1f97c03):
+
+```rust
+println!("{:?}", SPN::default()); // SPN { accidental: None, note: C, octave: 0 }
+```
+
+It's defined at a set frequency:
 
 ```rust
 const C_ZERO: Hertz = 16.352;
-
-impl Default for SPN {
-    fn default() -> Self {
-        Self {
-            accidental: Accidental::Natural,
-            note: Note::C,
-            octave: u8::default(),
-        }
-    }
-}
 ```
 
-This is super low - most humans bottom out around 20Hz.  The 88-key piano doesn't even start until A0Note how even though this is a different abstraction for working with pitches, the frequencies baked in to the standard are still pinned to the A440 scale.  Do a quick sanity check before abstracting further:
+This is super low - most humans bottom out around 20Hz.  The 88-key piano's lowest note is up at A0, a 9-semitone [`major sixth`](https://en.wikipedia.org/wiki/Major_sixth) higher.  Note how even though this is a different abstraction for working with pitches, the frequencies baked in to the standard are still pinned to the A440 scale.  Do a quick sanity check before abstracting further:
 
 ```rust
 fn main() {
@@ -432,55 +480,13 @@ fn main() {
 
 Oof.  Damn floating point numbers.  Luckily, even being off by a full Hertz at 440 (~4 cents) is less than the just-noticeable difference of ~5-6 cents, so within the ranges we're working with, that's not wrong enough to care.
 
-We can get them from strings with `std::str::FromStr`:
+We can get them from strings with `std::str::FromStr`.  We should reduce notation like `E#` to `F` as well - there's no such thing as `E#`, in our diatonic scale `E` and `F` are only separated by a semitone.
 
 ```rust
-impl FromStr for PianoKey {
-    type Err = io::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use io::{Error, ErrorKind::*};
-        // Verify it's a 2-character string
-        if s.len() != 2 {
-            return Err(Error::new(InvalidInput, "Must be two characters long"));
-        }
-        let mut chars = s.chars();
-        // Grab the note value - first character of string
-        if let Some(note) = chars.next() {
-            let char_note = note as char;
-            if !char_note.is_uppercase() {
-                // Reject anything outside [A-Z]
-                Err(Error::new(InvalidData, "First character must be an uppercase letter"))
-            } else if let Some(octave) = chars.next() {
-                // Grabbed octave value - second and final character of string
-                // Turn octave to integer
-                let integer_octave = octave as u8 - b'0';
-                if integer_octave > 8 {
-                    // Reject anything outside [0-8]
-                    return Err(Error::new(InvalidData, "Second character must be 0-8"));
-                }
-                // Turn note to integer
-                let integer_note = char_note as u8 - b'A';
-                // Make sure its a real note
-                if integer_note <= 8 {
-                    // Success!!
-                    Ok(PianoKey::new(integer_note, integer_octave))
-                } else {
-                    Err(Error::new(InvalidData, "First character must be A-G"))
-                }
-            } else {
-                Err(Error::new(InvalidInput, "Must be two characters long"))
-            }
-        } else {
-            Err(Error::new(NotFound, "Input cannot be empty"))
-        }
-    }
-}
 ```
 
-This has some error checking to make sure we get a valid key, doesn't handle the special cases where `0` and `8` are not actually full octaves - for this demonstration I'm sticking to the middle of the keyboard where it doesn't matter, but you'll want to address that correctly if you build out form this example!  Refer to the diagram for specifics. The [`regex`](https://docs.rs/regex/1.3.1/regex/) crate for representing [regular expressions](https://en.wikipedia.org/wiki/Regular_expression) might come in handy.
-
-Next, we need a way to convert a `PianoKey` to a `Pitch`:
+Next, we need a way to convert this `SPN` struct to a `Pitch`:
 
 ```rust
 
@@ -505,6 +511,7 @@ Seven hops gets you to eight pitches including the first and last.  Adding a set
 // TODO Go back and compare with the original AWK/one-liner
 // TODO Authoring - Pest? - just take separated characters - accept either Unicode flat OR some other character - you can use 'b', because only the first character is matching a note.  For sharp, ASCII 35 '#' is fine to demand.  Add a character for 
 // TODO dependent types could verify scale intervals
+// TODO after moving all helper code and edit code and stuff, see if this file can be literate?
 
 ##### Diatonic Modes
 
@@ -570,11 +577,13 @@ Okay, Ben.  Ben, okay.  Okay, Ben.  That's the version from the blog post, great
 split("4,5,7,11",a,",");
 ```
 
-This is called a [pentatonic scale](https://en.wikipedia.org/wiki/Pentatonic_scale), as opposed to a diatonic scale, as it only has five tones per octave defined by four intervals.  These tones are further apart than a major second - we're going to need some more intervals:
+This is called a [pentatonic scale](https://en.wikipedia.org/wiki/Pentatonic_scale), as it only has five tones per octave defined by four intervals.  The diatonic scales we've been working with are a subset of the [heptatonic scales](https://en.wikipedia.org/wiki/Heptatonic_scale), with seven notes each.  These tones are naturally further apart than we've been using - we're going to need some more intervals - I'm just going to go ahead and toss in the [full set](https://en.wikipedia.org/wiki/Interval_(music)#Main_intervals):
 
 ```rust
 
 ```
+
+Two identical notes are called a [unison](https://en.wikipedia.org/wiki/Unison), with 0 cents.  These intervals are defined within a single octave, so any of them apply across octaves as well - A4 and A5 are in unison just like A4 and another A4, and C4 and A5 is still a major sixth.  The terms "major", "minor", and "perfect" are not arbitrary, but that discussion is outside the scope of this post.  I will note that the [tritone](https://en.wikipedia.org/wiki/Tritone), representing 3 whole tones or 6 semitones like `F-B`, is the only one that's none of the three.  If you're into the mathy, music theory pattern parts of this exploration, I recommend [harmony]/[dissonance](https://en.wikipedia.org/wiki/Consonance_and_dissonance) for your next rabbit hole.  The tritone takes a leading role, and to hear it in action you should check out what the [Locrian mode](https://en.wikipedia.org/wiki/Locrian_mode) we defined sounds like with this program.  The C major scale has, well, a perfect fifth at the fifth position, and the Locrian mode has a tritone.
 
 This scale actually corresponds to playing just the black keys on a piano, skipping all the white keys.
 
@@ -594,8 +603,7 @@ TODO Rick & Morty "Human Music" gif
 
 * Port this to your favorite programming language (second favorite if that's already Rust).
 * Add more scales.
-* Parse sequences of keys to author music.
 * Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation)
+* Support authoring note sequences with variable durations
 
-*Body images are wikimedia commons unless otherwise specified*
-*Cover image from some subreddit, I don't remember*
+*Cover image: [reddit](https://www.reddit.com/r/linuxmasterrace/comments/dyqri7/like_god_would_have_wanted/)*
