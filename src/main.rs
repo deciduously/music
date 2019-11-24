@@ -1,5 +1,12 @@
+use core::{convert::TryInto, time::Duration};
 use rand::random;
-use std::ops::{AddAssign, Div};
+use rodio::{default_output_device, source::SineWave};
+use std::{
+    f32,
+    f64::consts::PI,
+    fmt,
+    ops::{AddAssign, Div},
+};
 
 #[derive(Default)]
 struct RandomBytes;
@@ -21,6 +28,8 @@ impl Iterator for RandomBytes {
 type Hertz = f64;
 const STANDARD_PITCH: Hertz = 440.0;
 const C_ZERO: Hertz = 16.352;
+const MIDDLE_C: Hertz = 261.626;
+const SAMPLE_RATE: Hertz = 44_100.0;
 
 struct Cents(f64);
 struct Semitones(i8);
@@ -75,10 +84,32 @@ enum Accidental {
     Sharp,
 }
 
+impl fmt::Display for Accidental {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Accidental::*;
+        let acc_str = match self {
+            Flat => "♭",
+            Sharp => "#",
+        };
+        write!(f, "{}", acc_str)
+    }
+}
+
 #[derive(Default, Debug, Clone, Copy)]
 struct Note {
     accidental: Option<Accidental>,
     letter: NoteLetter,
+}
+
+impl fmt::Display for Note {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let acc_str = if let Some(a) = self.accidental {
+            format!("{}", a)
+        } else {
+            "".to_string()
+        };
+        write!(f, "{:?}{}", self.letter, acc_str)
+    }
 }
 
 #[derive(Default, Debug, Clone, Copy)]
@@ -92,6 +123,12 @@ impl StandardPitch {
         Self::default()
     }
     //fn get_offset()
+}
+
+impl fmt::Display for StandardPitch {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}{}", self.note, self.octave)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -114,6 +151,7 @@ impl Default for Pitch {
 }
 
 impl AddAssign<Cents> for Pitch {
+    #[allow(clippy::suspicious_op_assign_impl)]
     fn add_assign(&mut self, cents: Cents) {
         self.frequency *= 2.0f64.powf((cents / Cents::from(Interval::Octave)).into())
     }
@@ -133,7 +171,29 @@ impl AddAssign<Interval> for Pitch {
 
 impl From<StandardPitch> for Pitch {
     fn from(sp: StandardPitch) -> Self {
-        Pitch::default()
+        let mut ret = Pitch::default();
+        // TODO
+        ret
+    }
+}
+
+impl From<Pitch> for StandardPitch {
+    fn from(p: Pitch) -> Self {
+        let mut ret = StandardPitch::default();
+        //let (interval, octaves) = ret.get_offset()
+        unimplemented!()
+    }
+}
+
+impl From<Pitch> for f64 {
+    fn from(pitch: Pitch) -> Self {
+        pitch.frequency
+    }
+}
+
+impl From<Pitch> for SineWave {
+    fn from(p: Pitch) -> Self {
+        SineWave::new(f64::from(p) as u32)
     }
 }
 
@@ -217,6 +277,12 @@ enum Scale {
     Diatonic(Mode),
 }
 
+impl Default for Scale {
+    fn default() -> Self {
+        Scale::Diatonic(Mode::Ionian)
+    }
+}
+
 impl Scale {
     fn get_intervals(self) -> &'static [Interval] {
         // TODO this needs to be a method, come here next!
@@ -240,12 +306,7 @@ impl Scale {
 }
 
 fn main() {
-    let mut pitch = Pitch::new(C_ZERO);
-    println!("{:?}", pitch); // Pitch { frequency: 16.352 }
-    for _ in 0..4 {
-        pitch += Semitones::from(Interval::Octave);
-    } // add 4 octaves - C0 -> C4
-    println!("{:?}", pitch); // Pitch { frequency: 261.632 }
-    pitch += Interval::Maj6; // C4 -> A4
-    println!("{:?}", pitch); // Pitch { frequency: 440.010821831319 } // close enough
+    let device = default_output_device().unwrap();
+    let source = SineWave::from(Pitch::default());
+    rodio::play_raw(&device, source);
 }

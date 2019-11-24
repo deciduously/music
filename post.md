@@ -8,8 +8,6 @@ tags: beginners, rust, tutorial, music
 
 # Everything Is Music
 
-TODO TESTS THROUGHOUT
-
 > Everything is music. When I go home, I throw knickers in the oven and it's music. Crash, boom, bang!
 
 *- [Winona Ryder](https://en.wikipedia.org/wiki/Winona_Ryder) as [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk) on [SNL](https://en.wikipedia.org/wiki/Saturday_Night_Live)'s [Celebrity Rock 'N' Roll Jeopardy!](https://en.wikipedia.org/wiki/Celebrity_Jeopardy!_(Saturday_Night_Live)) - [2002](https://en.wikipedia.org/wiki/2002) - [YouTube](https://youtu.be/R3V94ZtmdbQ?t=190)*
@@ -22,7 +20,15 @@ The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover im
 
 {% youtube uLhQQSKhTok %}
 
-By the end of this post we'll have written a fully cross-platform program that can procedurally generate music in number of different kinds key spanning up and down a whole [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard), as well play [hand-authored](https://en.wikipedia.org/wiki/Musical_composition) songs created with a rudimentary [notation system](https://en.wikipedia.org/wiki/Musical_notation).
+By the end of this post our program will:
+
+1. Run fully cross-platform without extra effort or code changes, not just specifically-configured Linux.
+1. Support a full range of keys of different types.
+1. Use the whole [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard).
+1. Produce any arbitrary tone we ask for.
+1. Encourage further extension with lots of Rust-y goodness.
+
+However, at the end of the day, it's just the thing in the cover image.
 
 [¡Vámonos!](https://en.wikipedia.org/wiki/Party)
 
@@ -58,8 +64,10 @@ There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_
 
 I have two disclaimers:
 
-1. [There are](https://en.wikipedia.org/wiki/Existence) [146](https://en.wikipedia.org/wiki/146_(number)) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Bostonn) [alone](https://en.wikipedia.org/wiki/Element_(mathematics)).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
+1. [There are](https://en.wikipedia.org/wiki/Existence) [182](https://en.wikipedia.org/wiki/182_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Bostonn), [149][https://en.wikipedia.org/wiki/149_(number)] [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
 1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
+
+Also, for *cough* brevity, there's no tests and there should and could be.
 
 ## The Meme
 
@@ -69,13 +77,13 @@ This post was inspired by [this](https://www.reddit.com/r/linuxmasterrace/commen
 
 ![the meme](https://i.redd.it/uirqnamnjpz31.jpg)
 
-I (evidently) couldn't let myself just scroll past that one.  Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
+I (evidently, ~6k words later) couldn't let myself just scroll past that one.  Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
 
 ```bash
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
 ```
 
-The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this one, but that's not to discredit it at all as a great source of information.  That write-up and Wikipedia were all I needed to complete this translation, and I had absolutely not a clue how this whole thing worked going in.  Reading that post and writing this program taught me a lot of the concepts I'm about to walk through for the first time.
+The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this one, but that's not to discredit it at all as a great source of information.  That write-up and Wikipedia were all I needed to complete this translation, and I had absolutely not a clue how this whole thing worked going in.
 
 I've gotta be honest - I didn't even try the `bash` and immediately dove into the pure Rust solution.  Nevertheless, it serves as a solid [30,000ft](https://en.wikipedia.org/wiki/Flight_level) [roadmap](https://en.wikipedia.org/wiki/Plan):
 
@@ -106,23 +114,16 @@ $ cargo new music
 Open that directory in the environment of your choice.  We'll use three crates to replace the functionality not (quickly) found in the Rust standard library:
 
 * [`rand`](https://docs.rs/rand/0.7.2/rand/) - [Random number generation](https://en.wikipedia.org/wiki/Random_number_generation)
-* [`hound`](https://github.com/ruuda/hound) - [WAV stream creation](https://en.wikipedia.org/wiki/WAV)
-* [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [WAV stream playback](https://en.wikipedia.org/wiki/Audio_signal)
+* [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [Audio signal processing](https://en.wikipedia.org/wiki/Audio_signal)
 
-`rand` is in place of [`cat /dev/urandom`](https://en.wikipedia.org/wiki//dev/random), and `hound`/`rodio` will cover [`aplay`](https://linux.die.net/man/1/aplay).  We also use two other crates for quality-of-life Rust stuff:
-
-* [`lazy_static`](https://github.com/rust-lang-nursery/lazy-static.rs) - [Static](https://en.wikipedia.org/wiki/Static_variable) values with [runtime](https://en.wikipedia.org/wiki/Runtime_(program_lifecycle_phase)) [initialization](https://en.wikipedia.org/wiki/Initialization_(programming))
-* [`regex`](https://docs.rs/regex/1.1.0/regex/) - [Regular expressions](https://en.wikipedia.org/wiki/Regular_expression)
+`rand` is in place of [`/dev/urandom`](https://en.wikipedia.org/wiki//dev/random) and `hexdump`, and `rodio` will cover [`xxd`](https://www.systutorials.com/docs/linux/man/1-xxd/) and [`aplay`](https://linux.die.net/man/1/aplay).  For the rest - step three - we'll just use the standard library.
 
 In `Cargo.toml`:
 
 ```toml
 [dependencies]
 
-hound = "3.4"
-lazy_static = "1.4"
 rand = "0.7"
-regex = "1.3"
 rodio = "0.10"
 ```
 
@@ -162,9 +163,7 @@ fn main() {
 }
 ```
 
-Give that a go with `cargo run` - whee.  There it is.  Random integers 0-255 until you kill the process.  Now delete the whole thing, top to bottom, we're not going to use any of that.  Sorry.  That was a little mean, I know.  We're going to use this crate to introduce randomness later on, don't worry, but first we have to get some fundamentals out of the way if we're gonna get this thing done right.  At least you spent a little less time than I did in this particular rabbit hole, and now we see we don't need no Linux [userland](https://en.wikipedia.org/wiki/User_space) tools.
-
-I promise that's the only [red herring](https://en.wikipedia.org/wiki/Red_herring), the rest of the code you should actually add to your file.
+Give that a go with `cargo run` - exciting stuff.  You should see random integers 0-255 until you kill the process.  Don't lose this but forget about it for now.  We're going to use it to introduce randomness at the end, don't worry, but first we have to get some fundamentals out of the way if we're gonna get this thing done right.
 
 ### Mapping Bytes To Notes
 
@@ -201,9 +200,7 @@ Sound propagates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](
 
 ![sine waves](https://upload.wikimedia.org/wikipedia/commons/6/6d/Sine_waves_different_frequencies.svg)
 
-If you're thinking *but Ben, you CAN mix component frequencies to represent sound waves as sine waves in fact we all do that all the time*, you're [correct in ways I don't personally fully understand](https://en.wikipedia.org/wiki/Signal_processing).  That's really cool stuff and a lot more complicated than what happens in this post.  If that was either turning you {off|on} to this, you can {start|stop} breathing normally.  There will be no signals processed here, just a single frequency [scalar](https://en.wikipedia.org/wiki/Variable_(computer_science)) we modulate.
-
-If the X axis is time, a sine wave represents a recurring action with an analog (or smooth) oscillation.  There are two interesting properties: the amplitude, which measures the deviation from the 0 axis at the peaks (how high the peaks are), and the frequency, which is how close together these peaks are, or how frequently this recurring thing happens.
+If the x-axis is time, a sine wave represents a recurring action with a smooth oscillation between peaks.  There are two interesting properties: the amplitude, which measures the deviation from the 0 axis at the peaks (how high the peaks are), and the frequency, which is how close together these peaks are, or how frequently this recurring thing happens.
 
 ##### Pitch
 
@@ -261,9 +258,32 @@ With this code we can use `Pitch::default()` to get our A440 pitch, or pass an a
 
 *[top](#table-of-contents)*
 
-Knowing what frequency to use to produce a given pitch is all well and good, but we need to actually make the sound.
+Knowing what frequency to use to produce a given pitch is all well and good, but we need to actually make the sound.  Wen we sing with our [voice](https://en.wikipedia.org/wiki/Human_voice), our [speech organs](https://en.wikipedia.org/wiki/Speech_organ) vibrate to produce complex multiple-component sound waves of differing frequencies.  We can get ourselves a little one-frequency "speechbox" that produces a wave programmatically instead of by physically vibrating.  To do so, we're going to [graph](https://en.wikipedia.org/wiki/Graph_of_a_function) a function of a single cycle of the target sine wave and [sample]((https://en.wikipedia.org/wiki/Sampling_(signal_processing))) it.
 
-TODO produce the flat tone - I think it's just gonna be 440*i*Pi
+We're going to do a little produce raw audio of this sine wave using [analog-to-digital conversion](https://en.wikipedia.org/wiki/Analog-to-digital_converter).  That's a super fancy term for something that isn't that complicated conceptually.  If you already know how we're doing this part, feel free to skip this explanation.
+
+A sine wave, as we've seen, is smooth.  However, what's a graph but a visualization of a function.  There's some function `mySineWave(x) = x` that's this wave when we put in a bunch of fractional numbers between *x* and *x*.  Each time we're back at `x` is the top of the circle - back at one, and it's gonna cycle at *x*Hz (by definition).  It stands to reason that at 0 time it'd be at the top, at .25 it'd be a quarter through, .125 an eight, etc ad infinitum.  The  `for (i = 0; i < 1; i += 0.0001)` loop is doing exactly that, calculating a series of adjacent points at a fixed interval (`0.0001`) that satisfy the function of this wave.  That's our analog-to-digital conversion  - we've taken something smooth, a sine wave, and made it digital, or made up of discrete points.
+
+There's a number of channels meaning is the number of frequencies - that's a cool jumping off point, but we're just working with one.  The sample rate is how many points to store each cycle, which is how high-fidelity this "digital snapshot" of the wave is.  Lots of applications use, [44.1KHz](https://en.wikipedia.org/wiki/44,100_Hz), is a standard sample rate [sample rate](https://en.wikipedia.org/wiki/Sampling_(signal_processing)#Sampling_rate) - a bit higher than 10KHz like the example.  According to the [sampling theorem](https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem), the threshold for ensuring you've captured a sufficient sample from an analog signal is that the sample rate must be greater than twice the frequency you you're sampling.  Humans can hear about 20Hz to 20,000Hz.  This means we need at least 40,000 samples, and 44,100 exceeds that.  I [don't understand](https://en.wikipedia.org/wiki/Transition_band) the reason for the specific 4.1k overage, but it's The Standard. Similarly, [16-bit samples](https://en.wikipedia.org/wiki/Audio_bit_depth) is commonly seen thing, so who am I to say otherwise.  The maximum amplitude this struct can represent is the maximum wave that fits in a 16-bit sample, because that's the biggest *x* will ever be in either direction - `1` or `-1`.
+
+This is going to be anti-climactic - we don't even need to call `sin()` ourselves.  We can just use [`rodio::source::SineWave`](https://docs.rs/rodio/0.10.0/rodio/source/struct.SineWave.html) and translate the parameter.  It locks you to an infinite 48KHz single-channel source at the frequency passed in.  Check out the source in the [library code](https://docs.rs/rodio/0.10.0/src/rodio/source/sine.rs.html#24) though (comment mine):
+
+```rust
+impl Iterator for SineWave {
+    type Item = f32;
+
+    #[inline]
+    fn next(&mut self) -> Option<f32> {
+        self.num_sample = self.num_sample.wrapping_add(1);
+
+        // Some value * 440.0 * (current sample / total samples)
+        let value = 2.0 * 3.14159265 * self.freq * self.num_sample as f32 / 48000.0;
+        Some(value.sin())
+    }
+}
+```
+
+This `impl Iterator` block is handling the `for` loop in the cover image.
 
 #### A Little Music Theory
 
@@ -500,6 +520,77 @@ fn main() {
 Armed with this knowledge, we can start manipulating pitches in terms of [Scientific Pitch Notation](https://en.wikipedia.org/wiki/Scientific_pitch_notation), another fancy name for a simple concept.  The piano keyboard above was labelled according to this standard - "A4" for example.  A standard pitch is composed of two components: a note from A-G with an optional accidental and a 0-indexed octave:
 
 ```rust
+
+#[derive(Default, Debug, Clone, Copy)]
+struct StandardPitch {
+    note: Note,
+    octave: u8,
+}
+```
+
+To show them, we just want to print them out next to each other - the first three should be `C C# D`:
+
+```rust
+impl fmt::Display for StandardPitch {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}{}", self.note, self.octave)
+    }
+}
+```
+
+The octave just starts at 0 and won't ever realistically rise above 255, so a `u8` is fine.  A note consists of a letter and optionally an accidental:
+
+```rust
+#[derive(Default, Debug, Clone, Copy)]
+struct Note {
+    accidental: Option<Accidental>,
+    letter: NoteLetter,
+}
+```
+
+For this one, we only want to display a character for an accidental if there's anything there:
+
+```rust
+impl fmt::Display for Note {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let acc_str = if let Some(a) = self.accidental {
+            format!("{}", a)
+        } else {
+            "".to_string()
+        };
+        write!(f, "{:?}{}", self.letter, acc_str)
+    }
+}
+```
+
+The accidental itself is a simple switch:
+
+```rust
+#[derive(Debug, Clone, Copy)]
+enum Accidental {
+    Flat,
+    Sharp,
+}
+
+impl fmt::Display for Accidental {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Accidental::*;
+        let acc_str = match self {
+            Flat => "♭",
+            Sharp => "#",
+        };
+        write!(f, "{}", acc_str)
+    }
+}
+```
+
+The [accidentals](https://en.wikipedia.org/wiki/Accidental_(music)) are represented in strings as `♭` for flat or `#` for sharp, which lower or raise the note by one semitone (or `Interval::Min2`) respectively.  This does produce 14 possible values for 12 possible semitones - the exceptions are wherever there's no black key in between two white keys.  `F♭` should parse as `E` and `B#` should parse as `C`.  Thankfully, we've already programmed it to do that!  // TODO have we??
+
+There is third accidental called "natural", `♮`, which cancels these out.  To represent a pitch in data we don't need it - that's a string-parsing concern.  The natural symbol is generally used for overriding a [key signature](https://en.wikipedia.org/wiki/Key_signature), which defines the default accidental for all the notes within a scale on [sheet music](https://en.wikipedia.org/wiki/Staff_(music)).  There are a series of accidentals on the margin of the staff that apply to all notes, which is how we ensure we play notes within a single given scale, or [key](https://en.wikipedia.org/wiki/Key_(music)).  However, you may choose to compose a melody that contains a note outside this key.  If we encounter something like `F#♮`, we just care that it's F.  In fact, we can stack accidentals as far as we want, we always just store the final net change in `StandardPitch`.
+
+As for `NoteLetter`:
+
+```rust
 #[derive(Debug, Clone, Copy)]
 enum NoteLetter {
     A,
@@ -516,38 +607,16 @@ impl Default for NoteLetter {
         NoteLetter::C
     }
 }
-
-#[derive(Debug, Clone, Copy)]
-enum Accidental {
-    Flat,
-    Sharp,
-}
-
-#[derive(Default, Debug, Clone, Copy)]
-struct Note {
-    accidental: Option<Accidental>,
-    letter: NoteLetter,
-}
-
-#[derive(Default, Debug, Clone, Copy)]
-struct StandardPitch {
-    note: Note,
-    octave: u8,
-}
 ```
 
 // TODO to/from Pitch here
 
 The notes are C-indexed, for better or for worse, so `Note::default()` should return that variant.  We'll talk more about why it's C and not A after learning about Modes below.   Don't worry, it's suitably disappointing.
 
-The [accidentals](https://en.wikipedia.org/wiki/Accidental_(music)) are represented in strings as `♭` for flat or `#` for sharp, which lower or raise the note by one semitone (or `Interval::Min2`) respectively.  This does produce 14 possible values for 12 possible semitones - the exceptions are wherever there's no black key in between two white keys.  `F♭` should parse as `E` and `B#` should parse as `C`.  Thankfully, we've already programmed it to do that!  // TODO have we??
-
-There is third accidental called "natural", `♮`, which cancels these out.  To represent a pitch in data we don't need it - that's a string-parsing concern.  The natural symbol is generally used for overriding a [key signature](https://en.wikipedia.org/wiki/Key_signature), which defines the default accidental for all the notes within a scale on [sheet music](https://en.wikipedia.org/wiki/Staff_(music)).  There are a series of accidentals on the margin of the staff that apply to all notes, which is how we ensure we play notes within a single given scale, or [key](https://en.wikipedia.org/wiki/Key_(music)).  However, you may choose to compose a melody that contains a note outside this key.  If we encounter something like `F#♮`, we just care that it's F.  In fact, we can stack accidentals as far as we want, we always just store the final net change in `StandardPitch`.
-
-For an octave, we won't ever realistically go more than 255 octaves, and we want to start with 0, so a `u8` primitive is fine.  The `Default` implementation that the compiler derives from this code corresponds to the official base pitch of this system, C0.  We can use `StandardPitch::default()` to procure one - here's a [playground link](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=dca4808334d51474c03a993bc1f97c03):
+Thanks to all the nested `Default` blocks, the `Default` implementation that the compiler derives for `StandardPitch` corresponds to the official base pitch of this system, `C0`.  We can use `StandardPitch::default()` to procure one - here's a [playground link](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=943967b13c8c3a5d02201b2adb509371):
 
 ```rust
-println!("{:?}", StandardPitch::default()); // StandardPitch { accidental: None, note: C, octave: 0 }
+println!("{}", StandardPitch::default()); // C0
 ```
 
 It's defined at a set frequency:
@@ -575,12 +644,6 @@ fn main() {
 
 Luckily, even being off by a full Hertz at 440 (~4 cents) is less than the just-noticeable difference of ~5-6 cents, so within the ranges we're working with that's not wrong enough to care.
 
-We can get them from strings with `std::str::FromStr`.  We should reduce notation like `E#` to `F` as well - there's no such thing as `E#`, in our diatonic scale `E` and `F` are only separated by a semitone.
-
-```rust
-
-```
-
 Scales are usually defined as an octave of intervals:
 
 ```rust
@@ -593,13 +656,8 @@ Seven hops gets you to eight pitches including the first and last.  Adding a set
 
 ```
 
-// TODO From/Into
-// TODO FromStr for Pitch that just calls StandardPitch::FromStr
-// TODO Traits for adding different types to pitches
 // TODO Scales that return an iterator of StandardPitch notes one octave long - THIS is where I'll talk about iterators - it should take a base note in StandardPitch and a length, return an Octave that's just a `Vec` or something with iter() on it?  and a definite end?
 // TODO Go back and compare with the original AWK/one-liner
-// TODO Authoring - Pest? - just take separated characters - accept either Unicode flat OR some other character - you can use 'b', because only the first character is matching a note.  For sharp, ASCII 35 '#' is fine to demand.  Add a character for 
-// TODO after moving all helper code and edit code and stuff, see if this file can be literate?  
 
 ##### Diatonic Modes
 
@@ -636,9 +694,9 @@ whole, whole, half, whole, whole, whole, half
 
 ```rust
 impl Mode {
-    fn base_intervals() -> Octave {
+    fn base_intervals() -> &'static [Interval] {
         use Interval::*;
-        [Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
+        &[Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
     }
 }
 ```
@@ -684,33 +742,11 @@ enum ScaleLength {
 }
 ```
 
-We need to tweak `Mode::base_intervals` - setting `Octave` like that is a little closed-minded:
-
-```diff
-- type Octave = [Interval; 7];
-  impl Mode {
--     fn base_intervals() -> Octave {
-+     fn base_intervals() -> &'static [Interval]
-          use Interval::*;
-+         &[Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
--         [Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
-      }
-  }
-```
-
-Instead of returning an [array](https://doc.rust-lang.org/std/primitive.array.html), we're returning a [slice](https://doc.rust-lang.org/std/slice/index.html).  We can give it a `'static` [lifetime](https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html) because it's very known at compile time - it's written right in the source.  We can guarantee it will remain static throughout runtime if it's compiled right in to the binary.
-
-We also need to update  `Scale`:
-
-```diff
-
-```
-
 // TODO dependent types could verify scale intervals
 
 The example in the cover image is called a [pentatonic scale](https://en.wikipedia.org/wiki/Pentatonic_scale), as it only has five tones per octave defined by four intervals.  The diatonic scales we've been working with are a subset of the [heptatonic scales](https://en.wikipedia.org/wiki/Heptatonic_scale), with seven notes each.  These tones are naturally further apart than we've been using - we're going to need some more intervals - I'm just going to go ahead and toss in the [full set](https://en.wikipedia.org/wiki/Interval_(music)#Main_intervals):
 
-Two identical notes are called a [unison](https://en.wikipedia.org/wiki/Unison), with 0 cents.  These intervals are defined within a single octave, so any of them apply across octaves as well - A4 and A5 are in unison just like A4 and another A4, and C4 and A5 is still a major sixth.  The terms "major", "minor", and "perfect" are not arbitrary, but that discussion is outside the scope of this post.  I will note that the [tritone](https://en.wikipedia.org/wiki/Tritone), representing 3 whole tones or 6 semitones like `F-B`, is the only one that's none of the three.  If you're into the mathy, music theory pattern parts of this exploration, I recommend [harmony](https://en.wikipedia.org/wiki/Harmony) for your next rabbit hole.  The tritone takes a leading role in [dissonance](https://en.wikipedia.org/wiki/Consonance_and_dissonance), and to hear it in action you should check out what the [Locrian mode](https://en.wikipedia.org/wiki/Locrian_mode) we defined sounds like with this program.  The C major scale has a perfect fifth, 5 semitones at the [dominant](https://en.wikipedia.org/wiki/Dominant_(music)) scale [degree](https://en.wikipedia.org/wiki/Degree_(music)) - and the Locrian mode has a tritone which is one extra semitone.
+Two identical notes are called a [unison](https://en.wikipedia.org/wiki/Unison), with 0 cents.  These intervals are defined within a single octave, so any of them apply across octaves as well - A4 and A5 are in unison just like A4 and another A4, and C4 and A5 is still a major sixth.  The terms "major", "minor", and "perfect" are not arbitrary, but that discussion is outside the scope of this post.  I will note that the [tritone](https://en.wikipedia.org/wiki/Tritone), representing 3 whole tones or 6 semitones like `F-B`, is the only one that's none of the three.  If interested, I recommend [harmony](https://en.wikipedia.org/wiki/Harmony) for your next rabbit hole.  The tritone takes a leading role in [dissonance](https://en.wikipedia.org/wiki/Consonance_and_dissonance), and to hear it in action you should check out what the [Locrian mode](https://en.wikipedia.org/wiki/Locrian_mode) we defined sounds like with this program.  The C major scale has a perfect fifth, 5 semitones at the [dominant](https://en.wikipedia.org/wiki/Dominant_(music)) scale [degree](https://en.wikipedia.org/wiki/Degree_(music)) - and the Locrian mode has a tritone which is one extra semitone.
 
 This scale actually corresponds to playing just the black keys on a piano, skipping all the white keys.
 
@@ -739,9 +775,11 @@ TODO Rick & Morty "Human Music" gif
 
 *[top](#table-of-contents)*
 
-* Port this to your favorite programming language (second favorite if that's already Rust).
-* Add more scales.
-* Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation)
-* Support authoring note sequences with variable durations
+- Implement `Chord`
+
+- Author your own music.  You'll find you already have a lot of this for free.
+- Add more scales.
+- Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation)
+- Port this to your favorite programming language (second favorite if that's already Rust).
 
 *Cover image: [reddit](https://www.reddit.com/r/linuxmasterrace/comments/dyqri7/like_god_would_have_wanted/)*
