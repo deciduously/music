@@ -840,6 +840,8 @@ Alright.  Back to the bytes.
 
 *[top](#table-of-contents)*
 
+![human music](https://thepracticaldev.s3.amazonaws.com/i/92xyu0xcenfmpvrf6kbq.gif)
+
 ### Listen To Your Files
 
 *[top](#table-of-contents)*
@@ -851,8 +853,6 @@ TODO maybe?  maybe not?
 ### Write Your Own Tunes
 
 *[top](#table-of-contents)*
-
-TODO Rick & Morty "Human Music" gif
 
 ## Challenges
 
