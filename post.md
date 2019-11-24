@@ -325,7 +325,7 @@ Now that we have a voice we can sing with we need to learn how to sing on key.  
 
 ![piano](https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Piano_Frequencies.svg/2560px-Piano_Frequencies.svg.png)
 
-The cyan key is Middle C, and A440 is highlighted in yellow.  The octaves on an 88-key piano are numbered as shown, so often A440 is simply denoted "A4" especially when dealing with a keyboard specifically.  You may own a tuner that marks 440Hz/A4 specifically if you're a musician.  This pitch is used for calibrating musical instruments and tuning a group, as well as a baseline constant for calculating frequencies.
+The cyan key is Middle C, and A440 is highlighted in yellow.  The octaves on an 88-key piano are numbered as shown, so often A440 is simply denoted "A4" especially when dealing with a keyboard.  You may own a tuner that marks 440Hz/A4 specifically if you're a musician.  This pitch is used for calibrating musical instruments and tuning a group, as well as a baseline constant for calculating frequencies.
 
 Note how each octave starts at C, not A, so A4 is actually higher in pitch than C4.  Octaves are "C-indexed" and base 8: `C D E F G A B C` is the base unmodified scale.
 
@@ -360,7 +360,7 @@ enum Interval {
 }
 ```
 
-Throughout this post I will tend towards over-specifying types like this - we only need `Min2` (half tone) and `Maj2` (whole tone) for now, but at least this way we have a full toolkit to work with should the need arise.  By including a numeric index with `Unison = 0`, each variant also gets assigned the next successive ID.  This way we can refer to each by name but also get an integer corresponding to the number of semitones when needed.  With this code we can use  `Interval::Octave as i8` to return `12_i8`.
+By including a numeric index with `Unison = 0`, each variant also gets assigned the next successive ID.  This way we can refer to each by name but also get an integer corresponding to the number of semitones when needed: `Interval::Maj2 as i8` returns `2_i8`.
 
 Clearly, there isn't a black key between every white key.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern all the way through.  The distribution pattern begins on C, but the keyboard itself starts at A0 and ends at C8.  A piano is thus designed because it can play music across the full range of diatonic stales.  This is where we get those base 8 sequences.
 
@@ -547,7 +547,6 @@ fn main() {
 Armed with this knowledge, we can start manipulating pitches in terms of [Scientific Pitch Notation](https://en.wikipedia.org/wiki/Scientific_pitch_notation), another fancy name for a simple concept.  The piano keyboard above was labelled according to this standard - "A4" for example.  A standard pitch is composed of two components: a note from A-G with an optional accidental and a 0-indexed octave:
 
 ```rust
-
 #[derive(Default, Debug, Clone, Copy)]
 struct StandardPitch {
     note: Note,
@@ -555,7 +554,7 @@ struct StandardPitch {
 }
 ```
 
-To show them, we just want to print them out next to each other - the first three should be `C C# D`:
+To show them, we just want to print them out next to each other - the first three should be `C0 C#0 D0`:
 
 ```rust
 impl fmt::Display for StandardPitch {
@@ -739,17 +738,17 @@ We've seen something like this somewhere before:
 split("0,2,4,5,7,9,11,12",a,",");
 ```
 
-What if we represent this octave as a series of offsets:
+What if we represent this octave as a series of semitone offsets from 440Hz:
 
 ```txt
 whole, whole, half, whole, whole, whole, half
   2  +  2   +  1  +   2   +  2  +   2  +  1
 0    2     4      5      7      9     11     12
 Un. Min2  Maj2  Perf4  Perf5   Maj6 Maj7   Octave
-C    D     E      F      G      A     B      C
+A4    B4   C4    D4     E4      F4   G4      A5
 ```
 
-Aha!  It's was a major scale over one octave this whole time.
+Aha!  It's was an A major scale over one octave this whole time.
 
 // TODO show generated major scale of intervals
 
@@ -772,15 +771,48 @@ Let's add a couple others scale lengths to play with:
 ```rust
 #[derive(Debug, Clone, Copy)]
 enum ScaleLength {
+    Tetratonic = 4,
     Pentatonic = 5,
     Heptatonic = 7,
     Chromatic = 12,
 }
 ```
 
-// TODO dependent types could verify scale intervals
+Interestingly, the scale shown is [tetratonic](https://en.wikipedia.org/wiki/Tetratonic_scale), given as octave-less notes, intervals from base, and offsets from A440:
 
-The example in the cover image is called a [pentatonic scale](https://en.wikipedia.org/wiki/Pentatonic_scale), as it only has five tones per octave defined by four intervals.  The diatonic scales we've been working with are a subset of the [heptatonic scales](https://en.wikipedia.org/wiki/Heptatonic_scale), with seven notes each.  These tones are naturally further apart than we've been using - we're going to need some more intervals - I'm just going to go ahead and toss in the [full set](https://en.wikipedia.org/wiki/Interval_(music)#Main_intervals):
+```txt
+[C#, D, E, G#]
+[Min2, Maj2, Maj3]
+[4, 5, 7, 11]
+```
+
+which is primarily associated with pre-historic music.  Maybe they spoke `AWK`?I also don't understand how that snippet works, because it's still indexed with `a[$1 % 8]`, but I'm too lazy to find out why.
+
+A more common variant is the [pentatonic scale](https://en.wikipedia.org/wiki/Pentatonic_scale), with 5 tones per octave.  The diatonic scales we've been working with are a subset of the [heptatonic scales](https://en.wikipedia.org/wiki/Heptatonic_scale), with seven notes each.  These tones are naturally further apart than we've been using.  There are a number of ways to construct a pentatonic scale, see the link for more, I'll just define one here:
+
+```txt
+[E♭, G♭, A♭, B♭, D♭]
+[Min3]
+[6, 9, 11, 13, 16]
+```
+
+This one is fun because it's what you get when you start at `E♭` and only play the *black* keys.  Like the major scales, this type of scale also has modes, one for each black key:
+
+```rust
+// TODO PENTATONIC MODES
+```
+
+The [chromatic scale](https://en.wikipedia.org/wiki/Chromatic_scale) is just all the notes:
+
+```txt
+[C, C#, D, D#, E, E#, F, F#, G, G#, A, A#, B]
+[Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2]
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+```
+
+Who needs key signatures anyhow, that's a waste of all these other keys!  This one throws 'em all in the mix.
+
+This could be a potential natural application of [dependent types](https://en.wikipedia.org/wiki/Dependent_type), a programming language feature that Rust does not support.  Few languages do, one example is the [Haskell](https://en.wikipedia.org/wiki/Haskell_(programming_language))-alike [Idris](https://en.wikipedia.org/wiki/Idris_(programming_language)#Dependent_types).  wherein we codify in the type system some restraint further than a type.  A simple example from wikipedia would be to let a function that appends a list of `m` elements to a list `n` specify as part of the return type for that the return value has length `m + n`.  A caller can then trust this fact implicitly, because the compiler won't build a binary if it's not true.  I think this could be applied here to verify that a scale's intervals method returns an octave, regardless of length.  That can be tested for now, but not encoded in the type directly.
 
 ##### Key
 
@@ -816,11 +848,11 @@ You know what else is a stream of bytes?  Literally everything else.  Who needs 
 
 TODO maybe?  maybe not?  
 
-TODO Rick & Morty "Human Music" gif
-
 ### Write Your Own Tunes
 
 *[top](#table-of-contents)*
+
+TODO Rick & Morty "Human Music" gif
 
 ## Challenges
 
