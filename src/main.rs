@@ -152,20 +152,20 @@ impl Default for Pitch {
 
 impl AddAssign<Cents> for Pitch {
     #[allow(clippy::suspicious_op_assign_impl)]
-    fn add_assign(&mut self, cents: Cents) {
-        self.frequency *= 2.0f64.powf((cents / Cents::from(Interval::Octave)).into())
+    fn add_assign(&mut self, rhs: Cents) {
+        self.frequency *= 2.0f64.powf((rhs / Cents::from(Interval::Octave)).into())
     }
 }
 
 impl AddAssign<Semitones> for Pitch {
-    fn add_assign(&mut self, semitones: Semitones) {
-        *self += Cents::from(semitones)
+    fn add_assign(&mut self, rhs: Semitones) {
+        *self += Cents::from(rhs)
     }
 }
 
 impl AddAssign<Interval> for Pitch {
-    fn add_assign(&mut self, i: Interval) {
-        *self += Cents::from(i)
+    fn add_assign(&mut self, rhs: Interval) {
+        *self += Cents::from(rhs)
     }
 }
 

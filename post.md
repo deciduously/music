@@ -1,7 +1,7 @@
 ---
 title: Teaching Numbers To Sing
 published: false
-description: Learn how to procedurally generate melodies in Rust.
+description: Learn how to procedurally generate melodies in a variety of keys with Rust.
 cover_image: https://thepracticaldev.s3.amazonaws.com/i/iuakwwcexql5u0th7gtm.jpg
 tags: beginners, rust, tutorial, music
 ---
@@ -22,11 +22,12 @@ The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover im
 
 By the end of this post our program will:
 
-1. Run fully cross-platform without extra effort or code changes, not just specifically-configured Linux.
 1. Support a full range of keys of different types.
 1. Use the whole [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard).
 1. Produce any arbitrary tone we ask for.
+1. Play back sequences recorded in a rudimentary [notation format](https://en.wikipedia.org/wiki/Musical_notation).
 1. Encourage further extension with lots of Rust-y goodness.
+1. Run fully cross-platform without extra effort or code changes, not just specifically-configured Linux.
 
 However, at the end of the day, it's just the thing in the cover image.
 
@@ -60,11 +61,11 @@ However, at the end of the day, it's just the thing in the cover image.
 
 This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and up) who are comfortable solving problems with at least one [imperative language](https://en.wikipedia.org/wiki/Imperative_programming).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).  You do not need any prior knowledge of physics or music theory, but there will be a tiny smattering of [elementary algebra](https://en.wikipedia.org/wiki/Elementary_algebra).  I promise it's quick.
 
-There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://www.rust-lang.org/) throughout this write-up, but don't worry if that's not what you're here for.  You can choose to skip all the code snippets entirely and still come out knowing how it all works.  It could also be useful for translating to your (second) favorite programming language.  Rust tends to get verbose, but one positive side-effect of that [verbosity](https://en.wikipedia.org/wiki/Verbosity) is that at least the core of what this code does should be easy to follow even without knowing the language.
+There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://www.rust-lang.org/) throughout this write-up, but don't worry if that's not what you're here for.  You can choose to skip all the code snippets entirely and still come out knowing how it all works.  It could also be useful for translating to your (second) favorite programming language.  Rust tends to get verbose, but one positive side-effect of that [verbosity](https://en.wikipedia.org/wiki/Verbosity) is that at least the core of what this code does should be easy to follow even without knowing the language.  We solve this problem by extensively modelling all the constituent components and their relationships, and by the time we get to the real logic most of our work will be already done.
 
 I have two disclaimers:
 
-1. [There are](https://en.wikipedia.org/wiki/Existence) [182](https://en.wikipedia.org/wiki/182_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Bostonn), [149][https://en.wikipedia.org/wiki/149_(number)] [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
+1. [There are](https://en.wikipedia.org/wiki/Existence) [192](https://en.wikipedia.org/wiki/192_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Bostonn), [161](https://en.wikipedia.org/wiki/161_(number)) [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
 1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
 
 Also, for *cough* brevity, there's no tests and there should and could be.
@@ -77,7 +78,7 @@ This post was inspired by [this](https://www.reddit.com/r/linuxmasterrace/commen
 
 ![the meme](https://i.redd.it/uirqnamnjpz31.jpg)
 
-I (evidently, ~6k words later) couldn't let myself just scroll past that one.  Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
+I (evidently, ~7k words later) couldn't let myself just scroll past that one.  Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
 
 ```bash
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
@@ -95,7 +96,7 @@ I've gotta be honest - I didn't even try the `bash` and immediately dove into th
 
 Don't worry, you don't need to have a clue how any of it works yet if some or all of this is incomprehensible.  I sure didn't.  I'm not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does exactly in this post, and I'm not going to elaborate much on what any of the specific commands in the pipeline mean (read the linked post for that).   By the time we're done, you'll be able to pick apart the whole thing yourself anyway.
 
-If you'd like the challenge of implementing this yourself from scratch, **stop right here**.  There's something about extensively modelling a problem space that kinda takes the mystery out, you know?  Try to build the program I described yourself in the language of your choice.  If you get stuck, this should all apply to whatever you've got going unless you've gone real funky with it - in which case, it sounds cool and you should show me.
+If you'd like the challenge of implementing this yourself from scratch in your own language, **stop right here**.  If you get stuck, this should all apply to whatever you've got going unless you've gone real funky with it - in which case, it sounds cool and you should show me.
 
 [¡Vámonos!](https://en.wikipedia.org/wiki/Party)
 
@@ -190,7 +191,7 @@ We can glean a bit of information at a glance, though, and depending on your cur
 
 *[top](#table-of-contents)*
 
-[Sound](https://en.wikipedia.org/wiki/Sound) is composed physically of [vibrations](https://en.wikipedia.org/wiki/Vibration).  These vibrations cause perturbations in some [medium](https://en.wikipedia.org/wiki/Transmission_medium), and those perturbations are what we experience as sound.  When we're talking about [hearing](https://en.wikipedia.org/wiki/Hearing) a sound with our [ears](https://en.wikipedia.org/wiki/Ear), the medium is usually [air](https://en.wikipedia.org/wiki/Atmosphere_of_Earth).
+[Sound](https://en.wikipedia.org/wiki/Sound) is composed physically of [vibrations](https://en.wikipedia.org/wiki/Vibration).  These vibrations cause perturbations in some [medium](https://en.wikipedia.org/wiki/Transmission_medium), which radiate out from the source of the vibration, and those perturbations cause [tiny oscillating variations](https://en.wikipedia.org/wiki/Sound_pressure) in local atmospheric pressure.  These variations are what we experience as sound.  When we're talking about [hearing](https://en.wikipedia.org/wiki/Hearing) a sound with our [ears](https://en.wikipedia.org/wiki/Ear), the medium is usually [air](https://en.wikipedia.org/wiki/Atmosphere_of_Earth).
 
 ##### Sine Waves
 
@@ -200,7 +201,17 @@ Sound propagates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](
 
 ![sine waves](https://upload.wikimedia.org/wikipedia/commons/6/6d/Sine_waves_different_frequencies.svg)
 
-If the x-axis is time, a sine wave represents a recurring action with a smooth oscillation between peaks.  There are two interesting properties: the amplitude, which measures the deviation from the 0 axis at the peaks (how high the peaks are), and the frequency, which is how close together these peaks are, or how frequently this recurring thing happens.
+If the x-axis is time, a sine wave represents a recurring action with a smooth (or analog) oscillation between peaks.  Picture a ball rising and then falling - the ball passes through every point in between the highest point it hits and the ground, so we can measure at any arbitrary instant an exact fractional height.  It doesn't fall from 8 meters to 7 meters all at once, it passes through 7.9, 7.8, 7.7, and all infinitesimally small heights in between too.  It's the same with sound.  Instead of height above the ground on the y axis, we have a pressure gradient from an equilibrium.  The air is getting rapidly pushed and pulled by this vibration across space as a wave.  It's still a physical phenomenon - a pressure gradient rises to a peak and then falls back to equilibrium and then below to an opposite peak, oscillating back and forth.  It doesn't just magically become a different higher value all at once.  A guitar string wobbling passes through each point in space between the two extremes it's tensing to and from, so the vibrations it causes oscillate in kind.
+
+You can actually use [math](https://en.wikipedia.org/wiki/Fourier_transform) to represent multi-component sound waves as a single wave - the ability to do so is what enables the whole field of [telecommunications](https://en.wikipedia.org/wiki/Telecommunication).  We're not going to touch that today, partially because I don't actually know how to perform a Fourier transform myself (yet) - some of you may have gone over this stiff in high school or college calculus classes, but I'm not personally formally STEM-educated and never got there in school.  One single sine wave is enough of a signal to produce a tone, so we'll keep it simple for today and I'll hit the books for next time.
+
+There are two interesting properties of a sine wave: the [amplitude](https://en.wikipedia.org/wiki/Amplitude), which measures the current deviation from the 0 axis for a given *x*, and the [frequency](https://en.wikipedia.org/wiki/Frequency), which is how close together these peaks at maximal amplitudes are, or how frequently this recurring thing happens.  The combination of the two dictate how we perceive the sound.  The amplitude will be perceived as [volume](https://en.wikipedia.org/wiki/Loudness) and the frequency as [pitch](https://en.wikipedia.org/wiki/Pitch_(music)).
+
+You can do cool things like frequency modulation and amplitude modulation to encode your signal as modulations of one of these properties:
+
+![modulation](https://upload.wikimedia.org/wikipedia/commons/a/a4/Amfm3-en-de.gif)
+
+This is how FM and AM radio process incoming sound signals to broadcast them to your radio, which can then perform the reverse and play back the original sound.   We also don't do any of that today but the code in this post could be used as a jumping off point for working with those functions.
 
 ##### Pitch
 
@@ -212,11 +223,11 @@ The standard unit for frequency is the [Hertz](https://en.wikipedia.org/wiki/Her
 
 Recall above that we saw we're going to run a loop like this:  `for (i = 0; i < 1; i += 0.0001)`.  If one were to, say, calculate a bunch of points along a single cycle of a sine wave like this one, it sure seems like this loop could get the job done.
 
-In simple cases, a sound at a specific pitch is a result of that sound's frequency.  The higher the frequency, or closer together the peaks, the higher the pitch.
+The higher the frequency, or closer together the peaks of (maximum positive amplitudes), the higher the pitch.
 
 ![frequency](https://upload.wikimedia.org/wikipedia/commons/e/ea/Wave_frequency.gif)
 
-Sound is a continuous spectrum of frequency, but when we make music we tend to prefer [notes](https://en.wikipedia.org/wiki/Musical_note) at set frequencies, or pitches.  I'm using  [frequency](https://en.wikipedia.org/wiki/Fundamental_frequency) and [pitch](https://en.wikipedia.org/wiki/Pitch_(music)) interchangeably, because for this application specifically they are, but go Wiki-diving if you want to learn about the distinction and nuance at play here.  The nature of sound is super cool but super complex and outside of the scope of this post - we just want to hear some numbers sing, we don't need to hear a full orchestra.
+Sound is a continuous spectrum of frequency, but when we make music we tend to prefer [notes](https://en.wikipedia.org/wiki/Musical_note) at set frequencies, or pitches.  I'm using [fundamental frequency](https://en.wikipedia.org/wiki/Fundamental_frequency) and pitch interchangeably, because for this application specifically they are, but go Wiki-diving if you want to learn about the distinction and nuance at play here.  The nature of sound is super cool but super complex and outside of the scope of this post - we just want to hear some numbers sing, we don't need to hear a full orchestra.
 
 One of the super cool things about it is the [octave](https://en.wikipedia.org/wiki/Octave).  Octaves just sound related, you know?
 
@@ -258,7 +269,7 @@ With this code we can use `Pitch::default()` to get our A440 pitch, or pass an a
 
 *[top](#table-of-contents)*
 
-Knowing what frequency to use to produce a given pitch is all well and good, but we need to actually make the sound.  Wen we sing with our [voice](https://en.wikipedia.org/wiki/Human_voice), our [speech organs](https://en.wikipedia.org/wiki/Speech_organ) vibrate to produce complex multiple-component sound waves of differing frequencies.  We can get ourselves a little one-frequency "speechbox" that produces a wave programmatically instead of by physically vibrating.  To do so, we're going to [graph](https://en.wikipedia.org/wiki/Graph_of_a_function) a function of a single cycle of the target sine wave and [sample]((https://en.wikipedia.org/wiki/Sampling_(signal_processing))) it.
+Knowing what frequency to use to produce a given pitch is all well and good, but we need to actually make the sound.  When we sing with our [voice](https://en.wikipedia.org/wiki/Human_voice), our [speech organs](https://en.wikipedia.org/wiki/Speech_organ) vibrate to produce complex multiple-component sound waves of differing frequencies.  We can program ourselves a little one-frequency "speechbox" that produces a wave programmatically instead of by physically vibrating.  To do so, we're going to [graph](https://en.wikipedia.org/wiki/Graph_of_a_function) a function of a single cycle of the target sine wave and [sample]((https://en.wikipedia.org/wiki/Sampling_(signal_processing))) it.
 
 We're going to do a little produce raw audio of this sine wave using [analog-to-digital conversion](https://en.wikipedia.org/wiki/Analog-to-digital_converter).  That's a super fancy term for something that isn't that complicated conceptually.  If you already know how we're doing this part, feel free to skip this explanation.
 
@@ -304,7 +315,7 @@ fn main() {
 
 *[top](#table-of-contents)*
 
-A440 is the A above Middle C on a piano:
+Now that we have a voice we can sing with we need to learn how to sing on key.  To get oriented, A440 is the A above Middle C on a piano:
 
 ![piano](https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Piano_Frequencies.svg/2560px-Piano_Frequencies.svg.png)
 
@@ -457,7 +468,7 @@ This is a much better way to deal with intervals than by frequency deltas.  Know
 
 Here, *a* is the initial frequency in Hertz, *b* is the target frequency, and *n* is the number of cents by which to increase *a*.
 
-Time for the plumbing.  It looks like we're going to need to divide some `Cents`:
+Time for the plumbing - we want to be able to ergonomically manipulate a `Pitch` in terms of this new logarithmic scale, and not worry about the specifics.  It looks like we're going to need to divide some `Cents`, using the `impl From<Cents> for f64` blocks we defined:
 
 ```rust
 use std::ops::Div;
@@ -471,19 +482,23 @@ impl Div for Cents {
 }
 ```
 
-We now know enough to manipulate a `Pitch`:
+This is just performing floating point division on the inner value, but keeps it wrapped up in the `Cents` context for us so we can directly use `Cents(x) / Cents(y)`.  There are a lot of unit conversions throughout this program but *all* of them are explicit and defined where we expect them.  We now know enough to manipulate a `Pitch` directly.  The [`AddAssign`](https://doc.rust-lang.org/std/ops/trait.AddAssign.html) trait gets us the `+=` operator, and can define it for any type we want on the right hand side:
 
 ```rust
 use std::ops::AddAssign
 
 impl AddAssign<Cents> for Pitch {
-    fn add_assign(&mut self, cents: Cents) {
-        self.frequency *= 2.0f64.powf((cents / Cents::from(Interval::Octave)).into())
+    fn add_assign(&mut self, rhs: Cents) {
+        self.frequency *= 2.0_f64.powf((rhs / Cents::from(Interval::Octave)).into())
     }
 }
 ```
 
-The [`AddAssign`](https://doc.rust-lang.org/std/ops/trait.AddAssign.html) trait gets us the `+=` operator.  Lets try to increase by a single Hertz using the value above:
+If that's not quite clear, this is the *exact* equation shown above with a bit of extra noise.  Dividing `cents` by `Cents::from(Interval::Octave)` leaves us with a `Cents` type, per the above `impl Dev for Cents` block.  However, we then want to pass the result to `2.0.powf(cents_ratio)`.  The compiler knows it's an `f64` here because we explicitly specified it with `2.0_f64` to use [`powf()`](https://doc.rust-lang.org/std/primitive.f64.html#method.powf).  This is a method on `f64`, so `self` in `pub fn powf(self, n: f64) -> f64` is an `f64` when this gets run.  We implemented `From<Cents> for f64` alread, which provides the `T::into() -> U` method like above for free as well as `U::from(T) -> U` in any context where the target type can be inferred, like right here.
+
+The `2.0_f64` literal is how we specify a concrete type - a `2.0` literal is just a `{float}` and stills need more context for the compiler to make into a `f32` (a.k.a. `float`) or `f64` (a.k.a. `double`) and use.  This is usually what we want, it gives us the flexibility to use this literal in any floating point context, but it also doesn't carry that information to help out with inference for other types.  Any numeric literal can take a concrete type suffix.   For example, `8` is an unqualified `{integer}` that can coerce to any unsigned integer type (`u8`,`u16`, `u32`, `u64`, or machine-dependent pointer-sized `usize`) until it's used in a specific context, but `8u8` begins its life as a `u8`, fully specified, so we know we can safely cast it to any larger type.  Any `_` found in a numeric literal is ignored and there for clarity - a 48KHz sample rate could be written `48_000.0_f64`.
+
+Lets try to increase by a single Hertz using the value above:
 
 ```rust
 fn main() {
@@ -790,11 +805,9 @@ TODO Rick & Morty "Human Music" gif
 
 *[top](#table-of-contents)*
 
-- Implement `Chord`
-
-- Author your own music.  You'll find you already have a lot of this for free.
+- Implement `Chord`.
 - Add more scales.
-- Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation)
-- Port this to your favorite programming language (second favorite if that's already Rust).
+- Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation).
+- Port this program to another language.
 
 *Cover image: [reddit](https://www.reddit.com/r/linuxmasterrace/comments/dyqri7/like_god_would_have_wanted/)*
