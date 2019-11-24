@@ -199,7 +199,7 @@ impl From<Pitch> for SineWave {
 
 #[derive(Debug, Clone, Copy)]
 enum Interval {
-    Unison,
+    Unison = 0,
     Min2,
     Maj2,
     Min3,
@@ -216,23 +216,7 @@ enum Interval {
 
 impl From<Interval> for Semitones {
     fn from(i: Interval) -> Self {
-        use Interval::*;
-        let x = match i {
-            Unison => 0,
-            Min2 => 1,
-            Maj2 => 2,
-            Min3 => 3,
-            Maj3 => 4,
-            Perfect4 => 5,
-            Tritone => 6,
-            Perfect5 => 7,
-            Min6 => 8,
-            Maj6 => 9,
-            Min7 => 10,
-            Maj7 => 11,
-            Octave => 12,
-        };
-        Semitones(x)
+        Semitones(i as i8)
     }
 }
 
@@ -252,12 +236,12 @@ enum ScaleLength {
 #[derive(Debug, Clone, Copy)]
 enum Mode {
     Ionian = 0,
-    Dorian = 1,
-    Phrygian = 2,
-    Lydian = 3,
-    Mixolydian = 4,
-    Aeolian = 5,
-    Locrian = 6,
+    Dorian,
+    Phrygian,
+    Lydian,
+    Mixolydian,
+    Aeolian,
+    Locrian,
 }
 
 impl Mode {
@@ -306,8 +290,12 @@ impl Scale {
 }
 
 fn main() {
-    let device = default_output_device().unwrap();
-    let sink = Sink::new(&device);
-    let source = SineWave::from(Pitch::default());
-    sink.append(source);
+    //let device = default_output_device().unwrap();
+    //let sink = Sink::new(&device);
+    //let source = SineWave::from(Pitch::default());
+    //sink.append(source);
+    let mut pitch = Pitch::default();
+    println!("{:?}", pitch);
+    pitch += Semitones::from(Interval::Octave);
+    println!("{:?}", pitch);
 }

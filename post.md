@@ -50,6 +50,7 @@ However, at the end of the day, it's just the thing in the cover image.
       * [Scientific Pitch Notation](#scientific-pitch-notation)
       * [Diatonic Modes](#diatonic-modes)
       * [Non-Heptatonic Scales](#other-scales)
+      * [Key](#key)
     - [Back To The Bytes](#back-to-the-bytes)
   * [Listen To Your Files](#listen-to-your-files)
   * [Write Your Own Tunes](#write-your-own-tunes)
@@ -61,14 +62,14 @@ However, at the end of the day, it's just the thing in the cover image.
 
 This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and up) who are comfortable solving problems with at least one [imperative language](https://en.wikipedia.org/wiki/Imperative_programming).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).  You do not need any prior knowledge of physics or music theory, but there will be a tiny smattering of [elementary algebra](https://en.wikipedia.org/wiki/Elementary_algebra).  I promise it's quick.
 
-There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://www.rust-lang.org/) throughout this write-up, but don't worry if that's not what you're here for.  You can choose to skip all the code snippets entirely and still come out knowing how it all works.  It could also be useful for translating to your (second) favorite programming language.  Rust tends to get verbose, but one positive side-effect of that [verbosity](https://en.wikipedia.org/wiki/Verbosity) is that at least the core of what this code does should be easy to follow even without knowing the language.  We solve this problem by extensively modelling all the constituent components and their relationships, and by the time we get to the real logic most of our work will be already done.
+There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://www.rust-lang.org/) throughout this write-up, but don't worry if that's not what you're here for.  I'm not here to teach you Rust or its idioms, this particular post is about the problem space and not the tools.  You can choose to skip all the code snippets entirely and still come out knowing how it all works.  It could also be useful for translating to your (second) favorite programming language.  Rust tends to get verbose, but one positive side-effect of that [verbosity](https://en.wikipedia.org/wiki/Verbosity) is that at least the core of what this code does should be easy to follow even without knowing the language.
 
 I have two disclaimers:
 
-1. [There are](https://en.wikipedia.org/wiki/Existence) [192](https://en.wikipedia.org/wiki/192_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Bostonn), [161](https://en.wikipedia.org/wiki/161_(number)) [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
+1. [There are](https://en.wikipedia.org/wiki/Existence) [194](https://en.wikipedia.org/wiki/194_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Bostonn), [163](https://en.wikipedia.org/wiki/163_(number)) [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
 1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
 
-Also, for *cough* brevity, there's no tests and there should and could be.
+Also, for brevity *cough*, there's no tests.  There could and should and be.
 
 ## The Meme
 
@@ -78,23 +79,23 @@ This post was inspired by [this](https://www.reddit.com/r/linuxmasterrace/commen
 
 ![the meme](https://i.redd.it/uirqnamnjpz31.jpg)
 
-I (evidently, ~7k words later) couldn't let myself just scroll past that one.  Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
+I couldn't let myself just scroll past that one, as evidenced by the ~7k word [diatribe](https://en.wikipedia.org/wiki/Diatribe) you stumbled upon.  Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
 
 ```bash
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
 ```
 
-The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this one, but that's not to discredit it at all as a great source of information.  That write-up and Wikipedia were all I needed to complete this translation, and I had absolutely not a clue how this whole thing worked going in.
+The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this one, but that's not to discredit it at as a fantastic source.  That write-up and Wikipedia were all I needed to complete this translation, and I had absolutely not a clue how this whole thing worked going in.
 
 I've gotta be honest - I didn't even try the `bash` and immediately dove into the pure Rust solution.  Nevertheless, it serves as a solid [30,000ft](https://en.wikipedia.org/wiki/Flight_level) [roadmap](https://en.wikipedia.org/wiki/Plan):
 
 1. `cat /dev/urandom`: Get a stream of random binary data.
 1. `hexdump -v -e '/1 "%u\n"'`: Convert binary to 8-bit base-10 integers (0-255).
-1. `awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }'`: Map integers to pitches, as 8-byte hexadecimal values.
-1. `xxd -r -p`: Convert hex numbers back to binary.
-1. `aplay -c 2 -f S32_LE -r 16000`: Play back binary data as sound.
+1. `awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }'`: Map integers to pitches and return sound wave samples.
+1. `xxd -r -p`: Convert hexadecimal samples back to binary.
+1. `aplay -c 2 -f S32_LE -r 16000`: Play back binary samples as sound wave.
 
-Don't worry, you don't need to have a clue how any of it works yet if some or all of this is incomprehensible.  I sure didn't.  I'm not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does exactly in this post, and I'm not going to elaborate much on what any of the specific commands in the pipeline mean (read the linked post for that).   By the time we're done, you'll be able to pick apart the whole thing yourself anyway.
+Don't worry at all if some or all of this is incomprehensible.  You don't need to have a clue how any of it works yet.  I'm not going to do what that [code](https://en.wikipedia.org/wiki/Source_code) does exactly in this post, and I'm not going to elaborate much on what any of the specific commands in the pipeline mean (read the linked post for that).   By the time we're done, you'll be able to pick apart the whole thing yourself anyway.
 
 If you'd like the challenge of implementing this yourself from scratch in your own language, **stop right here**.  If you get stuck, this should all apply to whatever you've got going unless you've gone real funky with it - in which case, it sounds cool and you should show me.
 
@@ -104,7 +105,7 @@ If you'd like the challenge of implementing this yourself from scratch in your o
 
 *[top](#table-of-contents)*
 
-As always, ensure you have at least the default stable Rust toolchain [installed](https://www.rust-lang.org/tools/install).  This code was written with `rustc` [version 1.39](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html) for [Rust 2018](https://doc.rust-lang.org/nightly/edition-guide/rust-2018/edition-changes.html).  
+Ensure you have at least the default stable Rust toolchain [installed](https://www.rust-lang.org/tools/install).  If you've previously installed `rustup` at any point, just issue `rustup update`.  This code was written with `rustc` [version 1.39](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html) for [Rust 2018](https://doc.rust-lang.org/nightly/edition-guide/rust-2018/edition-changes.html).  
 
 Then, spin up a new project:
 
@@ -112,12 +113,12 @@ Then, spin up a new project:
 $ cargo new music
 ```
 
-Open that directory in the environment of your choice.  We'll use three crates to replace the functionality not (quickly) found in the Rust standard library:
+Open that directory in the environment of your choice.  We'll use two crates, the Rust term for external libraries, to replace the functionality not found in the Rust standard library:
 
 * [`rand`](https://docs.rs/rand/0.7.2/rand/) - [Random number generation](https://en.wikipedia.org/wiki/Random_number_generation)
 * [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [Audio signal processing](https://en.wikipedia.org/wiki/Audio_signal)
 
-`rand` is in place of [`/dev/urandom`](https://en.wikipedia.org/wiki//dev/random) and `hexdump`, and `rodio` will cover [`xxd`](https://www.systutorials.com/docs/linux/man/1-xxd/) and [`aplay`](https://linux.die.net/man/1/aplay).  For the rest - step three - we'll just use the standard library.
+`rand` is in place of [`/dev/urandom`](https://en.wikipedia.org/wiki//dev/random) and [`hexdump`](https://en.wikipedia.org/wiki/Hex_dump), and `rodio` will cover [`xxd`](https://www.systutorials.com/docs/linux/man/1-xxd/) and [`aplay`](https://linux.die.net/man/1/aplay).  For the rest - step three - we'll just use the standard library, there's nothing fancy going on.
 
 In `Cargo.toml`:
 
@@ -134,7 +135,7 @@ rodio = "0.10"
 
 *[top](#table-of-contents)*
 
-When I sat down to tackle this whole thing I wrote this struct first.  The first part of the one-liner is  `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'`, which gets a source of random bytes (8-bit binary values) and shows them to the user formatted as base-10 integers.  The `rand` crate can give us random 8-bit integers out of the box by ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html)ing a type: `random::<u8>()` will produce a random [unsigned](https://en.wikipedia.org/wiki/Signedness) [8 bit](https://en.wikipedia.org/wiki/8-bit) integer ([`u8`](https://doc.rust-lang.org/nightly/std/primitive.u8.html)) with the default generator settings.  The following snippet does the same thing as `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'`:
+The first part of the one-liner is  `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'`, which gets a source of random bytes (8-bit binary values) and shows them to the user formatted as base-10 integers.  The `rand` crate can give us random 8-bit integers out of the box by ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html)ing a type: `random::<u8>()` will produce a random [unsigned](https://en.wikipedia.org/wiki/Signedness) [8 bit](https://en.wikipedia.org/wiki/8-bit) integer ([`u8`](https://doc.rust-lang.org/nightly/std/primitive.u8.html)) with the default generator settings.  The following snippet does the same thing as `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'`:
 
 ```rust
 use rand::random;
@@ -164,13 +165,13 @@ fn main() {
 }
 ```
 
-Give that a go with `cargo run` - exciting stuff.  You should see random integers 0-255 until you kill the process.  Don't lose this but forget about it for now.  We're going to use it to introduce randomness at the end, don't worry, but first we have to get some fundamentals out of the way if we're gonna get this thing done right.
+Give that a go with `cargo run` - exciting stuff.  You should see random integers 0-255 until you kill the process, matching the second command run in the video demonstration (or your own terminal, try it).  What is it we're randomizing, though?
 
 ### Mapping Bytes To Notes
 
 *[top](#table-of-contents)*
 
-Let's take a closer look at step 3 of the pipeline.  Of all the steps, that code most closely resembles what we ultimately end up with:
+Take a closer look at step 3 of the pipeline.  Of all the steps, that code most closely resembles what we ultimately end up with:
 
 ```bash
 split("0,2,4,5,7,9,11,12",a,",");
@@ -179,13 +180,13 @@ for (i = 0; i < 1; i += 0.0001)
            100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))
 ```
 
-This is probably still not too helpful for most - there's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) (oh, my) - and its written in freakin' [`AWK`](https://en.wikipedia.org/wiki/AWK).  Don't despair if this still doesn't mean much (or literally anything) to you.  We're going to model this problem from the ground up in [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)).  For a sneak peek, this is our fully abstracted equivalent:
+This is probably still not too helpful for most - there's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) (oh, my) - and its written in freakin' [`AWK`](https://en.wikipedia.org/wiki/AWK).  Don't despair if this still doesn't mean much (or literally anything) to you.  We're going to explicitly define all constituent components and their relationships, and by the time we get to the real logic it will all just already work.
 
-```rust
-TODO
-```
+We can glean a bit of information at a glance, though, and depending on your current comfort with this domain you may be able to kind of understand the general idea here.  It looks like we're going to tick up floating point values by ten-thousandths from zero to one (`0.0`, `0.0001`, `0.0002`, etc.) with `for (i = 0; i < 1; i += 0.0001)`, and do... I don't know, some math - `100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i)` - on each value.  In that math we're using both `i`, the current fractional part from 0 to 1, and `$1`, which is the random 8-bit integer being piped in.  Specifically, we're indexing into a list `a`:  `a[$1 % 8]`.  In other words, we're using the random byte `0-255` to select an index `0-7` from this list.  The list is defined with `split("0,2,4,5,7,9,11,12",a,",");`, which means split the first parameter string input by the third parameter character `,`, and store the list of elements to the second parameter `a` (`awk` is terse).  After we do the math, we're going to print it out as an 8-digit hex number: `printf("%08X\n", someResult)` - this [`printf`](https://en.wikipedia.org/wiki/Printf_format_string) formatter means we want a [0-padded](https://en.wikipedia.org/wiki/Npm_(software)#Notable_breakages) number that's 8 digits long in [upper-case](https://en.wikipedia.org/wiki/Letter_case) [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal).  The [base 10](https://en.wikipedia.org/wiki/Decimal) integer [`42`](https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_(42)) would be printed as `0000002A`.
 
-We can glean a bit of information at a glance, though, and depending on your current comfort with this domain you may be able to kind of understand the general idea here.  It looks like we're going to tick up floating point values by ten-thousandths from zero to one (`for (i = 0; i < 1; i += 0.0001)`), and do... I don't know, some math and stuff on each value based on the list `[0,2,4,5,7,9,11,12]`: `100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))` .  After we do the math, we're going to print it out as an 8-digit hex number: `printf("%08X\n",math())` - this [`printf`](https://en.wikipedia.org/wiki/Printf_format_string) formatter means we want a [0-padded](https://en.wikipedia.org/wiki/Npm_(software)#Notable_breakages) number that's 8 digits long in [upper-case](https://en.wikipedia.org/wiki/Letter_case) [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal).  The [base 10](https://en.wikipedia.org/wiki/Decimal) integer [`42`](https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_(42)) would be printed as `0000002A`.
+TL;DR for each ten-thousandth between 0 and 1 `i`, select a value `n` from `[0,2,4,5,7,9,11,12]` and return the result of `100 * sin(1382 * exp((n / 12) * log(2) * i)`.
+
+If you recognize this formula, awesome!  You can probably skim the next section.  If not, it's still [not time to panic](https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#Don't_Panic).  We just need to get some fundamentals out of the way.
 
 #### A Little Physics
 
@@ -201,9 +202,9 @@ Sound propagates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](
 
 ![sine waves](https://upload.wikimedia.org/wikipedia/commons/6/6d/Sine_waves_different_frequencies.svg)
 
-If the x-axis is time, a sine wave represents a recurring action with a smooth (or analog) oscillation between peaks.  Picture a ball rising and then falling - the ball passes through every point in between the highest point it hits and the ground, so we can measure at any arbitrary instant an exact fractional height.  It doesn't fall from 8 meters to 7 meters all at once, it passes through 7.9, 7.8, 7.7, and all infinitesimally small heights in between too.  It's the same with sound.  Instead of height above the ground on the y axis, we have a pressure gradient from an equilibrium.  The air is getting rapidly pushed and pulled by this vibration across space as a wave.  It's still a physical phenomenon - a pressure gradient rises to a peak and then falls back to equilibrium and then below to an opposite peak, oscillating back and forth.  It doesn't just magically become a different higher value all at once.  A guitar string wobbling passes through each point in space between the two extremes it's tensing to and from, so the vibrations it causes oscillate in kind.
+If the x-axis is time, a sine wave represents a recurring action with a smooth (or analog) oscillation between peaks.  Lots of physical phenomena are analog in nature - picture a ball getting tossed, rising and then falling.  The ball passes through every point in between the highest point it hits and the ground, so we can measure at any arbitrary instant an exact fractional height.  It doesn't fall from 8 meters to 7 meters all at once, it passes through 7.9, 7.8, 7.7, and all infinitesimally small heights in between too.  It's the same with sound.  Instead of height above the ground on the y axis, we have a pressure gradient from an equilibrium.  The air is getting rapidly pushed and pulled by this vibration across space as a wave.  It's still a physical phenomenon - a pressure gradient rises to a peak and then falls back to equilibrium and then below to an opposite peak, oscillating back and forth.  It doesn't just magically become a different higher value all at once.  A guitar string wobbling passes through each point in space between the two extremes it's tensing to and from, so the vibrations it causes oscillate in kind.
 
-You can actually use [math](https://en.wikipedia.org/wiki/Fourier_transform) to represent multi-component sound waves as a single wave - the ability to do so is what enables the whole field of [telecommunications](https://en.wikipedia.org/wiki/Telecommunication).  We're not going to touch that today, partially because I don't actually know how to perform a Fourier transform myself (yet) - some of you may have gone over this stiff in high school or college calculus classes, but I'm not personally formally STEM-educated and never got there in school.  One single sine wave is enough of a signal to produce a tone, so we'll keep it simple for today and I'll hit the books for next time.
+You can actually use [math](https://en.wikipedia.org/wiki/Fourier_transform) to represent multi-component sound waves as a single wave - the ability to do so is what enables the whole field of [telecommunications](https://en.wikipedia.org/wiki/Telecommunication).  We're not going to touch that today, partially because I don't actually know how to perform a Fourier transform myself (yet) - some of you may have learned this in high school or college [calculus](https://en.wikipedia.org/wiki/Calculus) classes, but I'm not personally formally STEM-educated and never got there in school.  One single sine wave is enough of a signal to produce a tone, so we'll keep it simple for today and I'll hit the books for next time.
 
 There are two interesting properties of a sine wave: the [amplitude](https://en.wikipedia.org/wiki/Amplitude), which measures the current deviation from the 0 axis for a given *x*, and the [frequency](https://en.wikipedia.org/wiki/Frequency), which is how close together these peaks at maximal amplitudes are, or how frequently this recurring thing happens.  The combination of the two dictate how we perceive the sound.  The amplitude will be perceived as [volume](https://en.wikipedia.org/wiki/Loudness) and the frequency as [pitch](https://en.wikipedia.org/wiki/Pitch_(music)).
 
@@ -211,7 +212,7 @@ You can do cool things like frequency modulation and amplitude modulation to enc
 
 ![modulation](https://upload.wikimedia.org/wikipedia/commons/a/a4/Amfm3-en-de.gif)
 
-This is how FM and AM radio process incoming sound signals to broadcast them to your radio, which can then perform the reverse and play back the original sound.   We also don't do any of that today but the code in this post could be used as a jumping off point for working with those functions.
+This is how FM and AM radio process incoming sound signals to broadcast them to your radio, which can then perform the reverse and play back the original sound.   We also don't do any of that today, but you could experiment with these functions with this as a base.
 
 ##### Pitch
 
@@ -221,7 +222,7 @@ The standard unit for frequency is the [Hertz](https://en.wikipedia.org/wiki/Her
 
 ![cycle gif](https://media.giphy.com/media/F5rQlfTXqCJ8c/giphy.gif)
 
-Recall above that we saw we're going to run a loop like this:  `for (i = 0; i < 1; i += 0.0001)`.  If one were to, say, calculate a bunch of points along a single cycle of a sine wave like this one, it sure seems like this loop could get the job done.
+Recall above that we saw we're going to run a loop like this:  `for (i = 0; i < 1; i += 0.0001)`.  In that loop, the math we process includes the function `sin()`.  If one were to, say, calculate a bunch of points along a single cycle of a sine wave like this one, it sure seems like just such a loop could get the job done.
 
 The higher the frequency, or closer together the peaks of (maximum positive amplitudes), the higher the pitch.
 
@@ -233,7 +234,7 @@ One of the super cool things about it is the [octave](https://en.wikipedia.org/w
 
 // TODO embed octave sound
 
-It turns out the relationship is physical - to increase any pitch by an octave, you double the frequency.  It turns out, though, that this fixed ratio actually holds for any arbitrary smaller or larger interval as well.  This system is called ["equal temperament"](https://en.wikipedia.org/wiki/Equal_temperament) - every pair of adjacent notes has the same ratio, regardless of how you define "adjacent".  To get halfway to the next octave, you multiply by 1.5 instead of 2.
+It turns out the relationship is physical - to increase any pitch by an octave, you double the frequency.  Not only that, this fixed ratio actually holds for any arbitrary smaller or larger interval as well.  This system is called ["equal temperament"](https://en.wikipedia.org/wiki/Equal_temperament) - every pair of adjacent notes has the same ratio, regardless of how you define "adjacent".  To get halfway to the next octave, you multiply by 1.5 instead of 2.
 
 To start working with concrete numbers, we need some sort of standard to base everything around.   Some of the world has settled on [440Hz](https://en.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO](https://en.wikipedia.org/wiki/International_Organization_for_Standardization) [16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
 
@@ -273,7 +274,7 @@ Knowing what frequency to use to produce a given pitch is all well and good, but
 
 We're going to do a little produce raw audio of this sine wave using [analog-to-digital conversion](https://en.wikipedia.org/wiki/Analog-to-digital_converter).  That's a super fancy term for something that isn't that complicated conceptually.  If you already know how we're doing this part, feel free to skip this explanation.
 
-A sine wave, as we've seen, is smooth.  However, what's a graph but a visualization of a function.  There's some function `mySineWave(x) = x` that's this wave when we put in a bunch of fractional numbers between *x* and *x*.  Each time we're back at `x` is the top of the circle - back at one, and it's gonna cycle at *x*Hz (by definition).  It stands to reason that at 0 time it'd be at the top, at .25 it'd be a quarter through, .125 an eight, etc ad infinitum.  The  `for (i = 0; i < 1; i += 0.0001)` loop is doing exactly that, calculating a series of adjacent points at a fixed interval (`0.0001`) that satisfy the function of this wave.  That's our analog-to-digital conversion  - we've taken something smooth, a sine wave, and made it digital, or made up of discrete points.
+A sine wave, as we've seen, is smooth.  However, what's a graph but a visualization of a function.  There's some function `mySineWave(x) = x` that's this wave when we put in a bunch of fractional numbers between *x* and *x*.  Each time we're back at `x` is the top of the circle - back at one, and it's gonna cycle at *x*Hz (by definition).  The  `for (i = 0; i < 1; i += 0.0001)` loop is doing exactly that, calculating a series of adjacent points at a fixed interval (`0.0001`) that satisfy the function of this wave.  That's our analog-to-digital conversion  - we've taken something smooth, a sine wave, and made it digital, or made up of discrete points.
 
 There's a number of channels meaning is the number of frequencies - that's a cool jumping off point, but we're just working with one.  The sample rate is how many points to store each cycle, which is how high-fidelity this "digital snapshot" of the wave is.  Lots of applications use, [44.1KHz](https://en.wikipedia.org/wiki/44,100_Hz), is a standard sample rate [sample rate](https://en.wikipedia.org/wiki/Sampling_(signal_processing)#Sampling_rate) - a bit higher than 10KHz like the example.  According to the [sampling theorem](https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem), the threshold for ensuring you've captured a sufficient sample from an analog signal is that the sample rate must be greater than twice the frequency you you're sampling.  Humans can hear about 20Hz to 20,000Hz.  This means we need at least 40,000 samples, and 44,100 exceeds that.  I [don't understand](https://en.wikipedia.org/wiki/Transition_band) the reason for the specific 4.1k overage, but it's The Standard. Similarly, [16-bit samples](https://en.wikipedia.org/wiki/Audio_bit_depth) is commonly seen thing, so who am I to say otherwise.  The maximum amplitude this struct can represent is the maximum wave that fits in a 16-bit sample, because that's the biggest *x* will ever be in either direction - `1` or `-1`.
 
@@ -321,18 +322,24 @@ Now that we have a voice we can sing with we need to learn how to sing on key.  
 
 The cyan key is Middle C, and A440 is highlighted in yellow.  The octaves on an 88-key piano are numbered as shown, so often A440 is simply denoted "A4" especially when dealing with a keyboard specifically.  You may own a tuner that marks 440Hz/A4 specifically if you're a musician.  This pitch is used for calibrating musical instruments and tuning a group, as well as a baseline constant for calculating frequencies.
 
-Note how each octave starts at C, not A, so A4 is actually higher in pitch than C4.  Octaves are "C-indexed" and base 8: `C D E F G A B C`.
+Note how each octave starts at C, not A, so A4 is actually higher in pitch than C4.  Octaves are "C-indexed" and base 8: `C D E F G A B C` is the base unmodified scale.
 
 ##### Scales
 
 *[top](#table-of-contents)*
 
-A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  The smallest of these intervals on a piano (and most of Western music) is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second or half step.  Take a look back at that piano diagram above - one semitone is the distance between an adjacent white key and black key.  A *whole* step, or a [major second](https://en.wikipedia.org/wiki/Major_second), is equal to two of semitones, or two adjacent white keys that pass over a black key.  There's a name for [each interval](https://en.wikipedia.org/wiki/Interval_(music)#Main_intervals) of semitones in an octave:
+A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  The smallest of these intervals on a piano (and most of Western music) is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second or half step.  We'll need to keep track of these as the basic unit of a keyboard interval:
+
+```rust
+struct Semitones(i8);
+```
+
+Take a look back at that piano diagram above - one semitone is the distance between an adjacent white key and black key.  A *whole* step, or a [major second](https://en.wikipedia.org/wiki/Major_second), is equal to two semitones, or two adjacent white keys that pass over a black key.  To play from C4 to C5, you'll use 12 keys (C4-B4), so octaves are divided into 12 equal semitones.  There's a name for [each interval](https://en.wikipedia.org/wiki/Interval_(music)#Main_intervals):
 
 ```rust
 #[derive(Debug, Clone, Copy)]
 enum Interval {
-    Unison,
+    Unison = 0,
     Min2,
     Maj2,
     Min3,
@@ -348,11 +355,11 @@ enum Interval {
 }
 ```
 
-Throughout this post I will tend towards over-specifying types like this - we only need `Min2` (half tone) and `Maj2` (whole tone) for now, but at least this way we have a full toolkit to work with should the need arise.
+Throughout this post I will tend towards over-specifying types like this - we only need `Min2` (half tone) and `Maj2` (whole tone) for now, but at least this way we have a full toolkit to work with should the need arise.  By including a numeric index with `Unison = 0`, each variant also gets assigned the next successive ID.  This way we can refer to each by name but also get an integer corresponding to the number of semitones when needed.  With this code we can use  `Interval::Octave as i8` to return `12_i8`.
 
-Clearly, there isn't a black key between every white key.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern for the whole length.
+Now it stays contextually tagged.  Clearly, there isn't a black key between every white key.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern all the way through.  The distribution pattern begins on C, but the keyboard itself starts at A0 and ends at C8.  A piano is thus designed because it can play music across the full range of diatonic stales.  This is where we get those base 8 sequences.
 
-A [major scale](https://en.wikipedia.org/wiki/Major_scale) is the baseline scale.  Start at Middle C, the one highlighted in cyan above, and count up to the next C key, eight white keys to the left.  THis is our baseline C-indexed exampled from above, `C D E F G A B C`.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get counting up to the next C, when the pattern repeats.  This totals 12 semitones per octave:
+That pattern, that the numbering system is based around, is the C [major scale](https://en.wikipedia.org/wiki/Major_scale).  Start at Middle C, the one highlighted in cyan above, and count up to the next C key, eight white keys to the left.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get counting up to the next C, when the pattern repeats.  This totals 12 semitones per octave:
 
 ```txt
 whole, whole, half, whole, whole, whole, half
@@ -360,6 +367,8 @@ whole, whole, half, whole, whole, whole, half
 ```
 
 TODO embed sound
+
+It is somewhat arbitrary at least mathematically to pin C as the base of the system - doing the same exercise with the same intervals starting on a different while key will also produce a major scale but you will start using the black keys to do so.  C is the note that allows you to stick to only white keys with this interval pattern, or has no sharps or flats in the key signature.
 
 There are a few variations of *minor* scale, but for now I'll define the [natural minor scale](https://en.wikipedia.org/wiki/Minor_scale#Natural_minor_scale).  This is what you get if you start at our good old friend A4 and march on up the white keys to A5:
 
@@ -369,22 +378,21 @@ whole, half, whole, whole, half, whole, whole
 
 TODO embed sound
 
-There are the same number of whole and half intervals, they're just distributed differently.  You can play a corresponding minor scale using only the white keys by simply starting at the sixth note.  Try counting it out yourself!
+It's the same pattern, just starting at a different offset.  You can play a corresponding minor scale using only the white keys by simply starting at the sixth note of the C major scale, which is A.  Try counting it out yourself up from A4.
 
 ##### Cents
 
 *[top](#table-of-contents)*
 
-Beyond the twelve 12 semitones in an octave, each semitone is divided into 100 [cents](https://en.wikipedia.org/wiki/Cent_(music)).  This means a full octave, representing a 2:1 ratio in frequency, spans 1200 cents.  Go ahead and set up some types:
+These discrete units are useful for working with a keyboard, but as we know, sound is analog and continuous.  We need to subdivide these intervals even more granularly, and because of equal temperament we're free to do so at any arbitrary level.  Beyond the twelve 12 semitones in an octave, each semitone is divided into 100 [cents](https://en.wikipedia.org/wiki/Cent_(music)).  This means a full octave, representing a 2:1 ratio in frequency, spans 1200 cents, and each cent can be divided without losing the ratio as well if needed:
 
 ```rust
 struct Cents(f64);
-struct Semitones(i8);
 ```
 
-I didn't just assign aliases as with `type Hertz = f64`, because I need to re-define how to convert to and from these with the [`From`](https://doc.rust-lang.org/std/convert/trait.From.html) [trait](https://doc.rust-lang.org/book/ch10-02-traits.html).  For that, I need my very own type, not just an alias of a primitive that already can convert to and from other primitives with the standard logic.  `Semitones` to `Cents` is not the same thing as `i8` to `f64`, we have a conversion factor.   The [tuple struct](https://doc.rust-lang.org/1.37.0/book/ch05-01-defining-structs.html#using-tuple-structs-without-named-fields-to-create-different-types) syntax is perfect for that.  Hertz really is a more general unit of frequency, so it made sense to me to separate that concept from a `Pitch` that can be modulated by cents.
+I didn't just assign aliases as with `type Hertz = f64`, because I need to re-define how to convert to and from `Cents` and `Semitones` with the [`From`](https://doc.rust-lang.org/std/convert/trait.From.html) [trait](https://doc.rust-lang.org/book/ch10-02-traits.html).  For that, I need my very own type, not just an alias of a primitive that already can convert to and from other primitives with the standard logic.  `Semitones` to `Cents` is not the same thing as `i8` to `f64`, we have a conversion factor.   The [tuple struct](https://doc.rust-lang.org/1.37.0/book/ch05-01-defining-structs.html#using-tuple-structs-without-named-fields-to-create-different-types) syntax is perfect for that.  I kept Hertz as an alias because it really is a more general unit of frequency.  It made sense to me to separate that concept from a `Pitch` that can be modulated by `Cents`.
 
-Now, bear with me - we're going to do a little plumbing to let ourselves work at a higher level of abstraction.  We can give ourselves some conversions to the inner primitive:
+Now, bear with me - we're going to do a little plumbing to let ourselves work at this higher level of abstraction.  We can give ourselves some conversions to the inner primitive:
 
 ```rust
 impl From<Cents> for f64 {
@@ -400,7 +408,7 @@ impl From<Semitones> for i8 {
 }
 ```
 
-However, now we can convert between them:
+Now we can encode the conversion factor:
 
 ```rust
 const SEMITONE_CENTS: Cents = Cents(100.0);
@@ -412,28 +420,12 @@ impl From<Semitones> for Cents {
 }
 ```
 
-We can also map our `Interval` variants to `Semitones`:
+We can also map our `Interval` variants directly `Semitones`, to make sure they're always turned into `Cents` correctly:
 
 ```rust
 impl From<Interval> for Semitones {
     fn from(i: Interval) -> Self {
-        use Interval::*;
-        let x = match i {
-            Unison => 0,
-            Min2 => 1,
-            Maj2 => 2,
-            Min3 => 3,
-            Maj3 => 4,
-            Perfect4 => 5,
-            Tritone => 6,
-            Perfect5 => 7,
-            Min6 => 8,
-            Maj6 => 9,
-            Min7 => 10,
-            Maj7 => 11,
-            Octave => 12,
-        };
-        Semitones(x)
+        Semitones(i as i8)
     }
 }
 ```
@@ -448,11 +440,11 @@ impl From<Interval> for Cents {
 }
 ```
 
-Phew!  Lots of code, but now we can operate directly in terms of intervals.
+Phew!  Lots of code, but now we can operate directly in terms of `Interval` variants.
 
-There's one more step to get to frequencies though.  Remember how Middle C was some crazy fraction, 261.626?  This is because cents are a [logarithmic](https://en.wikipedia.org/wiki/Logarithmic_scale) unit, standardized around the point 440.0.  Because of equal temperament, this 2:1 ratio holds for arbitrarily smaller intervals than octaves as well, where the math isn't always so clean.  Doubling this will get 880.0Hz, every time, but how would we add a semitone?  It's 100 cents, nice and neat, and there are 12 semitones - so we'd need to increase by a 12th of what doubling the number would do: `440 * 2^(1/12)`.  Looks innocuous enough, but my calculator gives me 466.164, Rust gives me 466.1637615180899 - not enough to perceptually matter, but enough that it's important that the standard is the interval ratio and not the specific amount of Hertz to add or subtract.  Those amounts will only be precise in floating point decimal representations at exact octaves from the base note, because that's integral factor after multiplying by 1 in either direction, 2 or 1/2.
+There's one more step to get to get from our brand new floating point `Cents` to frequencies though.  Remember how Middle C was some crazy fraction, 261.626Hz?  This is because cents are a [logarithmic](https://en.wikipedia.org/wiki/Logarithmic_scale) unit, standardized around the point 440.0.  While a 2:1 ratio is nice and neat, we've been subdividing that arbitrarily wherever it makes sense to us.  Now the arithmetic isn't always so clean.  Doubling 440.0Hz will get 880.0Hz, but how would we add a semitone?  It's 100 cents, nice and neat, and there are 12 semitones - so we'd need to increase by a 12th of what doubling the number would do: `440 * 2^(1/12)`.  Looks innocuous enough, but my calculator gives me 466.164, Rust gives me 466.1637615180899 - not enough to perceptually matter, but enough that it's important that the standard is the interval ratio and not the specific amount of Hertz to add or subtract.  Those amounts will only be precise in floating point decimal representations at exact octaves from the base note, because that's integral factor after multiplying by 1 in either direction, 2 or 1/2.
 
-Otherwise stated, the ratio between frequencies separated by a single cent is the 1200th root of 2, or 2^(1/1200).    In decimal, it's about 1.0005777895.  You wouldn't be able to hear a distinction between two tones a single cent apart.  The [just-noticeable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents, or 5*2^(1/1200).  Using this math, it works out to just shy of 4 cents to cause an increase of 1Hz, more precisely around 3.9302 for a base frequency of 440.0.
+Otherwise stated, the ratio between frequencies separated by a single cent is the 1200th root of 2, or 2^(1/1200).  In decimal, it's about 1.0005777895.  You wouldn't be able to hear a distinction between two tones a single cent apart.  The [just-noticeable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents, or 5*2^(1/1200).  Using this math, it works out to just shy of 4 cents to cause an increase of 1Hz, more precisely around 3.9302 for a base frequency of 440.0.
 
 Logarithmic units are helpful when the range of the y axis, in our case frequency, increases exponentially.  We know the graph of frequency to pitch does because to jump by any single octave, we double what we have - we're multiplying at each step, not adding (which results in a linear graph).  If A4 is 440Hz, A5 is 880Hz, and by A6 we're already at 1,760Hz.  The graph `f(x) = x^2` looks like this:
 
@@ -674,39 +666,24 @@ fn main() {
 
 Luckily, even being off by a full Hertz at 440 (~4 cents) is less than the just-noticeable difference of ~5-6 cents, so within the ranges we're working with that's not wrong enough to care.
 
-Scales are usually defined as an octave of intervals:
-
-```rust
-type Octave = [Interval; 7];
-```
-
-Seven hops gets you to eight pitches including the first and last.  Adding a set of intervals to a pitch should increase it by one octave:
-
-```rust
-
-```
-
-// TODO Scales that return an iterator of StandardPitch notes one octave long - THIS is where I'll talk about iterators - it should take a base note in StandardPitch and a length, return an Octave that's just a `Vec` or something with iter() on it?  and a definite end?
-// TODO Go back and compare with the original AWK/one-liner
-
 ##### Diatonic Modes
 
 *[top](#table-of-contents)*
 
-Now we can start defining scales.  If you count up to one octave higher from any given key using just successive white keys, that's a diatonic scale no matter which note you start from.  These scales are called [`Modes`](https://en.wikipedia.org/wiki/Mode_(music)#Modern_modes).
+Now we can start defining scales.  When I introduced the concept, I noted that using the same intervals as the major scale starting on a different white key will also produce the a major scale but you will start using the black keys.  Similarly, if you don't use the black keys and start on a different note and count up one octave, you will get a *different* diatonic scale.  These scale variations are called [`Modes`](https://en.wikipedia.org/wiki/Mode_(music)#Modern_modes), and while high-school me was terrified of and terrible at whipping them out on a brass instrument from memory, they're easy to work with programmatically.
 
-The first scale I laid out, the major scale, is also known as the [`Ionian mode`](https://en.wikipedia.org/wiki/Ionian_mode).  This is the base mode, each other is some offset from this scale.  The natural minor scale, where we started at A4, is called the [`Aeolian mode`](https://en.wikipedia.org/wiki/Aeolian_mode).  There's an absurdly fancy name for each offset.  This means we get our first seven `Scale` variants for free:
+The first scale I laid out, the major scale, is also known as the [`Ionian mode`](https://en.wikipedia.org/wiki/Ionian_mode).  This is the base mode, each other is some offset from this scale.  As we've seen, the key you need to start on to play this mode with no black keys (accidentals) is C.  The natural minor scale, where we started at A4 and counted up white keys, is called the [`Aeolian mode`](https://en.wikipedia.org/wiki/Aeolian_mode).  There's an absurdly fancy name for each offset.  This means we get our first seven `Scale` variants for free:
 
 ```rust
 #[derive(Debug, Clone, Copy)]
 enum Mode {
     Ionian = 0,
-    Dorian = 1,
-    Phrygian = 2,
-    Lydian = 3,
-    Mixolydian = 4,
-    Aeolian = 5,
-    Locrian = 6,
+    Dorian,
+    Phrygian,
+    Lydian,
+    Mixolydian,
+    Aeolian,
+    Locrian,
 }
 
 #[derive(Debug)]
@@ -715,7 +692,7 @@ enum Scale {
 }
 ```
 
-The C mode, Ionian, is the base, so we'll hardcode that sequence:
+We'll hardcode the C major sequence as the base:
 
 ```txt
 whole, whole, half, whole, whole, whole, half
@@ -776,14 +753,15 @@ enum ScaleLength {
 
 The example in the cover image is called a [pentatonic scale](https://en.wikipedia.org/wiki/Pentatonic_scale), as it only has five tones per octave defined by four intervals.  The diatonic scales we've been working with are a subset of the [heptatonic scales](https://en.wikipedia.org/wiki/Heptatonic_scale), with seven notes each.  These tones are naturally further apart than we've been using - we're going to need some more intervals - I'm just going to go ahead and toss in the [full set](https://en.wikipedia.org/wiki/Interval_(music)#Main_intervals):
 
+##### Key
+
 Two identical notes are called a [unison](https://en.wikipedia.org/wiki/Unison), with 0 cents.  These intervals are defined within a single octave, so any of them apply across octaves as well - A4 and A5 are in unison just like A4 and another A4, and C4 and A5 is still a major sixth.  The terms "major", "minor", and "perfect" are not arbitrary, but that discussion is outside the scope of this post.  I will note that the [tritone](https://en.wikipedia.org/wiki/Tritone), representing 3 whole tones or 6 semitones like `F-B`, is the only one that's none of the three.  If interested, I recommend [harmony](https://en.wikipedia.org/wiki/Harmony) for your next rabbit hole.  The tritone takes a leading role in [dissonance](https://en.wikipedia.org/wiki/Consonance_and_dissonance), and to hear it in action you should check out what the [Locrian mode](https://en.wikipedia.org/wiki/Locrian_mode) we defined sounds like with this program.  The C major scale has a perfect fifth, 5 semitones at the [dominant](https://en.wikipedia.org/wiki/Dominant_(music)) scale [degree](https://en.wikipedia.org/wiki/Degree_(music)) - and the Locrian mode has a tritone which is one extra semitone.
 
 This scale actually corresponds to playing just the black keys on a piano, skipping all the white keys.
 
-
 Alright.  Back to the bytes.
 
-##### Back To The Bytes
+#### Back To The Bytes
 
 *[top](#table-of-contents)*
 
