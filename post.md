@@ -23,13 +23,15 @@ The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover im
 By the end of this post our program will:
 
 1. Support a full range of keys of different types.
-1. Use the whole [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard).
+1. Use a full 108-key extended [piano](https://en.wikipedia.org/wiki/Piano) [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard).
 1. Produce any arbitrary tone we ask for.
 1. Play back sequences recorded in a rudimentary [notation format](https://en.wikipedia.org/wiki/Musical_notation).
 1. Encourage further extension with lots of Rust-y goodness.
 1. Run fully cross-platform without extra effort or code changes, not just specifically-configured Linux.
 
 However, at the end of the day, it's just the thing in the cover image.
+
+The completed code can be found on [GitHub](https://github.com/dedicuously/music).
 
 [¡Vámonos!](https://en.wikipedia.org/wiki/Party)
 
@@ -63,14 +65,14 @@ However, at the end of the day, it's just the thing in the cover image.
 
 This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and up) who are comfortable solving problems with at least one [imperative language](https://en.wikipedia.org/wiki/Imperative_programming).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).  You do not need any prior knowledge of physics or music theory, but there will be a tiny smattering of [elementary algebra](https://en.wikipedia.org/wiki/Elementary_algebra).  I promise it's quick.
 
-There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://www.rust-lang.org/) throughout this write-up, but don't worry if that's not what you're here for.  I'm not here to teach you Rust or its idioms, this particular post is about the problem space and not the tools.  You can choose to skip all the code snippets entirely and still come out knowing how it all works.  It could also be useful for translating to your (second) favorite programming language.  Rust tends to get verbose, but one positive side-effect of that [verbosity](https://en.wikipedia.org/wiki/Verbosity) is that at least the core of what this code does should be easy to follow even without knowing the language.
+There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://www.rust-lang.org/) throughout this write-up, but don't worry if that's not what you're here for.  I will elaborate on a few syntax notes but this particular post is focused on the problem space and not the tools.  You can choose to skip all the code snippets entirely and still come out knowing how it all works.  It could also be useful for translating to your (second) favorite programming language.  Rust tends to get verbose, but one positive side-effect of that [verbosity](https://en.wikipedia.org/wiki/Verbosity) is that at least the core of what this code does should be easy to follow even without knowing the language.
 
 I have two disclaimers:
 
-1. [There are](https://en.wikipedia.org/wiki/Existence) [194](https://en.wikipedia.org/wiki/194_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Bostonn), [163](https://en.wikipedia.org/wiki/163_(number)) [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
+1. [There are](https://en.wikipedia.org/wiki/Existence) [207](https://en.wikipedia.org/wiki/207_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Bostonn), [168](https://en.wikipedia.org/wiki/168_(number)) [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
 1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
 
-Also, for brevity *cough*, there's no tests.  There could and should and be.
+Also, for brevity *cough*, there's no tests.  There could and should (and will) be.
 
 ## The Meme
 
@@ -665,7 +667,7 @@ fn main() {
 }
 ```
 
-Luckily, even being off by a full Hertz at 440 (~4 cents) is less than the just-noticeable difference of ~5-6 cents, so within the ranges we're working with that's not wrong enough to care.
+Luckily, even being off by a full Hertz at 440 (~4 cents) is less than the just-noticeable difference of ~5-6 cents, so within the ranges we're working with that's not wrong enough to care.  To test, each piano key is [specified](https://en.wikipedia.org/wiki/Piano_key_frequencies)
 
 ##### Circle of Fifths
 
@@ -675,11 +677,13 @@ Now we can start defining scales.  When I introduced the concept, I noted that u
 
 ![circle](https://upload.wikimedia.org/wikipedia/commons/3/33/Circle_of_fifths_deluxe_4.svg)
 
-The C major scale has all white keys.  To find the version of the major scale that adds one single black key to agument a tone, you go up 7 semitones: [`Interval::Perfect5`](https://en.wikipedia.org/wiki/Perfect_fifth).  This has a ratio 3:2.  The first major scale around is G Major, with one sharp, and if you continue incrementing a fifth (remember, octave is irrelevant here), you'll hit all 12 before getting back to C.  To get through all the key signatures incrementally, one accidental at a time, you keep going up by perfect fifths.  Once you come all the way back to C, you'll have hit all 12 keys, encompassing all possible key signatures.
+The C major scale has all white keys.  To find the version of the major scale that adds one single black key to augment a tone, you go up 7 semitones: [`Interval::Perfect5`](https://en.wikipedia.org/wiki/Perfect_fifth).  This has a ratio 3:2.  The first major scale around the circle is [G major](https://en.wikipedia.org/wiki/G_major).  It has one sharp: A.  Go [back up](#a-little-music-theory) to the piano diagram and count up the major scale sequence from G, for example one note below the yellow A4.  You'll need the `F#` black key at the last step right before G5 all the other hops.  [D major](https://en.wikipedia.org/wiki/D_major) will need two black keys, `F#` and `C#`.  If you continue incrementing a fifth (remember, octave is irrelevant here), you'll hit all 12 possible patterns before getting back to C.  To get through all the key signatures incrementally, one accidental at a time, you keep going up by perfect fifths.  Once you come all the way back to C, you'll have hit all 12 keys, encompassing all possible key signatures.
 
-It's true that, e.g. `D#` and `E♭` represent the same pitch - what's different is why we got there.  After the midway point, it's easier to denote 5 flats than 7 sharps, even though they mean the same tones.
+This diagram also shows the [relative natural minor](https://en.wikipedia.org/wiki/Relative_key) for each.  We saw how to get [A minor](https://en.wikipedia.org/wiki/A_minor) from C major, so by definition of equal temperament that interval holds all the way around.
 
-That's to go clockwise - to go counter-clockwise, go up by a perfect fourth every time, which is 5 semitones.  This is known as "circle of fourths", and is more commonly associated with [jazz](https://en.wikipedia.org/wiki/Jazz) music where the fifths is seen in more [classical](https://en.wikipedia.org/wiki/Classical_music) contexts.
+It's true that, e.g. `D#` and `E♭` represent the same pitch - what's different is why we got there.  After the midway point, it's easier to denote 5 flats than 7 sharps, even though they mean the same tones - there's only 5 black keys to choose from, after all.
+
+To go counter-clockwise, go up by a perfect fourth every time, which is 5 semitones.  This is known as "circle of fourths", and is more commonly associated with [jazz](https://en.wikipedia.org/wiki/Jazz) music whereas fifths are seen in more [classical](https://en.wikipedia.org/wiki/Classical_music) contexts.
 
 // TODO show off all 12
 
@@ -738,20 +742,24 @@ What if we represent this octave as a series of offsets:
 ```txt
 whole, whole, half, whole, whole, whole, half
   2  +  2   +  1  +   2   +  2  +   2  +  1
-0    2     4      5      7       9    11     12
+0    2     4      5      7      9     11     12
+Un. Min2  Maj2  Perf4  Perf5   Maj6 Maj7   Octave
+C    D     E      F      G      A     B      C
 ```
 
 Aha!  It's was a major scale over one octave this whole time.
 
+// TODO show generated major scale of intervals
+
 The fact that Ionian Mode/C Major is Offset 0 is actually somewhat arbitrary - though definitely not completely.  There's a reason C major is so commonly found in music - it sounds good.  I did a [bare-minimum](https://lmgtfy.com/?q=why+does+it+start+from+C+not+A) amount of research and found it's an ["unfortunate historical accident"](https://music.stackexchange.com/questions/893/why-is-c-the-base-note-of-standard-notation-and-keys), which in retrospect is completely obvious and I should have seen coming.  The letters were originally numbered from A, of course, but got mapped to frequencies well before the modern modes we use now were honed and refined from previous systems.  The system eventually came to be based around the [C major scale](https://en.wikipedia.org/wiki/C_major), not A major.  By then the fact that what's now Middle C was 261.626Hz was long done and over with.
 
-TL;DR the concept of "mode" in an equally tempered system predates the "major" and "minor" scales in use today (see: [`Interval`](#scales) type), and `C == 0` is a historical artifact.
+TL;DR the concept of "mode" in an equally tempered system predates the modern scales and `C == 0` is a historical artifact.
 
 ##### Non Heptatonic Scales
 
 *[top](#table-of-contents)*
 
-Okay, Ben.  Ben, okay.  Okay, Ben.  That's the version from the blog post, great.  The line from the meme image has something different:
+Okay, Ben.  Ben, okay.  Okay, Ben.  We've arrived at the version from the blog post, great.  This whole time, though, the line from the meme image has had something different:
 
 ```bash
 split("4,5,7,11",a,",");
@@ -788,7 +796,7 @@ We way, way overshot this in the process of modelling the domain.  We can now au
 
 Two identical notes are called a [unison](https://en.wikipedia.org/wiki/Unison), with 0 cents.  These intervals are defined within a single octave, so any of them apply across octaves as well - A4 and A5 are in unison just like A4 and another A4, and C4 and A5 is still a major sixth.  The terms "major", "minor", and "perfect" are not arbitrary, but that discussion is outside the scope of this post.  I will note that the [tritone](https://en.wikipedia.org/wiki/Tritone), representing 3 whole tones or 6 semitones like `F-B`, is the only one that's none of the three.  If interested, I recommend [harmony](https://en.wikipedia.org/wiki/Harmony) for your next rabbit hole.  The tritone takes a leading role in [dissonance](https://en.wikipedia.org/wiki/Consonance_and_dissonance), and to hear it in action you should check out what the [Locrian mode](https://en.wikipedia.org/wiki/Locrian_mode) we defined sounds like with this program.  The C major scale has a perfect fifth, 5 semitones at the [dominant](https://en.wikipedia.org/wiki/Dominant_(music)) scale [degree](https://en.wikipedia.org/wiki/Degree_(music)) - and the Locrian mode has a tritone which is one extra semitone.
 
-We don't necessarily want to stick within a single octave, though. We want to use the full 88 keys, but only hit ones in the key.
+We don't necessarily want to stick within a single octave, though. We want to use the full 108 keys from C0 to B8 (even larger than the standard piano from the diagram), but only use notes in the key.
 
 // TODO
 
