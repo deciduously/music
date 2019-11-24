@@ -48,8 +48,9 @@ However, at the end of the day, it's just the thing in the cover image.
       * [Scales](#scales)
       * [Cents](#cents)
       * [Scientific Pitch Notation](#scientific-pitch-notation)
+      * [Circle of Fifths](#circle-of-fifths)
       * [Diatonic Modes](#diatonic-modes)
-      * [Non-Heptatonic Scales](#other-scales)
+      * [Non Heptatonic Scales](#non-heptatonic-scales)
       * [Key](#key)
     - [Back To The Bytes](#back-to-the-bytes)
   * [Listen To Your Files](#listen-to-your-files)
@@ -666,11 +667,29 @@ fn main() {
 
 Luckily, even being off by a full Hertz at 440 (~4 cents) is less than the just-noticeable difference of ~5-6 cents, so within the ranges we're working with that's not wrong enough to care.
 
+##### Circle of Fifths
+
+*[top](#table-of-contents)*
+
+Now we can start defining scales.  When I introduced the concept, I noted that using the same intervals as the C major scale starting on a different note will also produce a major scale but you will start using the black keys.  This is called the key signature, and there's one for each variant of the major scale starting from each black key.  They're related by the [circle of fifths](https://en.wikipedia.org/wiki/Circle_of_fifths):
+
+![circle](https://upload.wikimedia.org/wikipedia/commons/3/33/Circle_of_fifths_deluxe_4.svg)
+
+The C major scale has all white keys.  To find the version of the major scale that adds one single black key to agument a tone, you go up 7 semitones: [`Interval::Perfect5`](https://en.wikipedia.org/wiki/Perfect_fifth).  This has a ratio 3:2.  The first major scale around is G Major, with one sharp, and if you continue incrementing a fifth (remember, octave is irrelevant here), you'll hit all 12 before getting back to C.  To get through all the key signatures incrementally, one accidental at a time, you keep going up by perfect fifths.  Once you come all the way back to C, you'll have hit all 12 keys, encompassing all possible key signatures.
+
+It's true that, e.g. `D#` and `E♭` represent the same pitch - what's different is why we got there.  After the midway point, it's easier to denote 5 flats than 7 sharps, even though they mean the same tones.
+
+That's to go clockwise - to go counter-clockwise, go up by a perfect fourth every time, which is 5 semitones.  This is known as "circle of fourths", and is more commonly associated with [jazz](https://en.wikipedia.org/wiki/Jazz) music where the fifths is seen in more [classical](https://en.wikipedia.org/wiki/Classical_music) contexts.
+
+// TODO show off all 12
+
 ##### Diatonic Modes
 
 *[top](#table-of-contents)*
 
-Now we can start defining scales.  When I introduced the concept, I noted that using the same intervals as the major scale starting on a different white key will also produce the a major scale but you will start using the black keys.  Similarly, if you don't use the black keys and start on a different note and count up one octave, you will get a *different* diatonic scale.  These scale variations are called [`Modes`](https://en.wikipedia.org/wiki/Mode_(music)#Modern_modes), and while high-school me was terrified of and terrible at whipping them out on a brass instrument from memory, they're easy to work with programmatically.
+We can already produce the 12 transpositions from C.
+
+Similarly, if you don't use the black keys and start on a different note and count up one octave, you will get a *different* diatonic scale, such as the natural minor scale.  These scale variations are called [`Modes`](https://en.wikipedia.org/wiki/Mode_(music)#Modern_modes), and while high-school me was terrified of and terrible at whipping out arbitrary ones on a brass instrument from memory (mental math is *not* one of my talents), they're easy to work with programmatically (and much less stressful).
 
 The first scale I laid out, the major scale, is also known as the [`Ionian mode`](https://en.wikipedia.org/wiki/Ionian_mode).  This is the base mode, each other is some offset from this scale.  As we've seen, the key you need to start on to play this mode with no black keys (accidentals) is C.  The natural minor scale, where we started at A4 and counted up white keys, is called the [`Aeolian mode`](https://en.wikipedia.org/wiki/Aeolian_mode).  There's an absurdly fancy name for each offset.  This means we get our first seven `Scale` variants for free:
 
@@ -728,7 +747,7 @@ The fact that Ionian Mode/C Major is Offset 0 is actually somewhat arbitrary - t
 
 TL;DR the concept of "mode" in an equally tempered system predates the "major" and "minor" scales in use today (see: [`Interval`](#scales) type), and `C == 0` is a historical artifact.
 
-##### Other Scales
+##### Non Heptatonic Scales
 
 *[top](#table-of-contents)*
 
@@ -755,9 +774,23 @@ The example in the cover image is called a [pentatonic scale](https://en.wikiped
 
 ##### Key
 
+*[top](#table-of-contents)*
+
+We're finally ready to pull this all together.  For context, once again here's the original line we're dealing with:
+
+```bash
+split("0,2,4,5,7,9,11,12",a,",");
+```
+
+We've now discovered that that list represents the list of semitone offsets from C4 that represent a C major scale.  The random notes that get produced will all be frequencies that correspond to these offsets from 440Hz.
+
+We way, way overshot this in the process of modelling the domain.  We can now automatically generate sequences of `StandardPitch` structs that correspond to keys on an 88-key piano to select from: `[C4 D4 E4 F4 G4 A5 B5 C5]`, and each note already knows how to calculate it's frequency in Hertz.  If we want a different scale, we can just ask.
+
 Two identical notes are called a [unison](https://en.wikipedia.org/wiki/Unison), with 0 cents.  These intervals are defined within a single octave, so any of them apply across octaves as well - A4 and A5 are in unison just like A4 and another A4, and C4 and A5 is still a major sixth.  The terms "major", "minor", and "perfect" are not arbitrary, but that discussion is outside the scope of this post.  I will note that the [tritone](https://en.wikipedia.org/wiki/Tritone), representing 3 whole tones or 6 semitones like `F-B`, is the only one that's none of the three.  If interested, I recommend [harmony](https://en.wikipedia.org/wiki/Harmony) for your next rabbit hole.  The tritone takes a leading role in [dissonance](https://en.wikipedia.org/wiki/Consonance_and_dissonance), and to hear it in action you should check out what the [Locrian mode](https://en.wikipedia.org/wiki/Locrian_mode) we defined sounds like with this program.  The C major scale has a perfect fifth, 5 semitones at the [dominant](https://en.wikipedia.org/wiki/Dominant_(music)) scale [degree](https://en.wikipedia.org/wiki/Degree_(music)) - and the Locrian mode has a tritone which is one extra semitone.
 
-This scale actually corresponds to playing just the black keys on a piano, skipping all the white keys.
+We don't necessarily want to stick within a single octave, though. We want to use the full 88 keys, but only hit ones in the key.
+
+// TODO
 
 Alright.  Back to the bytes.
 
