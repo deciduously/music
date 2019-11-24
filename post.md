@@ -792,7 +792,7 @@ A more common variant is the [pentatonic scale](https://en.wikipedia.org/wiki/Pe
 
 ```txt
 [E♭, G♭, A♭, B♭, D♭]
-[Min3]
+[Min3, Min2, Min2, Min3]
 [6, 9, 11, 13, 16]
 ```
 
@@ -805,14 +805,14 @@ This one is fun because it's what you get when you start at `E♭` and only play
 The [chromatic scale](https://en.wikipedia.org/wiki/Chromatic_scale) is just all the notes:
 
 ```txt
-[C, C#, D, D#, E, E#, F, F#, G, G#, A, A#, B]
+[A, A#, B, C, C#, D, D#, E, F, F#, G, G#]
 [Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2]
 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 ```
 
 Who needs key signatures anyhow, that's a waste of all these other keys!  This one throws 'em all in the mix.
 
-This could be a potential natural application of [dependent types](https://en.wikipedia.org/wiki/Dependent_type), a programming language feature that Rust does not support.  Few languages do, one example is the [Haskell](https://en.wikipedia.org/wiki/Haskell_(programming_language))-alike [Idris](https://en.wikipedia.org/wiki/Idris_(programming_language)#Dependent_types).  wherein we codify in the type system some restraint further than a type.  A simple example from wikipedia would be to let a function that appends a list of `m` elements to a list `n` specify as part of the return type for that the return value has length `m + n`.  A caller can then trust this fact implicitly, because the compiler won't build a binary if it's not true.  I think this could be applied here to verify that a scale's intervals method returns an octave, regardless of length.  That can be tested for now, but not encoded in the type directly.
+This could be a potential natural application of [dependent types](https://en.wikipedia.org/wiki/Dependent_type), a programming language feature that Rust does not support.  Few languages do, one example is the [Haskell](https://en.wikipedia.org/wiki/Haskell_(programming_language))-alike [Idris](https://en.wikipedia.org/wiki/Idris_(programming_language)#Dependent_types).  wherein we codify in the type system some restraint further than a type.  The linked example describes a function that appends a list of `m` elements to a list `n` which specifies as part of the return type that the returned list has length `n + m`.  A caller can then trust this fact implicitly, because the compiler won't build a binary if it's not true.  I think this could be applied here to verify that a scale's intervals method returns an octave, regardless of length.  That can be tested for now, but not encoded in the type directly.
 
 ##### Key
 
