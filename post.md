@@ -6,7 +6,7 @@ cover_image: https://thepracticaldev.s3.amazonaws.com/i/iuakwwcexql5u0th7gtm.jpg
 tags: beginners, rust, tutorial, music
 ---
 
-# Everything Is Music
+## Everything Is Music
 
 > Everything is music. When I go home, I throw knickers in the oven and it's music. Crash, boom, bang!
 
@@ -67,7 +67,7 @@ There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_
 
 I have two disclaimers:
 
-1. [There are](https://en.wikipedia.org/wiki/Existence) [207](https://en.wikipedia.org/wiki/207_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Bostonn), [168](https://en.wikipedia.org/wiki/168_(number)) [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
+1. [There are](https://en.wikipedia.org/wiki/Existence) [209](https://en.wikipedia.org/wiki/209_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Bostonn), [169](https://en.wikipedia.org/wiki/169_(number)) [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
 1. Further to Point 1, most of this I learned myself on Wikipedia, some of it while writing this post.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
 
 Also, for brevity *cough*, there's no tests.  There could and should (and will) be.
@@ -203,7 +203,9 @@ Sound propagates as a [wave](https://en.wikipedia.org/wiki/Wave).  In [reality](
 
 ![sine waves](https://upload.wikimedia.org/wikipedia/commons/6/6d/Sine_waves_different_frequencies.svg)
 
-If the x-axis is time, a sine wave represents a recurring action with a smooth (or analog) oscillation between peaks.  Lots of physical phenomena are analog in nature - picture a ball getting tossed, rising and then falling.  The ball passes through every point in between the highest point it hits and the ground, so we can measure at any arbitrary instant an exact fractional height.  It doesn't fall from 8 meters to 7 meters all at once, it passes through 7.9, 7.8, 7.7, and all infinitesimally small heights in between too.  It's the same with sound.  Instead of height above the ground on the y axis, we have a pressure gradient from an equilibrium.  The air is getting rapidly pushed and pulled by this vibration across space as a wave.  It's still a physical phenomenon - a pressure gradient rises to a peak and then falls back to equilibrium and then below to an opposite peak, oscillating back and forth.  It doesn't just magically become a different higher value all at once.  A guitar string wobbling passes through each point in space between the two extremes it's tensing to and from, so the vibrations it causes oscillate in kind.
+If the x-axis is time, a sine wave represents a recurring action with a smooth (or analog) oscillation between peaks.  Lots of physical phenomena are analog in nature - picture a ball getting tossed, rising and then falling.  The ball passes through every point in between the highest point it hits and the ground, so we can measure at any arbitrary instant an exact fractional height.  It doesn't fall from 8 meters to 7 meters all at once, it passes through 7.9, 7.8, 7.7, and all infinitesimally small heights in between too.  It's the same with sound.
+
+Instead of height above the ground on the y axis, we have a [pressure gradient](https://en.wikipedia.org/wiki/Sound_pressure) from an equilibrium.  The air is getting rapidly pushed and pulled by this vibration across space as a wave.  It's still a physical phenomenon - a pressure gradient rises to a peak and then falls back to equilibrium and then below to an opposite peak, oscillating back and forth.  It doesn't just magically become a different higher value all at once.  A guitar string wobbling passes through each point in space between the two extremes it's tensing to and from, so the vibrations it causes oscillate in kind.
 
 You can actually use [math](https://en.wikipedia.org/wiki/Fourier_transform) to represent multi-component sound waves as a single wave - the ability to do so is what enables the whole field of [telecommunications](https://en.wikipedia.org/wiki/Telecommunication).  We're not going to touch that today, partially because I don't actually know how to perform a Fourier transform myself (yet) - some of you may have learned this in high school or college [calculus](https://en.wikipedia.org/wiki/Calculus) classes, but I'm not personally formally STEM-educated and never got there in school.  One single sine wave is enough of a signal to produce a tone, so we'll keep it simple for today and I'll hit the books for next time.
 
@@ -829,5 +831,7 @@ TODO Rick & Morty "Human Music" gif
 - Add more scales.
 - Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation).
 - Port this program to another language.
+
+This has been Public Service Announcement on the dangers of online encyclopedias.  Thank you for your time.
 
 *Cover image: [reddit](https://www.reddit.com/r/linuxmasterrace/comments/dyqri7/like_god_would_have_wanted/)*
