@@ -1,6 +1,6 @@
-use core::{convert::TryInto, time::Duration};
+use core::time::Duration;
 use rand::random;
-use rodio::{default_output_device, source::SineWave};
+use rodio::{default_output_device, source::SineWave, Sink};
 use std::{
     f32,
     f64::consts::PI,
@@ -307,6 +307,7 @@ impl Scale {
 
 fn main() {
     let device = default_output_device().unwrap();
+    let sink = Sink::new(&device);
     let source = SineWave::from(Pitch::default());
-    rodio::play_raw(&device, source);
+    sink.append(source);
 }

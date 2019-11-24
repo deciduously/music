@@ -283,7 +283,22 @@ impl Iterator for SineWave {
 }
 ```
 
-This `impl Iterator` block is handling the `for` loop in the cover image.
+This `impl Iterator` block is handling the `for` loop in the cover image.  We can test it on a default `Pitch`:
+
+```rust
+impl From<Pitch> for SineWave {
+    fn from(p: Pitch) -> Self {
+        SineWave::new(f64::from(p) as u32)
+    }
+}
+
+fn main() {
+    let device = default_output_device().unwrap();
+    let sink = Sink::new(&device);
+    let source = SineWave::from(Pitch::default());
+    sink.append(source);
+}
+```
 
 #### A Little Music Theory
 
