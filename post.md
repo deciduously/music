@@ -14,7 +14,7 @@ TODO TESTS THROUGHOUT
 
 *- [Winona Ryder](https://en.wikipedia.org/wiki/Winona_Ryder) as [Björk](https://en.wikipedia.org/wiki/Bj%C3%B6rk) on [SNL](https://en.wikipedia.org/wiki/Saturday_Night_Live)'s [Celebrity Rock 'N' Roll Jeopardy!](https://en.wikipedia.org/wiki/Celebrity_Jeopardy!_(Saturday_Night_Live)) - [2002](https://en.wikipedia.org/wiki/2002) - [YouTube](https://youtu.be/R3V94ZtmdbQ?t=190)*
 
-In this post, we'll [throw](https://en.wikipedia.org/wiki/Throwing) something [random](https://en.wikipedia.org/wiki/Random_number_generation) into, [well](https://en.wikipedia.org/wiki/Well), a [math](https://en.wikipedia.org/wiki/Mathematics)-[oven](https://en.wikipedia.org/wiki/Subroutine) and [*viola*](https://en.wikipedia.org/wiki/Viola), [music](https://en.wikipedia.org/wiki/Music)!  We'll just skip the [crash](https://en.wikipedia.org/wiki/Crash_(computing)).
+In this [post]((https://en.wikipedia.org/wiki/Blog)), we'll [throw](https://en.wikipedia.org/wiki/Throwing) something [random](https://en.wikipedia.org/wiki/Random_number_generation) into, [well](https://en.wikipedia.org/wiki/Well), a [math](https://en.wikipedia.org/wiki/Mathematics)-[oven](https://en.wikipedia.org/wiki/Subroutine) and [*viola*](https://en.wikipedia.org/wiki/Viola), [music](https://en.wikipedia.org/wiki/Music)!  We'll just skip the [crash](https://en.wikipedia.org/wiki/Crash_(computing)).
 
 In other words, we're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)), backed by a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).
 
@@ -22,7 +22,7 @@ The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover im
 
 {% youtube uLhQQSKhTok %}
 
-By the end of this post we'll have written a program that can procedurally generate music in number of different kinds of musical scale spanning up and down a whole [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard), as well play [hand-authored](https://en.wikipedia.org/wiki/Musical_composition) songs created with a rudimentary [notation system](https://en.wikipedia.org/wiki/Musical_notation) that compiles and runs on [Windows](https://en.wikipedia.org/wiki/Microsoft_Windows), [MacOS](https://en.wikipedia.org/wiki/MacOS), or Linux with no code modification.
+By the end of this post we'll have written a fully cross-platform program that can procedurally generate music in number of different kinds key spanning up and down a whole [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard), as well play [hand-authored](https://en.wikipedia.org/wiki/Musical_composition) songs created with a rudimentary [notation system](https://en.wikipedia.org/wiki/Musical_notation).
 
 [¡Vámonos!](https://en.wikipedia.org/wiki/Party)
 
@@ -58,7 +58,7 @@ There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_
 
 I have two disclaimers:
 
-1. [There are](https://en.wikipedia.org/wiki/Existence) [145](https://en.wikipedia.org/wiki/145_(number)) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Blog).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
+1. [There are](https://en.wikipedia.org/wiki/Existence) [146](https://en.wikipedia.org/wiki/146_(number)) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Bostonn) [alone](https://en.wikipedia.org/wiki/Element_(mathematics)).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
 1. Further to Point 1, most of this I learned myself on Wikipedia.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
 
 ## The Meme
@@ -538,7 +538,7 @@ struct StandardPitch {
 
 // TODO to/from Pitch here
 
-The notes are C-indexed, for better or for worse, so `Note::default()` should return that variant.  I did a bare-minimum amount of research and found two [fuzzy](https://ibreathemusic.com/forums/showthread.php?18520-Why-did-C-become-the-middle-note-Why-not-middle-A) [sources](http://ars-nova.com/Theory%20Q&A/Q65.html) that both boil down to "unfortunate historical accident".  The letters were originally numbered from A, of course, but got mapped to frequencies well before the modern modes we use now were honed and refined from previous systems.  We ended up somewhat arbitrarily with this system based around what ended up being C, not A.
+The notes are C-indexed, for better or for worse, so `Note::default()` should return that variant.  We'll talk more about why it's C and not A after learning about Modes below.   Don't worry, it's suitably disappointing.
 
 The [accidentals](https://en.wikipedia.org/wiki/Accidental_(music)) are represented in strings as `♭` for flat or `#` for sharp, which lower or raise the note by one semitone (or `Interval::Min2`) respectively.  This does produce 14 possible values for 12 possible semitones - the exceptions are wherever there's no black key in between two white keys.  `F♭` should parse as `E` and `B#` should parse as `C`.  Thankfully, we've already programmed it to do that!  // TODO have we??
 
@@ -658,6 +658,10 @@ whole, whole, half, whole, whole, whole, half
 ```
 
 Aha!  It's was a major scale over one octave this whole time.
+
+The fact that Ionian Mode/C Major is Offset 0 is actually somewhat arbitrary - though definitely not completely.  There's a reason C major is so commonly found in music - it sounds good.  I did a [bare-minimum](https://lmgtfy.com/?q=why+does+it+start+from+C+not+A) amount of research and found it's an ["unfortunate historical accident"](https://music.stackexchange.com/questions/893/why-is-c-the-base-note-of-standard-notation-and-keys), which in retrospect is completely obvious and I should have seen coming.  The letters were originally numbered from A, of course, but got mapped to frequencies well before the modern modes we use now were honed and refined from previous systems.  The system eventually came to be based around the [C major scale](https://en.wikipedia.org/wiki/C_major), not A major.  By then the fact that what's now Middle C was 261.626Hz was long done and over with.
+
+TL;DR the concept of "mode" in an equally tempered system predates the "major" and "minor" scales in use today (see: [`Interval`](#scales) type), and `C == 0` is a historical artifact.
 
 ##### Other Scales
 
