@@ -80,7 +80,7 @@ This post was inspired by [this](https://www.reddit.com/r/linuxmasterrace/commen
 
 ![the meme](https://i.redd.it/uirqnamnjpz31.jpg)
 
-I couldn't let myself just scroll past that one, as evidenced by the ~7k word [diatribe](https://en.wikipedia.org/wiki/Diatribe) you stumbled upon.  Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
+I couldn't let myself just scroll past that one, as evidenced by this [diatribe](https://en.wikipedia.org/wiki/Diatribe) I suppose.  Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
 
 ```bash
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000

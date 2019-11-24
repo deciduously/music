@@ -5,7 +5,7 @@ use std::{
     f32,
     f64::consts::PI,
     fmt,
-    ops::{AddAssign, Div},
+    ops::{Add, AddAssign, Div},
 };
 
 #[derive(Default)]
@@ -31,21 +31,29 @@ const C_ZERO: Hertz = 16.352;
 const MIDDLE_C: Hertz = 261.626;
 const SAMPLE_RATE: Hertz = 44_100.0;
 
+#[derive(Debug)]
 struct Cents(f64);
+
+#[derive(Debug)]
 struct Semitones(i8);
+
 const SEMITONE_CENTS: Cents = Cents(100.0);
 
-impl Div for Cents {
-    type Output = Self;
-
-    fn div(self, rhs: Self) -> Self {
-        Cents(f64::from(self) / f64::from(rhs))
+impl From<f64> for Cents {
+    fn from(f: f64) -> Self {
+        Cents(f)
     }
 }
 
 impl From<Cents> for f64 {
     fn from(cents: Cents) -> Self {
         cents.0
+    }
+}
+
+impl From<i8> for Semitones {
+    fn from(i: i8) -> Self {
+        Semitones(i)
     }
 }
 
@@ -58,6 +66,22 @@ impl From<Semitones> for i8 {
 impl From<Semitones> for Cents {
     fn from(semitones: Semitones) -> Self {
         Cents(i8::from(semitones) as f64 * f64::from(SEMITONE_CENTS))
+    }
+}
+
+impl Add for Semitones {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        (i8::from(self) + i8::from(other)).into()
+    }
+}
+
+impl Div for Cents {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self {
+        Cents(f64::from(self) / f64::from(rhs))
     }
 }
 
@@ -214,6 +238,18 @@ enum Interval {
     Octave,
 }
 
+impl From<Interval> for i8 {
+    fn from(i: Interval) -> Self {
+        Semitones::from(i).into()
+    }
+}
+
+impl From<Semitones> for Interval {
+    fn from(s: Semitones) -> Self {
+        unimplemented!()
+    }
+}
+
 impl From<Interval> for Semitones {
     fn from(i: Interval) -> Self {
         Semitones(i as i8)
@@ -223,6 +259,15 @@ impl From<Interval> for Semitones {
 impl From<Interval> for Cents {
     fn from(i: Interval) -> Self {
         Semitones::from(i).into()
+    }
+}
+
+impl Add for Interval {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Interval::from(Semitones::from(
+            i8::from(self) + i8::from(rhs) % Interval::Octave as i8,
+        ))
     }
 }
 
@@ -294,8 +339,5 @@ fn main() {
     //let sink = Sink::new(&device);
     //let source = SineWave::from(Pitch::default());
     //sink.append(source);
-    let mut pitch = Pitch::default();
-    println!("{:?}", pitch);
-    pitch += Semitones::from(Interval::Octave);
-    println!("{:?}", pitch);
+    println!("{:?}", Semitones(2) + Semitones(5));
 }
