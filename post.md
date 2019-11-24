@@ -42,7 +42,7 @@ By the end of this post we'll have written a program that can procedurally gener
       * [Cents](#cents)
       * [Scientific Pitch Notation](#scientific-pitch-notation)
       * [Diatonic Modes](#diatonic-modes)
-      * [Other Scales](#other-scales)
+      * [Non-Heptatonic Scales](#other-scales)
     - [Back To The Bytes](#back-to-the-bytes)
   * [Listen To Your Files](#listen-to-your-files)
   * [Write Your Own Tunes](#write-your-own-tunes)
@@ -125,6 +125,8 @@ rand = "0.7"
 regex = "1.3"
 rodio = "0.10"
 ```
+
+// TODO split to library and binary
 
 ### Random Bytes
 
@@ -465,11 +467,7 @@ impl AddAssign<Semitones> for Pitch {
         *self += Cents::from(semitones)
     }
 }
-```
 
-That's a lot easier to work with:
-
-```rust
 fn main() {
     let mut pitch = Pitch::default();
     println!("{:?}", pitch); // Pitch { frequency: 440.0 }
@@ -499,23 +497,11 @@ fn main() {
 
 *[top](#table-of-contents)*
 
-Armed with this knowledge, we can start manipulating pitches in terms of [Scientific Pitch Notation](https://en.wikipedia.org/wiki/Scientific_pitch_notation), another fancy name for a simple concept.  The piano keybaord above was labelled according to this standard, and it's where we get "A4" from.  A standard pitch is composed of three components: a note from A-G, an optional "accidental", and a 0-indexed octave.
-
-```rust
-#[derive(Debug, Default, Clone, Copy)]
-struct StandardPitch
- {
-    accidental: Option<Accidental>,
-    note: Note,
-    octave: u8,
-}
-```
-
-The notes are C-indexed, for better or for worse, so `Note::default()` should return that variant.  I did a bare-minimum amount of research and found two [fuzzy](https://ibreathemusic.com/forums/showthread.php?18520-Why-did-C-become-the-middle-note-Why-not-middle-A) [sources](http://ars-nova.com/Theory%20Q&A/Q65.html) that both boil down to "unfortunate historical accident".  The letters were originally numbered from A, of course, but got mapped to frequencies well before the modern modes we use now were honed and refined from previous systems.  We ended up somewhat arbitrarily with this system based around what ended up being C, not A.:
+Armed with this knowledge, we can start manipulating pitches in terms of [Scientific Pitch Notation](https://en.wikipedia.org/wiki/Scientific_pitch_notation), another fancy name for a simple concept.  The piano keyboard above was labelled according to this standard - "A4" for example.  A standard pitch is composed of two components: a note from A-G with an optional accidental and a 0-indexed octave:
 
 ```rust
 #[derive(Debug, Clone, Copy)]
-enum Note {
+enum NoteLetter {
     A,
     B,
     C,
@@ -525,26 +511,40 @@ enum Note {
     G,
 }
 
-impl Default for Note {
+impl Default for NoteLetter {
     fn default() -> Self {
-        Note::C
+        NoteLetter::C
     }
 }
-```
 
-There's optionally a `♭` or `#` modifier which lower or raise the note by one semitone, respectively.  These are called [accidentals](https://en.wikipedia.org/wiki/Accidental_(music)):
-
-```rust
 #[derive(Debug, Clone, Copy)]
 enum Accidental {
     Flat,
     Sharp,
 }
+
+#[derive(Default, Debug, Clone, Copy)]
+struct Note {
+    accidental: Option<Accidental>,
+    letter: NoteLetter,
+}
+
+#[derive(Default, Debug, Clone, Copy)]
+struct StandardPitch {
+    note: Note,
+    octave: u8,
+}
 ```
 
-There is third accidental called "natural", `♮`, which cancels these out.  To represent a pitch in data we don't need it - that's a string-parsing concern.  The natural symbol is generally used for overriding a [key signature](https://en.wikipedia.org/wiki/Key_signature), which defines the default accidental for all the notes within a scale on [sheet music](https://en.wikipedia.org/wiki/Staff_(music)).  There are a series of accidentals on the margin of the staff that apply to all notes, which is how we ensure we play notes within a single given scale, or [key](https://en.wikipedia.org/wiki/Key_(music)).  However, you may choose to compose a melody that contains a note outside this key.  To cancel it for one written note,  you can write `F♮`.  Our data representation would just store an F in this case, though.
+// TODO to/from Pitch here
 
-The `Default` implementation that the compiler derives from this code corresponds to the official base pitch of this system, C0.  We can use `StandardPitch::default()` to procure one - here's a [playground link](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=dca4808334d51474c03a993bc1f97c03):
+The notes are C-indexed, for better or for worse, so `Note::default()` should return that variant.  I did a bare-minimum amount of research and found two [fuzzy](https://ibreathemusic.com/forums/showthread.php?18520-Why-did-C-become-the-middle-note-Why-not-middle-A) [sources](http://ars-nova.com/Theory%20Q&A/Q65.html) that both boil down to "unfortunate historical accident".  The letters were originally numbered from A, of course, but got mapped to frequencies well before the modern modes we use now were honed and refined from previous systems.  We ended up somewhat arbitrarily with this system based around what ended up being C, not A.
+
+The [accidentals](https://en.wikipedia.org/wiki/Accidental_(music)) are represented in strings as `♭` for flat or `#` for sharp, which lower or raise the note by one semitone (or `Interval::Min2`) respectively.  This does produce 14 possible values for 12 possible semitones - the exceptions are wherever there's no black key in between two white keys.  `F♭` should parse as `E` and `B#` should parse as `C`.  Thankfully, we've already programmed it to do that!  // TODO have we??
+
+There is third accidental called "natural", `♮`, which cancels these out.  To represent a pitch in data we don't need it - that's a string-parsing concern.  The natural symbol is generally used for overriding a [key signature](https://en.wikipedia.org/wiki/Key_signature), which defines the default accidental for all the notes within a scale on [sheet music](https://en.wikipedia.org/wiki/Staff_(music)).  There are a series of accidentals on the margin of the staff that apply to all notes, which is how we ensure we play notes within a single given scale, or [key](https://en.wikipedia.org/wiki/Key_(music)).  However, you may choose to compose a melody that contains a note outside this key.  If we encounter something like `F#♮`, we just care that it's F.  In fact, we can stack accidentals as far as we want, we always just store the final net change in `StandardPitch`.
+
+For an octave, we won't ever realistically go more than 255 octaves, and we want to start with 0, so a `u8` primitive is fine.  The `Default` implementation that the compiler derives from this code corresponds to the official base pitch of this system, C0.  We can use `StandardPitch::default()` to procure one - here's a [playground link](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=dca4808334d51474c03a993bc1f97c03):
 
 ```rust
 println!("{:?}", StandardPitch::default()); // StandardPitch { accidental: None, note: C, octave: 0 }
@@ -553,12 +553,12 @@ println!("{:?}", StandardPitch::default()); // StandardPitch { accidental: None,
 It's defined at a set frequency:
 
 ```rust
-const C_ZERO: Hertz = Hertz(16.352);
+const C_ZERO: Hertz = 16.352;
 ```
 
 This is super low - most humans bottom out around 20Hz.  The 88-key piano's lowest note is up at A0, a 9-semitone [`major sixth`](https://en.wikipedia.org/wiki/Major_sixth) higher.  Note how even though this is a different abstraction for working with pitches, the frequencies baked in to the standard are still pinned to the A440 scale.  Do a quick sanity check before abstracting further:
 
-// TODO this should start with StandardPitch::default()
+// TODO this should start with StandardPitch::default() and use get_offset()
 
 ```rust
 fn main() {
@@ -576,12 +576,6 @@ fn main() {
 Luckily, even being off by a full Hertz at 440 (~4 cents) is less than the just-noticeable difference of ~5-6 cents, so within the ranges we're working with that's not wrong enough to care.
 
 We can get them from strings with `std::str::FromStr`.  We should reduce notation like `E#` to `F` as well - there's no such thing as `E#`, in our diatonic scale `E` and `F` are only separated by a semitone.
-
-```rust
-
-```
-
-Next, we need a way to convert this `StandardPitch` struct to a `Pitch`:
 
 ```rust
 
@@ -605,7 +599,6 @@ Seven hops gets you to eight pitches including the first and last.  Adding a set
 // TODO Scales that return an iterator of StandardPitch notes one octave long - THIS is where I'll talk about iterators - it should take a base note in StandardPitch and a length, return an Octave that's just a `Vec` or something with iter() on it?  and a definite end?
 // TODO Go back and compare with the original AWK/one-liner
 // TODO Authoring - Pest? - just take separated characters - accept either Unicode flat OR some other character - you can use 'b', because only the first character is matching a note.  For sharp, ASCII 35 '#' is fine to demand.  Add a character for 
-// TODO dependent types could verify scale intervals
 // TODO after moving all helper code and edit code and stuff, see if this file can be literate?  
 
 ##### Diatonic Modes
@@ -614,7 +607,7 @@ Seven hops gets you to eight pitches including the first and last.  Adding a set
 
 Now we can start defining scales.  If you count up to one octave higher from any given key using just successive white keys, that's a diatonic scale no matter which note you start from.  These scales are called [`Modes`](https://en.wikipedia.org/wiki/Mode_(music)#Modern_modes).
 
-The first scale I laid out, the major scale, is also known as the [`Ionian mode`](https://en.wikipedia.org/wiki/Ionian_mode).  This is the base mode, each other is some offset from this scale.  The natural minor scale, where we started at A4, is called the [`Aeolian mode`].  There's an absurdly fancy name for each offset.  This means we get our first seven `Scale` variants for free:
+The first scale I laid out, the major scale, is also known as the [`Ionian mode`](https://en.wikipedia.org/wiki/Ionian_mode).  This is the base mode, each other is some offset from this scale.  The natural minor scale, where we started at A4, is called the [`Aeolian mode`](https://en.wikipedia.org/wiki/Aeolian_mode).  There's an absurdly fancy name for each offset.  This means we get our first seven `Scale` variants for free:
 
 ```rust
 #[derive(Debug, Clone, Copy)]
@@ -676,15 +669,47 @@ Okay, Ben.  Ben, okay.  Okay, Ben.  That's the version from the blog post, great
 split("4,5,7,11",a,",");
 ```
 
-This is called a [pentatonic scale](https://en.wikipedia.org/wiki/Pentatonic_scale), as it only has five tones per octave defined by four intervals.  The diatonic scales we've been working with are a subset of the [heptatonic scales](https://en.wikipedia.org/wiki/Heptatonic_scale), with seven notes each.  These tones are naturally further apart than we've been using - we're going to need some more intervals - I'm just going to go ahead and toss in the [full set](https://en.wikipedia.org/wiki/Interval_(music)#Main_intervals):
+Let's add a couple others scale lengths to play with:
 
 ```rust
+#[derive(Debug, Clone, Copy)]
+enum ScaleLength {
+    Pentatonic = 5,
+    Heptatonic = 7,
+    Chromatic = 12,
+}
+```
+
+We need to tweak `Mode::base_intervals` - setting `Octave` like that is a little closed-minded:
+
+```diff
+- type Octave = [Interval; 7];
+  impl Mode {
+-     fn base_intervals() -> Octave {
++     fn base_intervals() -> &'static [Interval]
+          use Interval::*;
++         &[Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
+-         [Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
+      }
+  }
+```
+
+Instead of returning an [array](https://doc.rust-lang.org/std/primitive.array.html), we're returning a [slice](https://doc.rust-lang.org/std/slice/index.html).  We can give it a `'static` [lifetime](https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html) because it's very known at compile time - it's written right in the source.  We can guarantee it will remain static throughout runtime if it's compiled right in to the binary.
+
+We also need to update  `Scale`:
+
+```diff
 
 ```
+
+// TODO dependent types could verify scale intervals
+
+The example in the cover image is called a [pentatonic scale](https://en.wikipedia.org/wiki/Pentatonic_scale), as it only has five tones per octave defined by four intervals.  The diatonic scales we've been working with are a subset of the [heptatonic scales](https://en.wikipedia.org/wiki/Heptatonic_scale), with seven notes each.  These tones are naturally further apart than we've been using - we're going to need some more intervals - I'm just going to go ahead and toss in the [full set](https://en.wikipedia.org/wiki/Interval_(music)#Main_intervals):
 
 Two identical notes are called a [unison](https://en.wikipedia.org/wiki/Unison), with 0 cents.  These intervals are defined within a single octave, so any of them apply across octaves as well - A4 and A5 are in unison just like A4 and another A4, and C4 and A5 is still a major sixth.  The terms "major", "minor", and "perfect" are not arbitrary, but that discussion is outside the scope of this post.  I will note that the [tritone](https://en.wikipedia.org/wiki/Tritone), representing 3 whole tones or 6 semitones like `F-B`, is the only one that's none of the three.  If you're into the mathy, music theory pattern parts of this exploration, I recommend [harmony](https://en.wikipedia.org/wiki/Harmony) for your next rabbit hole.  The tritone takes a leading role in [dissonance](https://en.wikipedia.org/wiki/Consonance_and_dissonance), and to hear it in action you should check out what the [Locrian mode](https://en.wikipedia.org/wiki/Locrian_mode) we defined sounds like with this program.  The C major scale has a perfect fifth, 5 semitones at the [dominant](https://en.wikipedia.org/wiki/Dominant_(music)) scale [degree](https://en.wikipedia.org/wiki/Degree_(music)) - and the Locrian mode has a tritone which is one extra semitone.
 
 This scale actually corresponds to playing just the black keys on a piano, skipping all the white keys.
+
 
 Alright.  Back to the bytes.
 

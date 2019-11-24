@@ -1,5 +1,5 @@
 use rand::random;
-use std::ops::{Add, AddAssign, Div, Mul};
+use std::ops::{AddAssign, Div};
 
 #[derive(Default)]
 struct RandomBytes;
@@ -53,7 +53,7 @@ impl From<Semitones> for Cents {
 }
 
 #[derive(Debug, Clone, Copy)]
-enum Note {
+enum NoteLetter {
     A,
     B,
     C,
@@ -63,9 +63,9 @@ enum Note {
     G,
 }
 
-impl Default for Note {
+impl Default for NoteLetter {
     fn default() -> Self {
-        Note::C
+        NoteLetter::C
     }
 }
 
@@ -76,8 +76,13 @@ enum Accidental {
 }
 
 #[derive(Default, Debug, Clone, Copy)]
-struct StandardPitch {
+struct Note {
     accidental: Option<Accidental>,
+    letter: NoteLetter,
+}
+
+#[derive(Default, Debug, Clone, Copy)]
+struct StandardPitch {
     note: Note,
     octave: u8,
 }
@@ -86,6 +91,7 @@ impl StandardPitch {
     fn new(s: &str) -> Self {
         Self::default()
     }
+    //fn get_offset()
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -122,6 +128,12 @@ impl AddAssign<Semitones> for Pitch {
 impl AddAssign<Interval> for Pitch {
     fn add_assign(&mut self, i: Interval) {
         *self += Cents::from(i)
+    }
+}
+
+impl From<StandardPitch> for Pitch {
+    fn from(sp: StandardPitch) -> Self {
+        Pitch::default()
     }
 }
 
@@ -170,7 +182,12 @@ impl From<Interval> for Cents {
     }
 }
 
-type Octave = [Interval; 7];
+#[derive(Debug, Clone, Copy)]
+enum ScaleLength {
+    Pentatonic = 5,
+    Heptatonic = 7,
+    Chromatic = 12,
+}
 
 #[derive(Debug, Clone, Copy)]
 enum Mode {
@@ -184,9 +201,9 @@ enum Mode {
 }
 
 impl Mode {
-    fn base_intervals() -> Octave {
+    fn base_intervals() -> &'static [Interval] {
         use Interval::*;
-        [Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
+        &[Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
     }
     //fn get_intervals(&self) -> impl Iterator {
     //    let intervals = Mode::base_intervals();
@@ -196,16 +213,17 @@ impl Mode {
 
 #[derive(Debug, Clone, Copy)]
 enum Scale {
+    //Chromatic,
     Diatonic(Mode),
 }
 
 impl Scale {
-    fn get_intervals(self) -> Octave {
+    fn get_intervals(self) -> &'static [Interval] {
         // TODO this needs to be a method, come here next!
         // have THIS calculate an impl Iterator (or impl Scale??)
-        use Interval::*;
         use Scale::*;
         match self {
+            //Chromatic => StandardPitch::all_pitches(),
             Diatonic(_) => Mode::base_intervals(),
         }
     }
