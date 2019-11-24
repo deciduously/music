@@ -678,7 +678,9 @@ Now we can start defining scales.  When I introduced the concept, I noted that u
 
 ![circle](https://upload.wikimedia.org/wikipedia/commons/3/33/Circle_of_fifths_deluxe_4.svg)
 
-The C major scale has all white keys.  To find the version of the major scale that adds one single black key to augment a tone, you go up 7 semitones: [`Interval::Perfect5`](https://en.wikipedia.org/wiki/Perfect_fifth).  This has a ratio 3:2.  The first major scale around the circle is [G major](https://en.wikipedia.org/wiki/G_major).  It has one sharp: A.  Go [back up](#a-little-music-theory) to the piano diagram and count up the major scale sequence from G, for example one note below the yellow A4.  You'll need the `F#` black key at the last step right before G5 all the other hops.  [D major](https://en.wikipedia.org/wiki/D_major) will need two black keys, `F#` and `C#`.  If you continue incrementing a fifth (remember, octave is irrelevant here), you'll hit all 12 possible patterns before getting back to C.  To get through all the key signatures incrementally, one accidental at a time, you keep going up by perfect fifths.  Once you come all the way back to C, you'll have hit all 12 keys, encompassing all possible key signatures.
+The C major scale has all white keys.  To find the version of the major scale that adds one single black key to augment a tone, you go up 7 semitones: [`Interval::Perfect5`](https://en.wikipedia.org/wiki/Perfect_fifth).  This has a ratio 3:2.
+
+The first major scale around the circle is [G major](https://en.wikipedia.org/wiki/G_major).  It has one sharp: A.  Go [back up](#a-little-music-theory) to the piano diagram and count up the major scale sequence from G, for example one note below the yellow A4.  You'll need the `F#` black key at the last step right before G5, but all the other hops white stick to the white keys.  [D major](https://en.wikipedia.org/wiki/D_major) will need two black keys, `F#` and `C#`.  If you continue incrementing a fifth (remember, octave is irrelevant here), you'll hit all 12 possible patterns before getting back to C.  To get through all the key signatures incrementally, one accidental at a time, you keep going up by perfect fifths.  Once you come all the way back to C, you'll have hit all 12 keys, encompassing all possible key signatures.
 
 This diagram also shows the [relative natural minor](https://en.wikipedia.org/wiki/Relative_key) for each.  We saw how to get [A minor](https://en.wikipedia.org/wiki/A_minor) from C major, so by definition of equal temperament that interval holds all the way around.
 
@@ -766,7 +768,7 @@ Okay, Ben.  Ben, okay.  Okay, Ben.  We've arrived at the version from the blog p
 split("4,5,7,11",a,",");
 ```
 
-Let's add a couple others scale lengths to play with:
+The diatonic scales we've been working with are a subset of the [heptatonic scales](https://en.wikipedia.org/wiki/Heptatonic_scale), with seven notes each.  These tones are naturally further apart than we've been using.  Let's add a couple others scale lengths to play with:
 
 ```rust
 #[derive(Debug, Clone, Copy)]
@@ -788,7 +790,7 @@ Interestingly, the scale shown is [tetratonic](https://en.wikipedia.org/wiki/Tet
 
 which is primarily associated with pre-historic music.  Maybe they spoke `AWK`?I also don't understand how that snippet works, because it's still indexed with `a[$1 % 8]`, but I'm too lazy to find out why.
 
-A more common variant is the [pentatonic scale](https://en.wikipedia.org/wiki/Pentatonic_scale), with 5 tones per octave.  The diatonic scales we've been working with are a subset of the [heptatonic scales](https://en.wikipedia.org/wiki/Heptatonic_scale), with seven notes each.  These tones are naturally further apart than we've been using.  There are a number of ways to construct a pentatonic scale, see the link for more, I'll just define one here:
+A more common variant is the [pentatonic scale](https://en.wikipedia.org/wiki/Pentatonic_scale), with 5 tones per octave.   There are a number of ways to construct a pentatonic scale, see the link for more, I'll just define one here:
 
 ```txt
 [E♭, G♭, A♭, B♭, D♭]
