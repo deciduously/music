@@ -8,6 +8,9 @@ use std::{
     ops::{Add, AddAssign, Div},
 };
 
+#[cfg(test)]
+mod test;
+
 #[derive(Default)]
 struct RandomBytes;
 
@@ -25,17 +28,17 @@ impl Iterator for RandomBytes {
     }
 }
 
-type Hertz = f64;
-const STANDARD_PITCH: Hertz = 440.0;
-const C_ZERO: Hertz = 16.352;
-const MIDDLE_C: Hertz = 261.626;
-const SAMPLE_RATE: Hertz = 44_100.0;
+pub type Hertz = f64;
+pub const STANDARD_PITCH: Hertz = 440.0;
+pub const C_ZERO: Hertz = 16.352;
+pub const MIDDLE_C: Hertz = 261.626;
+pub const SAMPLE_RATE: Hertz = 44_100.0;
 
-#[derive(Debug)]
-struct Cents(f64);
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Cents(f64);
 
-#[derive(Debug)]
-struct Semitones(i8);
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Semitones(i8);
 
 const SEMITONE_CENTS: Cents = Cents(100.0);
 
@@ -73,7 +76,7 @@ impl Add for Semitones {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        (i8::from(self) + i8::from(other)).into()
+        Semitones(i8::from(self) + i8::from(other))
     }
 }
 
@@ -85,7 +88,7 @@ impl Div for Cents {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum NoteLetter {
     A,
     B,
@@ -102,7 +105,7 @@ impl Default for NoteLetter {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum Accidental {
     Flat,
     Sharp,
@@ -119,7 +122,7 @@ impl fmt::Display for Accidental {
     }
 }
 
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
 struct Note {
     accidental: Option<Accidental>,
     letter: NoteLetter,
@@ -136,8 +139,8 @@ impl fmt::Display for Note {
     }
 }
 
-#[derive(Default, Debug, Clone, Copy)]
-struct StandardPitch {
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
+pub struct StandardPitch {
     note: Note,
     octave: u8,
 }
@@ -147,6 +150,9 @@ impl StandardPitch {
         Self::default()
     }
     //fn get_offset()
+    fn all_pitches() -> &'static [Interval] {
+        unimplemented!()
+    }
 }
 
 impl fmt::Display for StandardPitch {
@@ -155,8 +161,8 @@ impl fmt::Display for StandardPitch {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-struct Pitch {
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Pitch {
     frequency: Hertz,
 }
 
@@ -221,8 +227,8 @@ impl From<Pitch> for SineWave {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-enum Interval {
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub enum Interval {
     Unison = 0,
     Min2,
     Maj2,
@@ -265,20 +271,21 @@ impl From<Interval> for Cents {
 impl Add for Interval {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
-        Interval::from(Semitones::from(
+        Interval::from(Semitones(
             i8::from(self) + i8::from(rhs) % Interval::Octave as i8,
         ))
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum ScaleLength {
+    Tetratonic = 4,
     Pentatonic = 5,
     Heptatonic = 7,
     Chromatic = 12,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 enum Mode {
     Ionian = 0,
     Dorian,
@@ -300,9 +307,9 @@ impl Mode {
     //}
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum Scale {
-    //Chromatic,
+    Chromatic,
     Diatonic(Mode),
 }
 
@@ -318,7 +325,7 @@ impl Scale {
         // have THIS calculate an impl Iterator (or impl Scale??)
         use Scale::*;
         match self {
-            //Chromatic => StandardPitch::all_pitches(),
+            Chromatic => StandardPitch::all_pitches(),
             Diatonic(_) => Mode::base_intervals(),
         }
     }
@@ -332,12 +339,4 @@ impl Scale {
     //    let idx = n as usize + offset % c.size_hint().0;
     //    c.nth(idx).unwrap()
     // }
-}
-
-fn main() {
-    //let device = default_output_device().unwrap();
-    //let sink = Sink::new(&device);
-    //let source = SineWave::from(Pitch::default());
-    //sink.append(source);
-    println!("{:?}", Semitones(2) + Semitones(5));
 }

@@ -70,8 +70,6 @@ I have two disclaimers:
 1. [There are](https://en.wikipedia.org/wiki/Existence) [214](https://en.wikipedia.org/wiki/214_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Boston), [173](https://en.wikipedia.org/wiki/173_(number)) [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
 1. Further to Point 1, most of this I learned myself on Wikipedia, some of it while writing this post.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
 
-Also, for brevity *cough*, there's no tests.  There could and should (and will) be.
-
 ## The Meme
 
 *[top](#table-of-contents)*
@@ -111,10 +109,12 @@ Ensure you have at least the default stable Rust toolchain [installed](https://w
 Then, spin up a new project:
 
 ```txt
-$ cargo new music
+$ cargo new music --lib
 ```
 
-Open your new `music` project directory in the environment of your choice.  We'll use two crates, the Rust term for external libraries, to replace the functionality not found in the Rust standard library:
+Open your new `music` project directory in the environment of your choice.  We're actually going to use both a library and an executable.  Create a subdirectory called `src/bin` and add a file `src/bin/main.rs`.  Our music engine library will live in `lib.rs` and the user-facing executable interface will live in `main.rs`.
+
+We'll use two crates, the Rust term for external libraries, to replace the functionality not found in the Rust standard library:
 
 * [`rand`](https://docs.rs/rand/0.7.2/rand/) - [Random number generation](https://en.wikipedia.org/wiki/Random_number_generation)
 * [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [Audio signal processing](https://en.wikipedia.org/wiki/Audio_signal)

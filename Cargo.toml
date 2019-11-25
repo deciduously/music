@@ -10,3 +10,7 @@ edition = "2018"
 
 rand = "0.7"
 rodio = "0.10"
+
+[dev-dependencies]
+
+pretty_assertions = "0.6"
