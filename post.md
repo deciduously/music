@@ -68,7 +68,7 @@ There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_
 
 I have two disclaimers:
 
-1. [There are](https://en.wikipedia.org/wiki/Existence) [214](https://en.wikipedia.org/wiki/214_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Boston), [173](https://en.wikipedia.org/wiki/173_(number)) [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
+1. [There are](https://en.wikipedia.org/wiki/Existence) [217](https://en.wikipedia.org/wiki/217_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Boston), [173](https://en.wikipedia.org/wiki/173_(number)) [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
 1. Further to Point 1, most of this I learned myself on Wikipedia, some of it while writing this post.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
 
 ## The Meme
@@ -196,7 +196,7 @@ fn main() {
 }
 ```
 
-We can access any types we define in `src/lib.rs` here by importing everything marked `pub` at the top via the project name: `use music::*`.  Most of our code is going in `lib.rs`, but certain concerns related tot he executable program itself like command-line argument parsing and user output belong here instead.  Give it a go with `cargo run`:
+We can access any types we define in `src/lib.rs` here by importing everything marked `pub` there at the top via the project name.  Most of our code is going in `lib.rs` but certain concerns related to the executable program itself, such as command-line argument parsing and user output, belong here instead.  Give it a go with `cargo run`:
 
 ```txt
 $ cargo run
@@ -579,7 +579,9 @@ impl Div for Cents {
 }
 ```
 
-This is just performing floating point division on the inner value, but keeps it wrapped up in the `Cents` context for us so we can directly use `Cents(x) / Cents(y)`.  There are a lot of unit conversions throughout this program but *all* of them are explicit and defined where we expect them.  We now know enough to manipulate a `Pitch` directly.  The [`AddAssign`](https://doc.rust-lang.org/std/ops/trait.AddAssign.html) trait gets us the `+=` operator, and can define it for any type we want on the right hand side:
+This is just performing floating point division on the inner value, but keeps it wrapped up in the `Cents` context for us so we can directly use `Cents(x) / Cents(y)`.  There are a lot of unit conversions throughout this program but *all* of them are explicit and defined where we expect them.  We now know enough to manipulate a `Pitch` directly.
+
+The [`AddAssign`](https://doc.rust-lang.org/std/ops/trait.AddAssign.html) trait gets us the `+=` operator, and can define it for any type we want on the right hand side:
 
 ```rust
 use std::ops::AddAssign
@@ -591,7 +593,7 @@ impl AddAssign<Cents> for Pitch {
 }
 ```
 
-If that's not quite clear, this is the *exact* equation shown above with a bit of extra noise.  Dividing `cents` by `Cents::from(Interval::Octave)` leaves us with a `Cents` type, per the above `impl Dev for Cents` block.  However, we then want to pass the result to `2.0.powf(cents_ratio)`.  The compiler knows it's an `f64` here because we explicitly specified it with `2.0_f64` to use [`powf()`](https://doc.rust-lang.org/std/primitive.f64.html#method.powf).  This is a method on `f64`, so `self` in `pub fn powf(self, n: f64) -> f64` is an `f64` when this gets run.  We implemented `From<Cents> for f64` alread, which provides the `T::into() -> U` method like above for free as well as `U::from(T) -> U` in any context where the target type can be inferred, like right here.
+If that's not quite clear, this is the exact equation shown above with a bit of extra noise.  Dividing `cents` by `Cents::from(Interval::Octave)` leaves us with a `Cents` type, per the above `impl Div for Cents` block.  However, we then want to pass the result to `2.0.powf(cents_ratio)`.  The compiler knows it's an `f64` here because we explicitly specified it with `2.0_f64` to use [`powf()`](https://doc.rust-lang.org/std/primitive.f64.html#method.powf).  This is a method on `f64`, so `self` in `pub fn powf(self, n: f64) -> f64` is an `f64` when this gets run.  We implemented `From<Cents> for f64` already, which provides the `T::into() -> U` method like above for free as well as `U::from(T) -> U` in any context where the target type can be inferred, like right here.
 
 The `2.0_f64` literal is how we specify a concrete type - a `2.0` literal is just a `{float}` and stills need more context for the compiler to make into a `f32` (a.k.a. `float`) or `f64` (a.k.a. `double`) and use.  This is usually what we want, it gives us the flexibility to use this literal in any floating point context, but it also doesn't carry that information to help out with inference for other types.  Any numeric literal can take a concrete type suffix.   For example, `8` is an unqualified `{integer}` that can coerce to any unsigned integer type (`u8`,`u16`, `u32`, `u64`, or machine-dependent pointer-sized `usize`) until it's used in a specific context, but `8u8` begins its life as a `u8`, fully specified, so we know we can safely cast it to any larger type.  Any `_` found in a numeric literal is ignored and there for clarity - a 48KHz sample rate could be written `48_000.0_f64`.
 
