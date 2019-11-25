@@ -38,6 +38,7 @@ The completed code can be found on [GitHub](https://github.com/deciduously/music
 - [Preamble](#preamble)
 - [The Meme](#the-meme)
 - [The Program](#the-program)
+  * [Project Structure](#project-structure)
   * [Random Bytes](#random-bytes)
   * [Mapping Bytes To Notes](#mapping-bytes-to-notes)
     - [A Little Physics](#a-little-physics)
@@ -104,17 +105,19 @@ If you'd like the challenge of implementing this yourself from scratch in your o
 
 *[top](#table-of-contents)*
 
+### Project Structure
+
 Ensure you have at least the default stable Rust toolchain [installed](https://www.rust-lang.org/tools/install).  If you've previously installed `rustup` at any point, just issue `rustup update`.  This code was written with `rustc` [version 1.39](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html) for [Rust 2018](https://doc.rust-lang.org/nightly/edition-guide/rust-2018/edition-changes.html).  
 
-Then, spin up a new project:
+Then, spin up a new library project:
 
 ```txt
 $ cargo new music --lib
 ```
 
-Open your new `music` project directory in the environment of your choice.  We're actually going to use both a library and an executable.  Create a subdirectory called `src/bin` and add a file `src/bin/main.rs`.  Our music engine library will live in `lib.rs` and the user-facing executable interface will live in `main.rs`.
+Open your new `music` project directory in the environment of your choice.  If you're not already sure what to use with Rust, I recommend [Visual Studio Code](https://code.visualstudio.com/) with the [Rust Language Server](https://github.com/rust-lang/rls) installed for in-editor development support.  If you have `rustup` present, the [VS Code RLS extension](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust) has a one-click set up.
 
-We'll use two crates, the Rust term for external libraries, to replace the functionality not found in the Rust standard library:
+We'll use two crates - the Rust term for external libraries - to replace the functionality not found in the Rust standard library:
 
 * [`rand`](https://docs.rs/rand/0.7.2/rand/) - [Random number generation](https://en.wikipedia.org/wiki/Random_number_generation)
 * [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [Audio signal processing](https://en.wikipedia.org/wiki/Audio_signal)
@@ -128,9 +131,106 @@ In `Cargo.toml`:
 
 rand = "0.7"
 rodio = "0.10"
+
+[dev-dependencies]
+
+pretty_assertions = "0.6"
 ```
 
-// TODO split to library and binary
+Next, open up `src/lib.rs`.  This is where we'll define our library of types and trait implementations.  Make it look like this:
+
+```rust
+#[cfg(test)]
+mod test;
+
+pub const GREETING: &'static str = "Cool Tunes (tm)";
+```
+
+The `cfg(test)` directive tells the compiler to only compile the `test` module when running `cargo test` specifically.  Any code marked with this tag doesn't end up in your compiled binary in either debug or release modes, even though the test runner does use a debug configuration.
+
+Next, create a new file at `src/test.rs` to hold that module:
+
+```rust
+use super::*;
+use pretty_assertions::assert_eq;
+
+#[test]
+fn cool_greeting() {
+    assert_eq!(GREETING, "Cool Tunes (tm)");
+}
+```
+
+Anything in this file marked `#[test]` will run as a test.  Give it a go with `cargo test` - the first build will take the longest:
+
+```txt
+$ cargo test
+   Compiling music v0.1.0 (C:\Users\you\code\music)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.53s
+     Running target\debug\deps\music-b4c9ecce4c26cf65.exe
+
+running 1 tests
+test test::cool_greeting ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+     Running target\debug\deps\mod-d894091c6e952d62.exe
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+   Doc-tests music
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
+
+Finally, create a directory called `src/bin`.  This optional module is where Cargo will by default expect an executable, if present.  Place a file at `src/bin/mod.rs`:
+
+```rust
+use music::*;
+
+fn main() {
+    println!("{}", GREETING);
+}
+```
+
+We can access any types we define in `src/lib.rs` here by importing everything marked `pub` at the top via the project name: `use music::*`.  Most of our code is going in `lib.rs`, but certain concerns related tot he executable program itself like command-line argument parsing and user output belong here instead.  Give it a go with `cargo run`:
+
+```txt
+$ cargo run
+   Compiling music v0.1.0 (C:\Users\you\code\music)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.57s
+     Running `target\debug\mod.exe`
+Cool Tunes (tm)
+```
+
+Your `music` directory should look something like the following:
+
+```txt
+│   .gitignore
+│   Cargo.lock
+│   Cargo.toml
+│
+└───src
+    │   lib.rs
+    │   test.rs
+    │
+    └───bin
+            mod.rs
+```
+
+This is a good time for an initial commit:
+
+```txt
+$ git add .
+$ git commit -m "Initial Commit"
+```
+
+You can run a faster compilation pass with `cargo check` if you just want the compiler to verify your code's integrity, not produce a binary.
+
+Now that everything has a place to go, let's source us some bytes.
 
 ### Random Bytes
 

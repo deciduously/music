@@ -11,6 +11,8 @@ use std::{
 #[cfg(test)]
 mod test;
 
+pub const GREETING: &'static str = "Cool Tunes (tm)";
+
 #[derive(Default)]
 struct RandomBytes;
 
