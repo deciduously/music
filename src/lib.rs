@@ -269,8 +269,7 @@ impl From<Semitones> for Interval {
             9 => Maj6,
             10 => Min7,
             11 => Maj7,
-            12 => Octave,
-            _ => Interval::from(Semitones(int_semitones % Octave as i8)),
+            12 | _ => Interval::from(Semitones(int_semitones % Octave as i8)),
         }
     }
 }

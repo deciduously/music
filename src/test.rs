@@ -2,7 +2,7 @@ use super::*;
 use pretty_assertions::assert_eq;
 
 #[test]
-fn cool_greeting() {
+fn test_cool_greeting() {
     assert_eq!(GREETING, "Cool Tunes (tm)");
 }
 
@@ -17,7 +17,7 @@ fn test_add_interval() {
     use Interval::*;
     assert_eq!(Unison + Unison, Unison);
     assert_eq!(Unison + Maj3, Maj3);
-    assert_eq!(Octave + Octave, Octave);
-    assert_eq!(Tritone + Tritone, Octave);
-    assert_eq!(Maj7 + Min3, Min2);
+    assert_eq!(Octave + Octave, Unison);
+    assert_eq!(Tritone + Tritone, Unison);
+    assert_eq!(Maj7 + Min3, Maj2);
 }
