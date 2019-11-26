@@ -40,3 +40,10 @@ fn test_add_interval() {
     assert_eq!(Tritone + Tritone, Unison);
     assert_eq!(Maj7 + Min3, Maj2);
 }
+
+#[test]
+fn test_add_cents_to_pitch() {
+    let mut pitch = Pitch::default();
+    pitch += Cents(3.9302);
+    assert_eq!(pitch, Pitch::new(441.0));
+}

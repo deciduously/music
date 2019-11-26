@@ -567,7 +567,7 @@ impl From<Semitones> for Cents {
 }
 ```
 
-With that in place, we can start working with intervals directly and have Rust understand them in terms of cents:
+With that in place, we're ready to start working with intervals directly and have Rust understand them in terms of cents:
 
 ```rust
 #[test]
@@ -579,7 +579,7 @@ fn test_interval_to_cents() {
 }
 ```
 
-We need `Interval` variants directly `Semitones` instead of plain integers, to make sure they're always turned into `Cents` correctly:
+We need `Interval` variants to map directly to `Semitones` instead of plain integers, to make sure they're always turned into `Cents` correctly:
 
 ```rust
 impl From<Interval> for Semitones {
@@ -599,7 +599,7 @@ impl From<Interval> for Cents {
 }
 ```
 
-Phew!  Lots of code, but now we can operate directly in terms of `Interval` variants or anything in between and everything stays contextually tagged.  Verify with `cargo test` that everything passes.
+Phew!  Lots of code, but now we can operate directly in terms of `Interval` variants or anything in between and everything stays contextually tagged.  Verify with `cargo test` that everything checks out.
 
 There's one more step to get from our brand new floating point `Cents` to frequencies in `Hertz` though.  Remember how Middle C was some crazy fraction, 261.626Hz?  This is because cents are a [logarithmic](https://en.wikipedia.org/wiki/Logarithmic_scale) unit, standardized around the point 440.0.  While a 2:1 ratio is nice and neat, we've been subdividing that arbitrarily wherever it makes sense to us.  Now the arithmetic isn't always so clean.  Doubling 440.0Hz will get 880.0Hz, but how would we add a semitone?  It's 100 cents, nice and neat, and there are 12 semitones - so we'd need to increase by a 12th of what doubling the number would do: `440 * 2^(1/12)`.  Looks innocuous enough, but my calculator gives me 466.164, Rust gives me 466.1637615180899 - not enough to perceptually matter, but enough that it's important that the standard is the interval ratio and not the specific amount of Hertz to add or subtract.  Those amounts will only be precise in floating point decimal representations at exact octaves from the base note, because that's integral factor after multiplying by 1 in either direction, 2 or 1/2.
 
@@ -619,7 +619,18 @@ Notice it's not a straight diagonal - we haven't removed the squaring from the s
 
 Here, *a* is the initial frequency in Hertz, *b* is the target frequency, and *n* is the number of cents by which to increase *a*.
 
-Time for the plumbing - we want to be able to ergonomically manipulate a `Pitch` in terms of this new logarithmic scale, and not worry about the specifics.  It looks like we're going to need to divide some `Cents`, using the `impl From<Cents> for f64` blocks we defined:
+Lets try to increase the standard pitch by single Hertz using the value above:
+
+```rust
+#[test]
+fn test_add_cents_to_pitch() {
+    let mut pitch = Pitch::default();
+    pitch += Cents(3.9302);
+    assert_eq!(pitch, Pitch::new(441.0));
+}
+```
+
+It looks like we're going to need to divide some `Cents`, leveraging the `impl From<Cents> for f64` blocks we already defined:
 
 ```rust
 use std::ops::Div;
@@ -651,16 +662,39 @@ If that's not quite clear, this is the exact equation shown above with a bit of 
 
 The `2.0_f64` literal is how we specify a concrete type - a `2.0` literal is just a `{float}` and stills need more context for the compiler to make into a `f32` (a.k.a. `float`) or `f64` (a.k.a. `double`) and use.  This is usually what we want, it gives us the flexibility to use this literal in any floating point context, but it also doesn't carry that information to help out with inference for other types.  Any numeric literal can take a concrete type suffix.   For example, `8` is an unqualified `{integer}` that can coerce to any unsigned integer type (`u8`,`u16`, `u32`, `u64`, or machine-dependent pointer-sized `usize`) until it's used in a specific context, but `8u8` begins its life as a `u8`, fully specified, so we know we can safely cast it to any larger type.  Any `_` found in a numeric literal is ignored and there for clarity - a 48KHz sample rate could be written `48_000.0_f64`.
 
-Lets try to increase by a single Hertz using the value above:
+Sadly, though, `cargo test` tells us we have a problem:
+
+```txt
+Diff < left / right > :
+ Pitch {
+<    frequency: 441.0000105867894,
+>    frequency: 441.0,
+ }
+```
+
+Floating point arithmetic is not precise.  However, a change of a single Hertz isn't even large enough for any human to percieve - for the purposes of testing, we just care that it's "close enough".  We can override the compiler-derived [`PartialEq`](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html) behavior for this type:
+
+```diff
+- #[derive(Debug, Clone, Copy, PartialEq)]
++ #[derive(Debug, Clone, Copy)]
+  pub struct Pitch {
+       frequency: Hertz,
+  }
+```
+
+This is pretty straightforward to hand-implmeent:
 
 ```rust
-fn main() {
-    let mut pitch = Pitch::default();
-    println!("{:?}", pitch); // Pitch { frequency: 440.0 }
-    pitch += Cents(3.9302); // attempt to add one Hz
-    println!("{:?}", pitch); // Pitch { frequency: 441.0000105867894 } - close enough
+impl PartialEq for Pitch {
+    fn eq(&self, other: &Pitch) -> bool {
+        let tolerance = 0.1;
+        let difference = (self.frequency - other.frequency).abs();
+        difference < tolerance
+    }
 }
 ```
+
+Now `assert_eq!(pitch, Pitch::new(441.0));` will return `true` and pass the test we wrote - try it out.
 
 Instead of adding single cents at a time, it's easier to work by semitone - luckily that's pretty easy now:
 

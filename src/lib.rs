@@ -163,7 +163,7 @@ impl fmt::Display for StandardPitch {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 pub struct Pitch {
     frequency: Hertz,
 }
@@ -179,6 +179,14 @@ impl Default for Pitch {
         Self {
             frequency: STANDARD_PITCH,
         }
+    }
+}
+
+impl PartialEq for Pitch {
+    fn eq(&self, other: &Pitch) -> bool {
+        let tolerance = 0.1;
+        let difference = (self.frequency - other.frequency).abs();
+        difference < tolerance
     }
 }
 
