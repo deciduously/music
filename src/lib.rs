@@ -4,7 +4,7 @@ use rodio::{default_output_device, source::SineWave, Sink};
 use std::{
     f32,
     f64::consts::PI,
-    fmt,
+    fmt, io,
     ops::{Add, AddAssign, Div},
     str::FromStr,
 };
@@ -93,13 +93,13 @@ impl Div for Cents {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum NoteLetter {
-    A,
-    B,
-    C,
+    C = 0,
     D,
     E,
     F,
     G,
+    A,
+    B,
 }
 
 impl Default for NoteLetter {
@@ -109,19 +109,22 @@ impl Default for NoteLetter {
 }
 
 impl FromStr for NoteLetter {
-    type Err = std::io::Error;
+    type Err = io::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // TODO this can probably  super concise and cool
-        match s {
-            "A" | "a" => Ok(NoteLetter::A),
-            "B" | "b" => Ok(NoteLetter::B),
-            "C" | "c" => Ok(NoteLetter::C),
-            "D" | "d" => Ok(NoteLetter::D),
-            "E" | "e" => Ok(NoteLetter::E),
-            "F" | "f" => Ok(NoteLetter::F),
-            "G" | "g" => Ok(NoteLetter::G),
-            _ => Err(std::io::Error(std::io::ErrorKind::new("Some Error"))),
+        // TODO this can probably get super concise and cool
+        match s.to_uppercase().as_str() {
+            "A" => Ok(NoteLetter::A),
+            "B" => Ok(NoteLetter::B),
+            "C" => Ok(NoteLetter::C),
+            "D" => Ok(NoteLetter::D),
+            "E" => Ok(NoteLetter::E),
+            "F" => Ok(NoteLetter::F),
+            "G" => Ok(NoteLetter::G),
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("{} is not a valid note", s),
+            )),
         }
     }
 }
@@ -143,6 +146,20 @@ impl fmt::Display for Accidental {
     }
 }
 
+impl FromStr for NoteLetter {
+    type Err = io::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use 
+        match s {
+            "b" | "♭" => Ok(Accidental::Flat),
+            "#" => Ok(Accidental::Sharp),
+            
+        }
+    }
+}
+
+
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 struct Note {
     accidental: Option<Accidental>,
@@ -157,6 +174,17 @@ impl fmt::Display for Note {
             "".to_string()
         };
         write!(f, "{:?}{}", self.letter, acc_str)
+    }
+}
+
+impl Note {
+    fn get_interval(&self, other: Self) -> Interval {
+        let int_self = self.letter as i8;
+        let int_other = other.letter as i8;
+        // TODO accidental?
+        Interval::from(Semitones(
+            (int_self - int_other).abs() % NoteLetter::B as i8,
+        ))
     }
 }
 
@@ -183,13 +211,21 @@ impl fmt::Display for StandardPitch {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+impl FromStr for StandardPitch {
+    type Err = io::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
 pub struct Pitch {
     frequency: Hertz,
 }
 
 impl Pitch {
-    fn new(frequency: Hertz) -> Self {
+    pub fn new(frequency: Hertz) -> Self {
         Self { frequency }
     }
 }
@@ -199,6 +235,14 @@ impl Default for Pitch {
         Self {
             frequency: STANDARD_PITCH,
         }
+    }
+}
+
+impl PartialEq for Pitch {
+    fn eq(&self, other: &Pitch) -> bool {
+        let tolerance = 0.1;
+        let difference = (self.frequency - other.frequency).abs();
+        difference < tolerance
     }
 }
 
@@ -223,17 +267,14 @@ impl AddAssign<Interval> for Pitch {
 
 impl From<StandardPitch> for Pitch {
     fn from(sp: StandardPitch) -> Self {
-        let mut ret = Pitch::default();
-        // TODO
+        use Interval::*;
+        let mut ret = Pitch::new(C_ZERO);
+        // Add octaves
+        for _ in 0..sp.octave {
+            ret += Octave;
+        }
+        // TODO Add note offset
         ret
-    }
-}
-
-impl From<Pitch> for StandardPitch {
-    fn from(p: Pitch) -> Self {
-        let mut ret = StandardPitch::default();
-        //let (interval, octaves) = ret.get_offset()
-        unimplemented!()
     }
 }
 
@@ -275,8 +316,8 @@ impl From<Interval> for i8 {
 impl From<Semitones> for Interval {
     fn from(s: Semitones) -> Self {
         use Interval::*;
-        let int_s = i8::from(s);
-        match int_s {
+        let int_semitones = i8::from(s);
+        match int_semitones {
             0 => Unison,
             1 => Min2,
             2 => Maj2,
@@ -289,8 +330,7 @@ impl From<Semitones> for Interval {
             9 => Maj6,
             10 => Min7,
             11 => Maj7,
-            12 => Octave,
-            _ => Interval::from(Semitones(int_s % Octave as i8)),
+            12 | _ => Interval::from(Semitones(int_semitones % Octave as i8)),
         }
     }
 }
