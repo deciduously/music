@@ -64,3 +64,71 @@ fn test_add_interval_to_pitch() {
     pitch += Min2;
     assert_eq!(pitch, Pitch::new(466.1))
 }
+
+#[test]
+fn test_standard_pitch_from_str() {
+    use NoteLetter::*;
+    use Accidental::*;
+    assert_eq!(
+        StandardPitch::from_str("A4").unwrap(),
+        StandardPitch {
+            note: Note {
+                letter: A,
+                accidental: None
+            },
+            octave: 4
+        }
+    );
+    assert_eq!(
+        StandardPitch::from_str("F#♭2").unwrap(),
+        StandardPitch {
+            note: Note {
+                letter: F,
+                accidental: None
+            },
+            octave: 2
+        }
+    );
+    assert_eq!(
+        StandardPitch::from_str("F♭2").unwrap(),
+        StandardPitch {
+            note: Note {
+                letter: E,
+                accidental: None
+            },
+            octave: 2
+        }
+    );
+    assert_eq!(
+        StandardPitch::from_str("B#2").unwrap(),
+        StandardPitch {
+            note: Note {
+                letter: C,
+                accidental: None
+            },
+            octave: 2
+        }
+    );
+    assert_eq!(
+        StandardPitch::from_str("F#2").unwrap(),
+        StandardPitch {
+            note: Note {
+                letter: F,
+                accidental: Some(Sharp),
+            },
+            octave: 2
+        }
+    );
+}
+
+#[test]
+fn test_note_interval() {
+    // TODO
+}
+
+#[test]
+fn test_standard_pitch_to_pitch() {
+    // TODO
+}
+
+// TODO demonstrate above, then talk about FromStr

@@ -4,8 +4,9 @@ use rodio::{default_output_device, source::SineWave, Sink};
 use std::{
     f32,
     f64::consts::PI,
-    fmt,
+    fmt, io,
     ops::{Add, AddAssign, Div},
+    str::FromStr,
 };
 
 #[cfg(test)]
@@ -92,13 +93,13 @@ impl Div for Cents {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum NoteLetter {
-    A,
-    B,
-    C,
+    C = 0,
     D,
     E,
     F,
     G,
+    A,
+    B,
 }
 
 impl Default for NoteLetter {
@@ -141,6 +142,17 @@ impl fmt::Display for Note {
     }
 }
 
+impl Note {
+    fn get_interval(&self, other: Self) -> Interval {
+        let int_self = self.letter as i8;
+        let int_other = other.letter as i8;
+        // TODO accidental?
+        Interval::from(Semitones(
+            (int_self - int_other).abs() % NoteLetter::B as i8,
+        ))
+    }
+}
+
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct StandardPitch {
     note: Note,
@@ -160,6 +172,14 @@ impl StandardPitch {
 impl fmt::Display for StandardPitch {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{}", self.note, self.octave)
+    }
+}
+
+impl FromStr for StandardPitch {
+    type Err = io::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        unimplemented!()
     }
 }
 
@@ -211,8 +231,13 @@ impl AddAssign<Interval> for Pitch {
 
 impl From<StandardPitch> for Pitch {
     fn from(sp: StandardPitch) -> Self {
-        let mut ret = Pitch::default();
-        // TODO
+        use Interval::*;
+        let mut ret = Pitch::new(C_ZERO);
+        // Add octaves
+        for _ in 0..sp.octave {
+            ret += Octave;
+        }
+        // Add note offset
         ret
     }
 }

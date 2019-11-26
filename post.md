@@ -882,6 +882,20 @@ const C_ZERO: Hertz = 16.352;
 
 This is super low - most humans bottom out around 20Hz.  The 88-key piano's lowest note is up at A0, a 9-semitone [`major sixth`](https://en.wikipedia.org/wiki/Major_sixth) higher.  Note how even though this is a different abstraction for working with pitches, the frequencies baked in to the standard are still pinned to the A440 scale.  Do a quick sanity check before abstracting further:
 
+Creating one of these manually is no fun - this is how we need to define A440:
+
+```rust
+StandardPitch {
+    note: Note {
+        letter: A,
+        accidental: None
+    },
+    octave: 4
+}
+```
+
+We want to be able to parse these from strings like "A4" instead.  This has a few oddities - multiple accidentals need to reuce to just one, and adjacent notes like `E` and `F` shoudln't ever try to represent a note in between.  There's no such thing as `F♭`.  This test is long, see [the GitHub file]() for the full source.
+
 // TODO this should start with StandardPitch::default() and use get_offset()
 
 ```rust
@@ -928,6 +942,8 @@ We can already produce the 12 transpositions from C.
 Similarly, if you don't use the black keys and start on a different note and count up one octave, you will get a *different* diatonic scale, such as the natural minor scale.  These scale variations are called [`Modes`](https://en.wikipedia.org/wiki/Mode_(music)#Modern_modes), and while high-school me was terrified of and terrible at whipping out arbitrary ones on a brass instrument from memory (mental math is *not* one of my talents), they're easy to work with programmatically (and much less stressful).
 
 The first scale I laid out, the major scale, is also known as the [`Ionian mode`](https://en.wikipedia.org/wiki/Ionian_mode).  This is the base mode, each other is some offset from this scale.  As we've seen, the key you need to start on to play this mode with no black keys (accidentals) is C.  The natural minor scale, where we started at A4 and counted up white keys, is called the [`Aeolian mode`](https://en.wikipedia.org/wiki/Aeolian_mode).  There's an absurdly fancy name for each offset.  This means we get our first seven `Scale` variants for free:
+
+// TODO introduce Scale code with Scales section, edit it here with Modes
 
 ```rust
 #[derive(Debug, Clone, Copy)]
