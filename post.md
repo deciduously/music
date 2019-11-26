@@ -64,9 +64,25 @@ The completed code can be found on [GitHub](https://github.com/deciduously/music
 
 This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and up) who are comfortable solving problems with at least one [imperative language](https://en.wikipedia.org/wiki/Imperative_programming).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).  You do not need any prior knowledge of physics or music theory, but there will be a tiny smattering of [elementary algebra](https://en.wikipedia.org/wiki/Elementary_algebra).  I promise it's quick.
 
-There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://www.rust-lang.org/) throughout this write-up, but don't worry if that's not what you're here for.  I will elaborate on a few syntax notes but this particular post is focused on the problem space and not the tools.  You can choose to skip all the code snippets entirely and still come out knowing how it all works.  It could also be useful for translating to your (second) favorite programming language.  Rust tends to get verbose, but one positive side-effect of that [verbosity](https://en.wikipedia.org/wiki/Verbosity) is that at least the core of what this code does should be easy to follow even without knowing the language.
+There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://www.rust-lang.org/) throughout this write-up, but don't worry if that's not what you're here for.  This particular post is focused on the problem space, Rust is just the tool used to get there.  You can choose to skip all the code snippets entirely and still come out knowing how it all works.
 
-I have two disclaimers:
+I will be practicing Test-Driven Development in this post, which means that we're going to define tests of functions we're about to write before attempting the implementation.  Here's an example of a test we'll write later:
+
+```rust
+#[test]
+fn test_add_interval() {
+    use Interval::*;
+    assert_eq!(Unison + Unison, Unison);
+    assert_eq!(Unison + Maj3, Maj3);
+    assert_eq!(Octave + Octave, Unison);
+    assert_eq!(Tritone + Tritone, Unison);
+    assert_eq!(Maj7 + Min3, Maj2);
+}
+```
+
+Each test is just a Rust function.  In it we use a feature of our library, in this case the ability to add musical intervals together with the `+` operator.  On the last line, we assert that the result obtained is equal the expectated result we hardcoded.  This way, we can run `cargo test` to automatically check if our implementation is correct.  Every function marked `#[test]` will run, so we can see anywhere our expectations are not met in the whole program.  By writing these tests before we write the implementation, we've automatied verifying that the code we right actually does what we think it does for a variety of edge cases without having to manually try each one.  Even better, as our code evolves, we'll be able to immediately notice if we accidentally break functionality that worked previously.  
+
+I have two disclaimers before getting started:
 
 1. [There are](https://en.wikipedia.org/wiki/Existence) [217](https://en.wikipedia.org/wiki/217_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Boston), [173](https://en.wikipedia.org/wiki/173_(number)) [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
 1. Further to Point 1, most of this I learned myself on Wikipedia, some of it while writing this post.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
@@ -137,7 +153,7 @@ rodio = "0.10"
 pretty_assertions = "0.6"
 ```
 
-We're practicing Test-Driven Development in this post, which means that we're going to define tests of functions we're about to write before attempting the implementation.  This way, we can run `cargo test` to automatically check if our implementation is correct.  Before we do anything else at all, create a new file at `src/test.rs` to hold our test module:
+Before we do anything else at all, create a new file at `src/test.rs` to hold our test module:
 
 ```rust
 use super::*;
@@ -672,7 +688,7 @@ Diff < left / right > :
  }
 ```
 
-Floating point arithmetic is not precise.  However, a change of a single Hertz isn't even large enough for any human to percieve - for the purposes of testing, we just care that it's "close enough" - at a glance we can look at those results and understand that we got where we need to be.  To convince Rust of that, we can override the compiler-derived [`PartialEq`](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html) behavior for this type:
+Floating point arithmetic is not precise.  However, a change of a single Hertz isn't even large enough for any human to percieve, so for the purposes of testing, we just care that it's "close enough".  At a glance we can look at those results and understand that we got where we need to be.  To convince Rust of that, we can override the compiler-derived [`PartialEq`](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html) behavior for this type:
 
 ```diff
 - #[derive(Debug, Clone, Copy, PartialEq)]
@@ -682,7 +698,7 @@ Floating point arithmetic is not precise.  However, a change of a single Hertz i
   }
 ```
 
-We can specify a tolerance for equality in code.  I'm arbitrarily deciding that if two `Pitch` objects are within tenth of a Hertz, they're functionally equivalent:
+We can specify a tolerance for equality in code.  I'm arbitrarily deciding that if two `Pitch` objects are within a tenth of a Hertz of each other, they're functionally equivalent:
 
 ```rust
 impl PartialEq for Pitch {
