@@ -66,7 +66,7 @@ This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and
 
 There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://www.rust-lang.org/) throughout this write-up, but don't worry if that's not what you're here for.  This particular post is focused on the problem space, Rust is just the tool used to get there.  You can choose to skip all the code snippets entirely and still come out knowing how it all works.
 
-I will be practicing Test-Driven Development in this post, which means that we're going to define tests of functions we're about to write before attempting the implementation.  Here's an example of a test we'll write later:
+We'll write this program using Test-Driven Development, or TDD.  This means we're going to define tests of functionality we need *before* attempting the implementation.  This allows us to specify the expected behavior for a variety of edge cases ahead of time.  Here's an example of a test we'll write later:
 
 ```rust
 #[test]
@@ -81,8 +81,9 @@ fn test_add_interval() {
 }
 ```
 
-Each test is just a Rust function.  In it we use a feature of our library, in this case the ability to add musical intervals together with the `+` operator.  On the last line, we assert that the result obtained is equal the expectated result we hardcoded.  This way, we can run `cargo test` to automatically check if our implementation is correct.  Every function marked `#[test]` will run, so we can see anywhere our expectations are not met in the whole program.  By writing these tests before we write the implementation, we've automatied verifying that the code we right actually does what we think it does for a variety of edge cases without having to manually try each one.  Even better, as our code evolves, we'll be able to immediately notice if we accidentally break functionality that worked previously.  
+Each test is just a Rust function.  In it we use a feature of our library, in this case the ability to add musical intervals together with the `+` operator, and assert that the result obtained is equal an expected result that we hardcode. We can run `cargo test` to automatically check if our implementation is correct.  Every function marked `#[test]` will run, so we can see anywhere our expectations are not met in the whole program.
 
+By writing these tests before we write the implementation, we've automated the process of verifying that our code actually does what we think it does having to manually try each edge case.  Even better, as our code evolves we'll be able to immediately notice if we accidentally break functionality that worked previously.  
 I have two disclaimers before getting started:
 
 1. [There are](https://en.wikipedia.org/wiki/Existence) [217](https://en.wikipedia.org/wiki/217_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Boston), [173](https://en.wikipedia.org/wiki/173_(number)) [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
