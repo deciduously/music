@@ -237,16 +237,8 @@ impl From<StandardPitch> for Pitch {
         for _ in 0..sp.octave {
             ret += Octave;
         }
-        // Add note offset
+        // TODO Add note offset
         ret
-    }
-}
-
-impl From<Pitch> for StandardPitch {
-    fn from(p: Pitch) -> Self {
-        let mut ret = StandardPitch::default();
-        //let (interval, octaves) = ret.get_offset()
-        unimplemented!()
     }
 }
 
