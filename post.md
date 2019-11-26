@@ -14,7 +14,7 @@ tags: beginners, rust, tutorial, music
 
 In this [post]((https://en.wikipedia.org/wiki/Blog)), we'll [throw](https://en.wikipedia.org/wiki/Throwing) something [random](https://en.wikipedia.org/wiki/Random_number_generation) into, [well](https://en.wikipedia.org/wiki/Well), a [math](https://en.wikipedia.org/wiki/Mathematics)-[oven](https://en.wikipedia.org/wiki/Subroutine) and [*viola*](https://en.wikipedia.org/wiki/Viola), [music](https://en.wikipedia.org/wiki/Music)!  We'll just skip the [crash](https://en.wikipedia.org/wiki/Crash_(computing)).
 
-In other words, we're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)), backed by a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).
+In other words, we're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)), backed by a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).
 
 The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover image [procedurally generates](https://en.wikipedia.org/wiki/Procedural_generation) a [melody](https://en.wikipedia.org/wiki/Melody) using [tools assumed to be present](https://en.wikipedia.org/wiki/Unix_philosophy) on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu).  The melody produced will be composed of notes along a single [octave](https://en.wikipedia.org/wiki/Octave) in a hardcoded [key](https://en.wikipedia.org/wiki/Key_(music)):
 
@@ -64,8 +64,6 @@ The completed code can be found on [GitHub](https://github.com/deciduously/music
 
 This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and up) who are comfortable solving problems with at least one [imperative language](https://en.wikipedia.org/wiki/Imperative_programming).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).  You do not need any prior knowledge of physics or music theory, but there will be a tiny smattering of [elementary algebra](https://en.wikipedia.org/wiki/Elementary_algebra).  I promise it's quick.
 
-There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://www.rust-lang.org/) throughout this write-up, but don't worry if that's not what you're here for.  This particular post is focused on the problem space, Rust is just the tool used to get there.  You can choose to skip all the code snippets entirely and still come out knowing how it all works.
-
 We'll write this program using Test-Driven Development, or TDD.  This means we're going to define the expected behavior of new functionality *before* attempting the implementation.  Here's an example of a test we'll write later:
 
 ```rust
@@ -98,7 +96,7 @@ This post was inspired by [this](https://www.reddit.com/r/linuxmasterrace/commen
 
 ![the meme](https://i.redd.it/uirqnamnjpz31.jpg)
 
-I couldn't let myself just scroll past that one, as evidenced by this [diatribe](https://en.wikipedia.org/wiki/Diatribe) I suppose.  Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
+I couldn't let myself just scroll past that one, [clearly](https://en.wikipedia.org/wiki/Diatribe).  Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
 
 ```bash
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
@@ -139,7 +137,7 @@ Open your new `music` project directory in the environment of your choice.  If y
 We'll use two crates - the Rust term for external libraries - to replace the functionality not found in the Rust standard library:
 
 * [`rand`](https://docs.rs/rand/0.7.2/rand/) - [Random number generation](https://en.wikipedia.org/wiki/Random_number_generation)
-* [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [Audio signal processing](https://en.wikipedia.org/wiki/Audio_signal)
+* [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [Audio signal playback](https://en.wikipedia.org/wiki/Audio_signal)
 
 `rand` is in place of [`/dev/urandom`](https://en.wikipedia.org/wiki//dev/random) and [`hexdump`](https://en.wikipedia.org/wiki/Hex_dump), and `rodio` will cover [`xxd`](https://www.systutorials.com/docs/linux/man/1-xxd/) and [`aplay`](https://linux.die.net/man/1/aplay).  For the rest - step three - we'll just use the standard library, there's nothing fancy going on.
 
@@ -1099,6 +1097,6 @@ TODO maybe?  maybe not?
 - Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation).
 - Port this program to another language.
 
-This has been Public Service Announcement on the dangers of online encyclopedias.  Thank you for your time.
+This has been a Public Service Announcement on the dangers of online encyclopedias.  Thank you for your time.
 
 *Cover image: [reddit](https://www.reddit.com/r/linuxmasterrace/comments/dyqri7/like_god_would_have_wanted/)*
