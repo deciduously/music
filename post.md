@@ -1,5 +1,5 @@
 ---
-title: Teaching Numbers How To Sing
+title: Teaching Numbers How To Sing with Test-Driven Development
 published: false
 description: Learn how to procedurally generate melodies in a variety of keys with Rust.
 cover_image: https://thepracticaldev.s3.amazonaws.com/i/iuakwwcexql5u0th7gtm.jpg
@@ -137,7 +137,21 @@ rodio = "0.10"
 pretty_assertions = "0.6"
 ```
 
-Next, open up `src/lib.rs`.  This is where we'll define our library of types and trait implementations.  Make it look like this:
+We're practicing Test-Driven Development in this post, which means that we're going to define tests of functions we're about to write before attempting the implementation.  This way, we can run `cargo test` to automatically check if our implementation is correct.  Before we do anything else at all, create a new file at `src/test.rs` to hold our test module:
+
+```rust
+use super::*;
+use pretty_assertions::assert_eq;
+
+#[test]
+fn test_cool_greeting() {
+    assert_eq!(GREETING, "Cool Tunes (tm)");
+}
+```
+
+If the two arguments to `assert_eq!()` are not equal, this test will fail. Anything in this file marked `#[test]` will run as a test, and any code you see throughout this post marked with this directive should go here.
+
+This test is importing a constant, `GREETING`, from our library, and expecting it to be the string `Cool Tunes (tm)`.  This code will fail to compile, though - there's no such `super::GREETING` constant available to test!  Open up `src/lib.rs` and replace the contents with this:
 
 ```rust
 #[cfg(test)]
@@ -146,21 +160,9 @@ mod test;
 pub const GREETING: &'static str = "Cool Tunes (tm)";
 ```
 
-The `cfg(test)` directive tells the compiler to only compile the `test` module when running `cargo test` specifically.  Any code marked with this tag doesn't end up in your compiled binary in either debug or release modes, even though the test runner does use a debug configuration.
+The `#[cfg(test)]` tag tells the compiler to only build the `test` module when we're using the test runner.  The compiler won't even look at it when using `cargo run`.
 
-Next, create a new file at `src/test.rs` to hold that module:
-
-```rust
-use super::*;
-use pretty_assertions::assert_eq;
-
-#[test]
-fn cool_greeting() {
-    assert_eq!(GREETING, "Cool Tunes (tm)");
-}
-```
-
-Anything in this file marked `#[test]` will run as a test.  Give it a go with `cargo test` - the first build will take the longest:
+Now we can give `cargo test` a go - the first build will take the longest as it gathers and builds dependencies for the first time:
 
 ```txt
 $ cargo test
@@ -169,7 +171,7 @@ $ cargo test
      Running target\debug\deps\music-b4c9ecce4c26cf65.exe
 
 running 1 tests
-test test::cool_greeting ... ok
+test test::test_cool_greeting ... ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 
@@ -185,6 +187,10 @@ running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 ```
+
+// TODO show a failing test?
+
+Great!  Near the top, we can see our `cool_greeting` test function passing.
 
 Finally, create a directory called `src/bin`.  This optional module is where Cargo will by default expect an executable, if present.  Place a file at `src/bin/mod.rs`:
 
@@ -257,7 +263,11 @@ impl Iterator for RandomBytes {
         Some(random::<Self::Item>())
     }
 }
+```
 
+To replicate the `bash` command exactly, add this driver code to `src/bin/mod.rs`:
+
+```rust
 fn main() {
     let mut rands = RandomBytes::new();
     loop {
@@ -345,16 +355,38 @@ To start working with concrete numbers, we need some sort of standard to base ev
 
 ![stuttgart](https://i.imgflip.com/3h0y3g.jpg)
 
-Let's set up a type to represent a pitch:
+We can keep track of Hertz with a double-precision floating-point value:
 
 ```rust
-type Hertz = f64;
-const STANDARD_PITCH: Hertz = 440.0;
+pub type Hertz = f64;
+```
 
+Next, we need a way to represent a pitch:
+
+```rust
 #[derive[Debug, Clone, Copy]
 struct Pitch {
     frequency: Hertz,
 }
+```
+
+We want our new `Pitch` type to default to A440, but also accept any arbitrary value:
+
+```rust
+#[test]
+fn test_new_pitch() {
+    assert_eq!(Pitch::default(), Pitch { frequency: 440.0 });
+    assert_eq!(Pitch::new(MIDDLE_C), Pitch { frequency: 261.626 });
+}
+```
+
+The following code gets us there:
+
+```rust
+pub const STANDARD_PITCH: Hertz = 440.0;
+pub const MIDDLE_C: Hertz = 261.626;
+
+// ..
 
 impl Pitch {
     fn new(frequency: Hertz) -> Self {
@@ -369,21 +401,19 @@ impl Default for Pitch {
 }
 ```
 
-With this code we can use `Pitch::default()` to get our A440 pitch, or pass an arbitrary frequency: `Pitch::new(261.626) // Middle C`.
+Verify it with `cargo test`!
 
 ##### Singing
 
 *[top](#table-of-contents)*
 
-Knowing what frequency to use to produce a given pitch is all well and good, but we need to actually make the sound.  When we sing with our [voice](https://en.wikipedia.org/wiki/Human_voice), our [speech organs](https://en.wikipedia.org/wiki/Speech_organ) vibrate to produce complex multiple-component sound waves of differing frequencies.  We can program ourselves a little one-frequency "speechbox" that produces a wave programmatically instead of by physically vibrating.  To do so, we're going to [graph](https://en.wikipedia.org/wiki/Graph_of_a_function) a function of a single cycle of the target sine wave and [sample](https://en.wikipedia.org/wiki/Sampling_(signal_processing)) it.
+Knowing what frequency to use to produce a given pitch is all well and good, but we need to actually make the sound.  When we sing with our [voice](https://en.wikipedia.org/wiki/Human_voice), our [speech organs](https://en.wikipedia.org/wiki/Speech_organ) vibrate to produce complex multiple-component sound waves of differing frequencies.  We can program ourselves a little one-frequency "speechbox" that produces a wave programmatically instead of by physically vibrating.  To do so, we're going to perform an [analog-to-digital conversion](https://en.wikipedia.org/wiki/Analog-to-digital_converter).  That's a super fancy term for something that isn't that complicated conceptually.  We're going to [graph](https://en.wikipedia.org/wiki/Graph_of_a_function) the function of a single cycle of the target sine wave and [sample](https://en.wikipedia.org/wiki/Sampling_(signal_processing)) it.  If you already know how we're doing this part, feel free to skip this explanation.
 
-We're going to do a little produce raw audio of this sine wave using [analog-to-digital conversion](https://en.wikipedia.org/wiki/Analog-to-digital_converter).  That's a super fancy term for something that isn't that complicated conceptually.  If you already know how we're doing this part, feel free to skip this explanation.
+A sine wave, as we've seen, is smooth.  However, what's a graph but a visualization of a function.  There's some function `mySineWave(x)` that's this wave when we put in a bunch of fractional numbers between *0* and *1*.  The  `for (i = 0; i < 1; i += 0.0001)` loop is doing exactly that, calculating a series of adjacent points at a fixed interval (`0.0001`) that satisfy the function of this wave.  That's our analog-to-digital conversion  - we've taken something smooth, a sine wave, and made it digital, or made up of discrete points.  For `Pitch::default()`, this cycle repeats 440 times each second.
 
-A sine wave, as we've seen, is smooth.  However, what's a graph but a visualization of a function.  There's some function `mySineWave(x) = x` that's this wave when we put in a bunch of fractional numbers between *x* and *x*.  Each time we're back at `x` is the top of the circle - back at one, and it's gonna cycle at *x*Hz (by definition).  The  `for (i = 0; i < 1; i += 0.0001)` loop is doing exactly that, calculating a series of adjacent points at a fixed interval (`0.0001`) that satisfy the function of this wave.  That's our analog-to-digital conversion  - we've taken something smooth, a sine wave, and made it digital, or made up of discrete points.
+The sample rate of an audio stream is how many points to store for each one of these cycles, or is how high-fidelity this "digital snapshot" of the wave is.  Lots of applications use a [44.1KHz](https://en.wikipedia.org/wiki/44,100_Hz) [sample rate](https://en.wikipedia.org/wiki/Sampling_(signal_processing)#Sampling_rate) - a bit higher than 10KHz like the example.  According to the [sampling theorem](https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem), the threshold for ensuring you've captured a sufficient sample from an analog signal is that the sample rate must be greater than twice the frequency you you're sampling.  Humans can hear about 20Hz to 20,000Hz.  This means we need at least 40,000 samples, and 44,100 exceeds that.  I [don't understand](https://en.wikipedia.org/wiki/Transition_band) the reason for the specific 4.1k overage, but it's The Standard. Similarly, [16-bit samples](https://en.wikipedia.org/wiki/Audio_bit_depth) is commonly seen thing, so who am I to say otherwise.  In this application, we're using 48KHz.  The maximum amplitude this struct can represent is the maximum wave that fits in a 16-bit sample, because that's the biggest *x* will ever be in either direction - `1` or `-1`.
 
-There's a number of channels meaning is the number of frequencies - that's a cool jumping off point, but we're just working with one.  The sample rate is how many points to store each cycle, which is how high-fidelity this "digital snapshot" of the wave is.  Lots of applications use a [44.1KHz](https://en.wikipedia.org/wiki/44,100_Hz) [sample rate](https://en.wikipedia.org/wiki/Sampling_(signal_processing)#Sampling_rate) - a bit higher than 10KHz like the example.  According to the [sampling theorem](https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem), the threshold for ensuring you've captured a sufficient sample from an analog signal is that the sample rate must be greater than twice the frequency you you're sampling.  Humans can hear about 20Hz to 20,000Hz.  This means we need at least 40,000 samples, and 44,100 exceeds that.  I [don't understand](https://en.wikipedia.org/wiki/Transition_band) the reason for the specific 4.1k overage, but it's The Standard. Similarly, [16-bit samples](https://en.wikipedia.org/wiki/Audio_bit_depth) is commonly seen thing, so who am I to say otherwise.  In this application, we're using 4.8KHz.  The maximum amplitude this struct can represent is the maximum wave that fits in a 16-bit sample, because that's the biggest *x* will ever be in either direction - `1` or `-1`.
-
-This is going to be anti-climactic - we don't even need to call `sin()` ourselves.  We can just use [`rodio::source::SineWave`](https://docs.rs/rodio/0.10.0/rodio/source/struct.SineWave.html) and translate the parameter.  It locks you to an infinite 48KHz single-channel source at the frequency passed in.  Check out the source in the [library code](https://docs.rs/rodio/0.10.0/src/rodio/source/sine.rs.html#24) though (comment mine):
+We actually don't even need to call `sin()` ourselves.  We can just use [`rodio::source::SineWave`](https://docs.rs/rodio/0.10.0/rodio/source/struct.SineWave.html) and translate the parameter.  It locks you to an infinite 48KHz single-channel source at the frequency passed in.  Check out the source in the [library code](https://docs.rs/rodio/0.10.0/src/rodio/source/sine.rs.html#24) though (comment mine):
 
 ```rust
 impl Iterator for SineWave {
@@ -416,6 +446,8 @@ fn main() {
     sink.append(source);
 }
 ```
+
+// TODO revisit the above
 
 #### A Little Music Theory
 
@@ -497,7 +529,17 @@ struct Cents(f64);
 
 I didn't just assign aliases as with `type Hertz = f64`, because I need to re-define how to convert to and from `Cents` and `Semitones` with the [`From`](https://doc.rust-lang.org/std/convert/trait.From.html) [trait](https://doc.rust-lang.org/book/ch10-02-traits.html).  For that, I need my very own type, not just an alias of a primitive that already can convert to and from other primitives with the standard logic.  `Semitones` to `Cents` is not the same thing as `i8` to `f64`, we have a conversion factor.   The [tuple struct](https://doc.rust-lang.org/1.37.0/book/ch05-01-defining-structs.html#using-tuple-structs-without-named-fields-to-create-different-types) syntax is perfect for that.  I kept Hertz as an alias because it really is a more general unit of frequency.  It made sense to me to separate that concept from a `Pitch` that can be modulated by `Cents`.
 
-Now, bear with me - we're going to do a little plumbing to let ourselves work at this higher level of abstraction.  We can give ourselves some conversions to the inner primitive:
+Now, bear with me - we're going to do a little plumbing to let ourselves work at this higher level of abstraction.  We need to be able to translate our discrete `Semitones` into `Cents` ergonomically:
+
+```rust
+#[test]
+fn test_semitones_to_cents() {
+    assert_eq!(Cents::from(Semitones(1)), Cents(100.0));
+    assert_eq!(Cents::from(Semitones(12)), Cents(1200.0));
+}
+```
+
+We can give ourselves some conversions to the inner primitive:
 
 ```rust
 impl From<Cents> for f64 {
@@ -525,7 +567,19 @@ impl From<Semitones> for Cents {
 }
 ```
 
-We can also map our `Interval` variants directly `Semitones`, to make sure they're always turned into `Cents` correctly:
+With that in place, we can start working with intervals directly and have Rust understand them in terms of cents:
+
+```rust
+#[test]
+fn test_interval_to_cents() {
+    use Interval::*;
+    assert_eq!(Cents::from(Unison), Cents(0.0));
+    assert_eq!(Cents::from(Min2), Cents(100.0));
+    assert_eq!(Cents::from(Octave), Cents(1200.0));
+}
+```
+
+We need `Interval` variants directly `Semitones` instead of plain integers, to make sure they're always turned into `Cents` correctly:
 
 ```rust
 impl From<Interval> for Semitones {
@@ -545,7 +599,7 @@ impl From<Interval> for Cents {
 }
 ```
 
-Phew!  Lots of code, but now we can operate directly in terms of `Interval` variants or anything in between and everything stays contextually tagged.
+Phew!  Lots of code, but now we can operate directly in terms of `Interval` variants or anything in between and everything stays contextually tagged.  Verify with `cargo test` that everything passes.
 
 There's one more step to get from our brand new floating point `Cents` to frequencies in `Hertz` though.  Remember how Middle C was some crazy fraction, 261.626Hz?  This is because cents are a [logarithmic](https://en.wikipedia.org/wiki/Logarithmic_scale) unit, standardized around the point 440.0.  While a 2:1 ratio is nice and neat, we've been subdividing that arbitrarily wherever it makes sense to us.  Now the arithmetic isn't always so clean.  Doubling 440.0Hz will get 880.0Hz, but how would we add a semitone?  It's 100 cents, nice and neat, and there are 12 semitones - so we'd need to increase by a 12th of what doubling the number would do: `440 * 2^(1/12)`.  Looks innocuous enough, but my calculator gives me 466.164, Rust gives me 466.1637615180899 - not enough to perceptually matter, but enough that it's important that the standard is the interval ratio and not the specific amount of Hertz to add or subtract.  Those amounts will only be precise in floating point decimal representations at exact octaves from the base note, because that's integral factor after multiplying by 1 in either direction, 2 or 1/2.
 

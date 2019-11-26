@@ -7,9 +7,23 @@ fn test_cool_greeting() {
 }
 
 #[test]
+fn test_new_pitch() {
+    assert_eq!(Pitch::default(), Pitch { frequency: 440.0 });
+    assert_eq!(Pitch::new(MIDDLE_C), Pitch { frequency: 261.626 });
+}
+
+#[test]
 fn test_semitones_to_cents() {
     assert_eq!(Cents::from(Semitones(1)), Cents(100.0));
     assert_eq!(Cents::from(Semitones(12)), Cents(1200.0));
+}
+
+#[test]
+fn test_interval_to_cents() {
+    use Interval::*;
+    assert_eq!(Cents::from(Unison), Cents(0.0));
+    assert_eq!(Cents::from(Min2), Cents(100.0));
+    assert_eq!(Cents::from(Octave), Cents(1200.0));
 }
 
 #[test]
