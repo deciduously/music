@@ -13,7 +13,25 @@ fn test_semitones_to_cents() {
 }
 
 #[test]
-fn test_cents_to_semitones() {
-    //TODO
+fn test_add_interval() {
+    use Interval::*;
+    assert_eq!(Unison + Unison, Unison);
+    assert_eq!(Unison + Maj7, Maj7);
+    assert_eq!(Octave + Octave, Octave);
+    assert_eq!(Maj7 + Tritone, Perfect4);
 }
-// TODO ALL THE TESTS
+
+#[test]
+fn test_standard_pitch_from_str() {
+    use std::str::FromStr;
+    assert_eq!(
+        StandardPitch::from_str("A4"),
+        StandardPitch {
+            note: Note {
+                accidental: None,
+                letter: NoteLetter::A,
+            },
+            octave: 4
+        }
+    )
+}

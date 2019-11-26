@@ -6,6 +6,7 @@ use std::{
     f64::consts::PI,
     fmt,
     ops::{Add, AddAssign, Div},
+    str::FromStr,
 };
 
 #[cfg(test)]
@@ -107,6 +108,24 @@ impl Default for NoteLetter {
     }
 }
 
+impl FromStr for NoteLetter {
+    type Err = std::io::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // TODO this can probably  super concise and cool
+        match s {
+            "A" | "a" => Ok(NoteLetter::A),
+            "B" | "b" => Ok(NoteLetter::B),
+            "C" | "c" => Ok(NoteLetter::C),
+            "D" | "d" => Ok(NoteLetter::D),
+            "E" | "e" => Ok(NoteLetter::E),
+            "F" | "f" => Ok(NoteLetter::F),
+            "G" | "g" => Ok(NoteLetter::G),
+            _ => Err(std::io::Error(std::io::ErrorKind::new("Some Error"))),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Accidental {
     Flat,
@@ -154,6 +173,7 @@ impl StandardPitch {
     //fn get_offset()
     fn all_pitches() -> &'static [Interval] {
         unimplemented!()
+        // Need to do FromStr first
     }
 }
 
@@ -254,7 +274,24 @@ impl From<Interval> for i8 {
 
 impl From<Semitones> for Interval {
     fn from(s: Semitones) -> Self {
-        unimplemented!()
+        use Interval::*;
+        let int_s = i8::from(s);
+        match int_s {
+            0 => Unison,
+            1 => Min2,
+            2 => Maj2,
+            3 => Min3,
+            4 => Maj3,
+            5 => Perfect4,
+            6 => Tritone,
+            7 => Perfect5,
+            8 => Min6,
+            9 => Maj6,
+            10 => Min7,
+            11 => Maj7,
+            12 => Octave,
+            _ => Interval::from(Semitones(int_s % Octave as i8)),
+        }
     }
 }
 

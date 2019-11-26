@@ -27,7 +27,7 @@ By the end of this post our program will:
 1. Produce any arbitrary tone we ask for.
 1. Play back sequences recorded in a rudimentary [notation format](https://en.wikipedia.org/wiki/Musical_notation).
 1. Encourage further extension with lots of Rust-y goodness.
-1. Run fully cross-platform without extra effort or code changes, not just specifically-configured Linux.
+1. Compile and run on Windows, MacOS, or Linux with no code changes (I tried all three).
 
 However, at the end of the day, it's just the thing in the cover image.
 
@@ -62,9 +62,9 @@ The completed code can be found on [GitHub](https://github.com/deciduously/music
 
 *[top](#table-of-contents)*
 
-This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and up) who are comfortable solving problems with at least one [imperative language](https://en.wikipedia.org/wiki/Imperative_programming).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).  You do not need any prior knowledge of physics or music theory, but there will be a tiny smattering of [elementary algebra](https://en.wikipedia.org/wiki/Elementary_algebra).  I promise it's quick.
+This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and up) who are comfortable solving problems with at least one [imperative](https://en.wikipedia.org/wiki/Imperative_programming) [language](https://en.wikipedia.org/wiki/Programming_language).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).  You do not need any prior knowledge of physics or music theory, but there will be a tiny smattering of [elementary algebra](https://en.wikipedia.org/wiki/Elementary_algebra).  I promise it's quick.
 
-There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://www.rust-lang.org/) throughout this write-up, but don't worry if that's not what you're here for.  I will elaborate on a few syntax notes but this particular post is focused on the problem space and not the tools.  You can choose to skip all the code snippets entirely and still come out knowing how it all works.  It could also be useful for translating to your (second) favorite programming language.  Rust tends to get verbose, but one positive side-effect of that [verbosity](https://en.wikipedia.org/wiki/Verbosity) is that at least the core of what this code does should be easy to follow even without knowing the language.
+There's a bunch of fairly [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://www.rust-lang.org/) throughout this write-up, but don't worry if that's not what you're here for.  You can choose to skip all the code snippets entirely and still come out knowing how it all works.
 
 I have two disclaimers:
 
@@ -79,7 +79,7 @@ This post was inspired by [this](https://www.reddit.com/r/linuxmasterrace/commen
 
 ![the meme](https://i.redd.it/uirqnamnjpz31.jpg)
 
-I couldn't let myself just scroll past that one, as evidenced by this [diatribe](https://en.wikipedia.org/wiki/Diatribe) I suppose.  Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
+I couldn't let myself just scroll past that one ([clearly](https://en.wikipedia.org/wiki/Diatribe).  Here's a version of the [`bash`](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) [pipeline](https://en.wikipedia.org/wiki/Pipeline_(Unix)) at the bottom with slightly different hard-coded values, taken from [this blog post](https://blog.robertelder.org/bash-one-liner-compose-music/) by [Robert Elder](https://www.robertelder.org/) that explores it:
 
 ```bash
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
@@ -115,14 +115,14 @@ Then, spin up a new library project:
 $ cargo new music --lib
 ```
 
-Open your new `music` project directory in the environment of your choice.  If you're not already sure what to use with Rust, I recommend [Visual Studio Code](https://code.visualstudio.com/) with the [Rust Language Server](https://github.com/rust-lang/rls) installed for in-editor development support.  If you have `rustup` present, the [VS Code RLS extension](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust) has a one-click set up.
+Open your new `music` project directory in the environment of your choice.  If you're not already sure what to use with Rust, I recommend [Visual Studio Code](https://code.visualstudio.com/) with the [Rust Language Server](https://github.com/rust-lang/rls) installed for in-editor development support.  If you have `rustup` present, the [VS Code RLS extension](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust) has a one-click set up.  I have been an exclusive Linux user for years and years and wrote this whole project on Windows 10 with VS Code.  Rust is cross-platform, yo.
 
 We'll use two crates - the Rust term for external libraries - to replace the functionality not found in the Rust standard library:
 
 * [`rand`](https://docs.rs/rand/0.7.2/rand/) - [Random number generation](https://en.wikipedia.org/wiki/Random_number_generation)
 * [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [Audio signal processing](https://en.wikipedia.org/wiki/Audio_signal)
 
-`rand` is in place of [`/dev/urandom`](https://en.wikipedia.org/wiki//dev/random) and [`hexdump`](https://en.wikipedia.org/wiki/Hex_dump), and `rodio` will cover [`xxd`](https://www.systutorials.com/docs/linux/man/1-xxd/) and [`aplay`](https://linux.die.net/man/1/aplay).  For the rest - step three - we'll just use the standard library, there's nothing fancy going on.
+`rand` is in place of [`/dev/urandom`](https://en.wikipedia.org/wiki//dev/random) and [`hexdump`](https://en.wikipedia.org/wiki/Hex_dump), and `rodio` will cover [`xxd`](https://www.systutorials.com/docs/linux/man/1-xxd/) and [`aplay`](https://linux.die.net/man/1/aplay).  For step 3, which is the bulk of the program, we'll just use the standard library.  If `awk` can do it in two statements, Rust can sure as heck do it in several hundred lines (don't panic).  I also use [`pretty_assertions`](https://docs.rs/pretty_assertions/0.6.1/pretty_assertions/) to make the [test runner](https://en.wikipedia.org/wiki/Unit_testing) output a little prettier:
 
 In `Cargo.toml`:
 
@@ -137,6 +137,8 @@ rodio = "0.10"
 pretty_assertions = "0.6"
 ```
 
+We're going to organize this program into three components.  The core of it all will be a library of types and relationships between them, which will live in `src/lib.rs`.  Most of our code will go here, this is where we'll model the domain.  This file is already created for you, with a stub `test` module.  We're going to make that module it's own file instead, `src/test.rs`.  In this file, we'll define unit tests to automatically verify the logic we create in `lib.rs` is correct.
+
 Next, open up `src/lib.rs`.  This is where we'll define our library of types and trait implementations.  Make it look like this:
 
 ```rust
@@ -146,9 +148,7 @@ mod test;
 pub const GREETING: &'static str = "Cool Tunes (tm)";
 ```
 
-The `cfg(test)` directive tells the compiler to only compile the `test` module when running `cargo test` specifically.  Any code marked with this tag doesn't end up in your compiled binary in either debug or release modes, even though the test runner does use a debug configuration.
-
-Next, create a new file at `src/test.rs` to hold that module:
+Next, create a new file at `src/test.rs` to hold the test module:
 
 ```rust
 use super::*;
@@ -160,7 +160,7 @@ fn cool_greeting() {
 }
 ```
 
-Anything in this file marked `#[test]` will run as a test.  Give it a go with `cargo test` - the first build will take the longest:
+Anything in this file marked `#[test]` will run as a test.  This file is only compiled and run when you run `cargo test`.  Try it now - the first build will take the longest:
 
 ```txt
 $ cargo test
@@ -186,7 +186,7 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 ```
 
-Finally, create a directory called `src/bin`.  This optional module is where Cargo will by default expect an executable, if present.  Place a file at `src/bin/mod.rs`:
+Finally, create a directory called `src/bin`.  This optional module is where Cargo will by default expect an executable, if present.  Our program will include a command-line interface to interact with the types we define.  Logic concerned with tht interface will live here.  Place a file at `src/bin/mod.rs`:
 
 ```rust
 use music::*;
@@ -196,7 +196,7 @@ fn main() {
 }
 ```
 
-We can access any types we define in `src/lib.rs` here by importing everything marked `pub` there at the top via the project name.  Most of our code is going in `lib.rs` but certain concerns related to the executable program itself, such as command-line argument parsing and user output, belong here instead.  Give it a go with `cargo run`:
+We can access any types we define in `src/lib.rs` here by importing everything there (at, least, things that are marked `pub`, or public) at the top via the project name.  Give it a go with `cargo run`:
 
 ```txt
 $ cargo run
@@ -206,7 +206,7 @@ $ cargo run
 Cool Tunes (tm)
 ```
 
-Your `music` directory should look something like the following:
+The *coolest* tunes.  Your `music` directory should look something like the following:
 
 ```txt
 │   .gitignore
@@ -377,13 +377,27 @@ With this code we can use `Pitch::default()` to get our A440 pitch, or pass an a
 
 Knowing what frequency to use to produce a given pitch is all well and good, but we need to actually make the sound.  When we sing with our [voice](https://en.wikipedia.org/wiki/Human_voice), our [speech organs](https://en.wikipedia.org/wiki/Speech_organ) vibrate to produce complex multiple-component sound waves of differing frequencies.  We can program ourselves a little one-frequency "speechbox" that produces a wave programmatically instead of by physically vibrating.  To do so, we're going to [graph](https://en.wikipedia.org/wiki/Graph_of_a_function) a function of a single cycle of the target sine wave and [sample](https://en.wikipedia.org/wiki/Sampling_(signal_processing)) it.
 
-We're going to do a little produce raw audio of this sine wave using [analog-to-digital conversion](https://en.wikipedia.org/wiki/Analog-to-digital_converter).  That's a super fancy term for something that isn't that complicated conceptually.  If you already know how we're doing this part, feel free to skip this explanation.
+TO do so, we need to perform an [analog-to-digital conversion](https://en.wikipedia.org/wiki/Analog-to-digital_converter).  That's a super fancy term for something that isn't that complicated conceptually.  If you already know how we're doing this part, feel free to skip this explanation.
 
 A sine wave, as we've seen, is smooth.  However, what's a graph but a visualization of a function.  There's some function `mySineWave(x) = x` that's this wave when we put in a bunch of fractional numbers between *x* and *x*.  Each time we're back at `x` is the top of the circle - back at one, and it's gonna cycle at *x*Hz (by definition).  The  `for (i = 0; i < 1; i += 0.0001)` loop is doing exactly that, calculating a series of adjacent points at a fixed interval (`0.0001`) that satisfy the function of this wave.  That's our analog-to-digital conversion  - we've taken something smooth, a sine wave, and made it digital, or made up of discrete points.
 
 There's a number of channels meaning is the number of frequencies - that's a cool jumping off point, but we're just working with one.  The sample rate is how many points to store each cycle, which is how high-fidelity this "digital snapshot" of the wave is.  Lots of applications use a [44.1KHz](https://en.wikipedia.org/wiki/44,100_Hz) [sample rate](https://en.wikipedia.org/wiki/Sampling_(signal_processing)#Sampling_rate) - a bit higher than 10KHz like the example.  According to the [sampling theorem](https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem), the threshold for ensuring you've captured a sufficient sample from an analog signal is that the sample rate must be greater than twice the frequency you you're sampling.  Humans can hear about 20Hz to 20,000Hz.  This means we need at least 40,000 samples, and 44,100 exceeds that.  I [don't understand](https://en.wikipedia.org/wiki/Transition_band) the reason for the specific 4.1k overage, but it's The Standard. Similarly, [16-bit samples](https://en.wikipedia.org/wiki/Audio_bit_depth) is commonly seen thing, so who am I to say otherwise.  In this application, we're using 4.8KHz.  The maximum amplitude this struct can represent is the maximum wave that fits in a 16-bit sample, because that's the biggest *x* will ever be in either direction - `1` or `-1`.
 
-This is going to be anti-climactic - we don't even need to call `sin()` ourselves.  We can just use [`rodio::source::SineWave`](https://docs.rs/rodio/0.10.0/rodio/source/struct.SineWave.html) and translate the parameter.  It locks you to an infinite 48KHz single-channel source at the frequency passed in.  Check out the source in the [library code](https://docs.rs/rodio/0.10.0/src/rodio/source/sine.rs.html#24) though (comment mine):
+The `rodio` crate actually has a built-in [`rodio::source::SineWave`](https://docs.rs/rodio/0.10.0/rodio/source/struct.SineWave.html).  We could give ourselves a `From` implementation to play theirs - this code should produce an A440 tone:
+
+```rust
+use rodio::{Sink, source::SineWave, default_output_device};
+
+fn main() {
+    let device = default_output_device().unwrap();
+    let sink = Sink::new(&device);
+    let source = SineWave::from(STANDARD_PITCH);
+    sink.append(source);
+    sink.sleep_until_end();
+}
+```
+
+This source produces an infinite sound source at the given frequency a 48KHz sample rate.  Check out this section of the [source code](https://docs.rs/rodio/0.10.0/src/rodio/source/sine.rs.html#24) from the `rodio` crate for `SineWave`:
 
 ```rust
 impl Iterator for SineWave {
@@ -393,35 +407,53 @@ impl Iterator for SineWave {
     fn next(&mut self) -> Option<f32> {
         self.num_sample = self.num_sample.wrapping_add(1);
 
-        // Some value * 440.0 * (current sample / total samples)
         let value = 2.0 * 3.14159265 * self.freq * self.num_sample as f32 / 48000.0;
         Some(value.sin())
     }
 }
 ```
 
-This `impl Iterator` block is handling the `for` loop in the cover image.  We can test it on a default `Pitch`:
+This `impl Iterator` block is handling the `for` loop in the cover image.  It's calculating the exact amplitude of a sine wave at some fractional point between 0 and 1.
+
+The math, in other words, is `440.0 * Pi * (current sample / total samples)`, multiplied by some value, in this case `2.0`.  This code is calculating the sine wave at a given point within a cycle - for 0 to 1, there are 48,000 points to collect, so the current point is the sine wave of this frequency at whatever point we're at, stored as `self.num_sample`, between 0 and 1.
+
+For some reason they've hardcoded [Pi](https://en.wikipedia.org/wiki/Pi), there are constants available like [`std::f64::consts::PI`](https://doc.rust-lang.org/std/f64/consts/constant.PI.html).  I'd be interested to know if anyone would know why that's a good choice instead of relying on the language constant!
+
+We can go ahead and throw a quick conversion in for our `Pitch` type - could be useful for testing:
 
 ```rust
+// lib.rs
 impl From<Pitch> for SineWave {
     fn from(p: Pitch) -> Self {
         SineWave::new(f64::from(p) as u32)
     }
 }
-
-fn main() {
-    let device = default_output_device().unwrap();
-    let sink = Sink::new(&device);
-    let source = SineWave::from(Pitch::default());
-    sink.append(source);
-}
 ```
+
+Now we can play the same tone using our own toolkit:
+
+```diff
+  fn main() {
+      let device = default_output_device().unwrap();
+      let sink = Sink::new(&device);
+-     let source = SineWave::from(STANDARD_PITCH);
++     let source = SineWave::from(Pitch::default());
+      sink.append(source);
+      sink.sleep_until_end();
+  }
+```
+
+Much better.  I'll briefly cover the other tidbits: `default_output_device()` attempts to find the running system's currently configured default audio device, and a [`Sink`](https://docs.rs/rodio/0.10.0/rodio/struct.Sink.html) is an abstraction for handling multiple sounds.  It works like an audio track.  You can `append()` a new `Source` of sound, and the first one appended starts the track.  A newly appended track will play after whatever is playing finishes, but a `rodioL::source::SineWive` is an infinite source.
+
+Finally, we have to `sleep_until_end()` the thread until the sound completes playing (which for `SineWave` is never), or else the program will move right along and exit.  You'll have to kill this run with `Ctrl-C`, this sound will play forever.
+
+One way we could solve this **whole shindig** is by simply modulating the pitch passed to `SineWave` based on the intervals we already went over.  And, like, *cool*, I guess.  We can do a lot better, though.  What exactly do those intervals mean?
 
 #### A Little Music Theory
 
 *[top](#table-of-contents)*
 
-Now that we have a voice we can sing with we need to learn how to sing on key.  To get oriented, A440 is the A above Middle C on a piano:
+While it's great to have a voice we can sing with with, I'm sure we'd all prefer it if our program learned how to sing on key.  To get oriented, A440 is the A above Middle C on a piano:
 
 ![piano](https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Piano_Frequencies.svg/2560px-Piano_Frequencies.svg.png)
 
@@ -878,7 +910,7 @@ enum ScaleLength {
     Tetratonic = 4,
     Pentatonic = 5,
     Heptatonic = 7,
-    Chromatic = 12,
+    Dodecatonic = 12,
 }
 ```
 
@@ -906,7 +938,7 @@ This one is fun because it's what you get when you start at `E♭` and only play
 // TODO PENTATONIC MODES
 ```
 
-The [chromatic scale](https://en.wikipedia.org/wiki/Chromatic_scale) is just all the notes:
+The only dodecatonic scale is the [chromatic scale](https://en.wikipedia.org/wiki/Chromatic_scale) is just all the notes:
 
 ```txt
 [A, A#, B, C, C#, D, D#, E, F, F#, G, G#]
@@ -964,7 +996,7 @@ TODO maybe?  maybe not?
 
 *[top](#table-of-contents)*
 
-- A [`WAV`](https://en.wikipedia.org/wiki/WAV) file is an uncompressed audio stream.  Write the digitized waveform with [`hound`](https://github.com/ruuda/hound).
+- A [`WAV`](https://en.wikipedia.org/wiki/WAV) file is an uncompressed audio stream.  Write out the digitized waveform you've defined with [`hound`](https://github.com/ruuda/hound).
 - Implement `Chord`.
 - Add more scales.
 - Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation).
