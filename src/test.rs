@@ -13,7 +13,11 @@ fn test_semitones_to_cents() {
 }
 
 #[test]
-fn test_cents_to_semitones() {
-    //TODO
+fn test_add_interval() {
+    use Interval::*;
+    assert_eq!(Unison + Unison, Unison);
+    assert_eq!(Unison + Maj3, Maj3);
+    assert_eq!(Octave + Octave, Octave);
+    assert_eq!(Tritone + Tritone, Octave);
+    assert_eq!(Maj7 + Min3, Min2);
 }
-// TODO ALL THE TESTS

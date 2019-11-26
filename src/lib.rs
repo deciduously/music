@@ -169,7 +169,7 @@ pub struct Pitch {
 }
 
 impl Pitch {
-    fn new(frequency: Hertz) -> Self {
+    pub fn new(frequency: Hertz) -> Self {
         Self { frequency }
     }
 }
@@ -254,7 +254,24 @@ impl From<Interval> for i8 {
 
 impl From<Semitones> for Interval {
     fn from(s: Semitones) -> Self {
-        unimplemented!()
+        use Interval::*;
+        let int_semitones = i8::from(s);
+        match int_semitones {
+            0 => Unison,
+            1 => Min2,
+            2 => Maj2,
+            3 => Min3,
+            4 => Maj3,
+            5 => Perfect4,
+            6 => Tritone,
+            7 => Perfect5,
+            8 => Min6,
+            9 => Maj6,
+            10 => Min7,
+            11 => Maj7,
+            12 => Octave,
+            _ => Interval::from(Semitones(int_semitones % Octave as i8)),
+        }
     }
 }
 

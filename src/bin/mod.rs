@@ -1,5 +1,5 @@
 use music::*;
-use rodio::{Sink, source::SineWave, default_output_device};
+use rodio::{default_output_device, source::SineWave, Sink};
 
 fn main() {
     println!("{}", GREETING);
