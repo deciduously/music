@@ -13,6 +13,11 @@ fn test_semitones_to_cents() {
 }
 
 #[test]
+fn test_add_semitones() {
+    assert_eq!(Semitones(2) + Semitones(4), Semitones(6));
+}
+
+#[test]
 fn test_add_interval() {
     use Interval::*;
     assert_eq!(Unison + Unison, Unison);
