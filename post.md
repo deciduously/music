@@ -364,7 +364,7 @@ pub type Hertz = f64;
 Next, we need a way to represent a pitch:
 
 ```rust
-#[derive[Debug, Clone, Copy]
+#[derive(Debug, Clone, Copy, PartialEq)]
 struct Pitch {
     frequency: Hertz,
 }
@@ -672,7 +672,7 @@ Diff < left / right > :
  }
 ```
 
-Floating point arithmetic is not precise.  However, a change of a single Hertz isn't even large enough for any human to percieve - for the purposes of testing, we just care that it's "close enough".  We can override the compiler-derived [`PartialEq`](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html) behavior for this type:
+Floating point arithmetic is not precise.  However, a change of a single Hertz isn't even large enough for any human to percieve - for the purposes of testing, we just care that it's "close enough" - at a glance we can look at those results and understand that we got where we need to be.  To convince Rust of that, we can override the compiler-derived [`PartialEq`](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html) behavior for this type:
 
 ```diff
 - #[derive(Debug, Clone, Copy, PartialEq)]
@@ -682,7 +682,7 @@ Floating point arithmetic is not precise.  However, a change of a single Hertz i
   }
 ```
 
-This is pretty straightforward to hand-implmeent:
+We can specify a tolerance for equality in code.  I'm arbitrarily deciding that if two `Pitch` objects are within tenth of a Hertz, they're functionally equivalent:
 
 ```rust
 impl PartialEq for Pitch {
@@ -694,9 +694,21 @@ impl PartialEq for Pitch {
 }
 ```
 
-Now `assert_eq!(pitch, Pitch::new(441.0));` will return `true` and pass the test we wrote - try it out.
+Now the test we wrote will pass.  Try it out!
 
-Instead of adding single cents at a time, it's easier to work by semitone - luckily that's pretty easy now:
+Instead of adding single cents at a time, it's easier to work by semitone:
+
+```rust
+#[test]
+fn test_add_semitones_to_pitch() {
+    use Interval::Octave;
+    let mut pitch = Pitch::default();
+    pitch += Semitones::from(Octave);
+    assert_eq!(pitch, Pitch::new(880.0))
+}
+```
+
+That's pretty easy with the work we've already done:
 
 ```rust
 impl AddAssign<Semitones> for Pitch {
@@ -704,16 +716,21 @@ impl AddAssign<Semitones> for Pitch {
         *self += Cents::from(semitones)
     }
 }
+```
 
-fn main() {
+In fact, why not just go straight for intervals:
+
+```rust
+#[test]
+fn test_add_interval_to_pitch() {
+    use Interval::Min2;
     let mut pitch = Pitch::default();
-    println!("{:?}", pitch); // Pitch { frequency: 440.0 }
-    pitch += Semitones::from(Interval::Octave);
-    println!("{:?}", pitch); // Pitch { frequency: 880.0 } - 2:1 ratio
+    pitch += Min2;
+    assert_eq!(pitch, Pitch::new(466.1))
 }
 ```
 
-Why not just go straight for intervals:
+Naturally, this is also trivial:
 
 ```rust
 impl AddAssign<Interval> for Pitch {
@@ -721,14 +738,9 @@ impl AddAssign<Interval> for Pitch {
         *self += Cents::from(i)
     }
 }
-
-fn main() {
-    let mut pitch = Pitch::default();
-    println!("{:?}", pitch); // Pitch { frequency: 440.0 }
-    pitch += Interval::Min2; // Add a semitone
-    println!("{:?}", pitch); // Pitch { frequency: 466.1637615180899 }
-}
 ```
+
+Now we've got ourselves a nice toolkit for working with pitches in terms of intervals.
 
 ##### Scientific Pitch Notation
 

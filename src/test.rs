@@ -47,3 +47,19 @@ fn test_add_cents_to_pitch() {
     pitch += Cents(3.9302);
     assert_eq!(pitch, Pitch::new(441.0));
 }
+
+#[test]
+fn test_add_semitones_to_pitch() {
+    use Interval::Octave;
+    let mut pitch = Pitch::default();
+    pitch += Semitones::from(Octave);
+    assert_eq!(pitch, Pitch::new(880.0))
+}
+
+#[test]
+fn test_add_interval_to_pitch() {
+    use Interval::Min2;
+    let mut pitch = Pitch::default();
+    pitch += Min2;
+    assert_eq!(pitch, Pitch::new(466.1))
+}
