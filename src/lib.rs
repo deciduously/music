@@ -623,9 +623,11 @@ impl Scale {
     }
     fn get_notes(self, base_note: Note) -> Vec<Note> {
         let mut ret = vec![base_note];
-        self.get_intervals()
-            .iter()
-            .for_each(|i| ret.push(base_note + *i));
+        let mut offset = Interval::Unison;
+        self.get_intervals().iter().for_each(|i| {
+            offset += *i;
+            ret.push(base_note + offset)
+        });
         ret
     }
     //fn get_interval(&self, n: u8) -> Interval {
