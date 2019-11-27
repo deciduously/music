@@ -38,11 +38,7 @@ pub const SAMPLE_RATE: Hertz = Hertz(44_100.0);
 
 impl Hertz {
     fn abs(self) -> Self {
-        if self.0 < 0.0 {
-            Self(-self.0)
-        } else {
-            self
-        }
+        Self(self.0.abs())
     }
 }
 
@@ -212,6 +208,30 @@ struct Note {
     letter: NoteLetter,
 }
 
+impl Note {
+    fn from_c(&self) -> Interval {
+        use Accidental::*;
+        let ret = self.letter.from_c();
+        if let Some(acc) = self.accidental {
+            match acc {
+                // TODO refactor
+                Flat => return Interval::from(Semitones::from(i8::from(Semitones::from(ret)) - 1)),
+                Sharp => return ret + Interval::Min2,
+            }
+        };
+        ret
+    }
+    fn get_offset_from_interval(&self, other: Interval) -> Interval {
+        let self_from_c = self.from_c();
+        self_from_c - other
+    }
+    fn get_offset(&self, other: Self) -> Interval {
+        let self_from_c = self.from_c();
+        let other_from_c = other.from_c();
+        self_from_c - other_from_c
+    }
+}
+
 impl fmt::Display for Note {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let acc_str = if let Some(a) = self.accidental {
@@ -223,11 +243,35 @@ impl fmt::Display for Note {
     }
 }
 
+impl From<Interval> for Note {
+    // Take an interval from C
+    fn from(i: Interval) -> Self {
+        use Interval::*;
+        // TODO MAKE THIS COOL - define Chromatic scale first??
+        // That's a series of Min2
+        match i {
+            Unison => Self::from_str("C").unwrap(),
+            Min2 => Self::from_str("C#").unwrap(),
+            Maj2 => Self::from_str("D").unwrap(),
+            Min3 => Self::from_str("D#").unwrap(),
+            Maj3 => Self::from_str("E").unwrap(),
+            Perfect4 => Self::from_str("F").unwrap(),
+            Tritone => Self::from_str("F#").unwrap(),
+            Perfect5 => Self::from_str("G").unwrap(),
+            Min6 => Self::from_str("G#").unwrap(),
+            Maj6 => Self::from_str("A").unwrap(),
+            Min7 => Self::from_str("A#").unwrap(),
+            Maj7 => Self::from_str("B").unwrap(),
+            Octave => Self::from_str("C").unwrap(),
+        }
+    }
+}
+
 impl Add<Interval> for Note {
     type Output = Self;
 
     fn add(self, rhs: Interval) -> Self {
-        unimplemented!()
+       // TODO HOW ???
     }
 }
 
@@ -248,8 +292,6 @@ impl FromStr for Note {
             let letter = NoteLetter::from_str(letter)?;
             if let Some(accidental) = char_strs.next() {
                 // check if it's valid
-                use Accidental::*;
-                use NoteLetter::*;
                 let accidental = Accidental::from_str(accidental)?;
                 return Ok(Self {
                     letter,
@@ -462,6 +504,23 @@ impl Add for Interval {
         Interval::from(Semitones(
             i8::from(self) + i8::from(rhs) % Interval::Octave as i8,
         ))
+    }
+}
+
+impl Sub for Interval {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        let mut delta = i8::from(self) - i8::from(rhs);
+        if delta < 0 {
+            delta = Interval::Octave as i8 + delta;
+        };
+        Interval::from(Semitones(delta))
+    }
+}
+
+impl AddAssign for Interval {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
     }
 }
 

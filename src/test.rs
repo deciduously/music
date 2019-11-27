@@ -43,6 +43,17 @@ fn test_add_interval() {
 }
 
 #[test]
+fn test_sub_interval() {
+    use Interval::*;
+    assert_eq!(Unison - Unison, Unison);
+    assert_eq!(Unison - Maj3, Min6);
+    assert_eq!(Maj2 - Min3, Maj7);
+    assert_eq!(Octave - Octave, Unison);
+    assert_eq!(Tritone - Tritone, Unison);
+    assert_eq!(Maj7 - Min3, Min6);
+}
+
+#[test]
 fn test_add_cents_to_pitch() {
     let mut pitch = Pitch::default();
     pitch += Cents(3.9302);
@@ -100,6 +111,16 @@ fn test_new_piano_key() {
         }
     );
     assert_eq!(
+        PianoKey::new("Gb2").unwrap(),
+        PianoKey {
+            note: Note {
+                letter: G,
+                accidental: Some(Flat)
+            },
+            octave: 2
+        }
+    );
+    assert_eq!(
         PianoKey::new("F#8").unwrap(),
         PianoKey {
             note: Note {
@@ -143,6 +164,42 @@ fn test_piano_key_to_pitch() {
 }
 
 #[test]
+fn test_get_note_from_c() {
+    use Interval::*;
+    assert_eq!(Note::from_str("A").unwrap().from_c(), Maj6);
+    assert_eq!(Note::from_str("A#").unwrap().from_c(), Min7);
+    assert_eq!(Note::from_str("Bb").unwrap().from_c(), Min7);
+    assert_eq!(Note::from_str("B").unwrap().from_c(), Maj7);
+    assert_eq!(Note::from_str("C").unwrap().from_c(), Unison);
+    assert_eq!(Note::from_str("C#").unwrap().from_c(), Min2);
+    assert_eq!(Note::from_str("D").unwrap().from_c(), Maj2);
+    assert_eq!(Note::from_str("D#").unwrap().from_c(), Min3);
+    assert_eq!(Note::from_str("E").unwrap().from_c(), Maj3);
+    assert_eq!(Note::from_str("F").unwrap().from_c(), Perfect4);
+    assert_eq!(Note::from_str("F#").unwrap().from_c(), Tritone);
+    assert_eq!(Note::from_str("G").unwrap().from_c(), Perfect5);
+    assert_eq!(Note::from_str("G#").unwrap().from_c(), Min6);
+}
+
+#[test]
+fn test_get_note_offset() {
+    use Interval::*;
+    let a = Note::from_str("A").unwrap();
+    assert_eq!(Note::from_str("A").unwrap().get_offset(a), Unison);
+    assert_eq!(Note::from_str("A#").unwrap().get_offset(a), Min2);
+    assert_eq!(Note::from_str("B").unwrap().get_offset(a), Maj2);
+    assert_eq!(Note::from_str("C").unwrap().get_offset(a), Min3);
+    assert_eq!(Note::from_str("C#").unwrap().get_offset(a), Maj3);
+    assert_eq!(Note::from_str("D").unwrap().get_offset(a), Perfect4);
+    assert_eq!(Note::from_str("D#").unwrap().get_offset(a), Tritone);
+    assert_eq!(Note::from_str("E").unwrap().get_offset(a), Perfect5);
+    assert_eq!(Note::from_str("F").unwrap().get_offset(a), Min6);
+    assert_eq!(Note::from_str("F#").unwrap().get_offset(a), Maj6);
+    assert_eq!(Note::from_str("G").unwrap().get_offset(a), Min7);
+    assert_eq!(Note::from_str("G#").unwrap().get_offset(a), Maj7);
+}
+
+#[test]
 fn test_get_c_major() {
     assert_eq!(
         Scale::default().get_notes(Note::default()),
@@ -160,11 +217,6 @@ fn test_get_c_major() {
 
 #[test]
 fn test_note_interval() {
-    // TODO
-}
-
-#[test]
-fn test_standard_pitch_to_pitch() {
     // TODO
 }
 

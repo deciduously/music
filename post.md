@@ -1,7 +1,7 @@
 ---
 title: Teach Numbers How To Sing Using Test-Driven Development
 published: false
-description: Learn how to procedurally generate melodies in a variety of keys with Rust and TDD.
+description: Procedurally generate melodies by building your own sound waves in Rust.
 cover_image: https://thepracticaldev.s3.amazonaws.com/i/iuakwwcexql5u0th7gtm.jpg
 tags: beginners, rust, tutorial, music
 ---
@@ -31,7 +31,7 @@ By the end of this post our program will:
 
 However, at the end of the day, it's just the thing in the cover image.
 
-The completed code can be found on [GitHub](https://github.com/deciduously/music), along with the Markdown for this post.  Make a PR!  I'll keep it in sync with this post.
+The completed code can be found on [GitHub](https://github.com/deciduously/music), along with the Markdown for this post.  I'm a beginner myself and am sure this code could be improved.  Make a PR!  I'll keep it in sync here.
 
 ## Table of Contents
 
@@ -779,12 +779,8 @@ We can specify a tolerance for equality in code.  I'm arbitrarily deciding that 
 
 ```rust
 impl Hertz {
-    fn abs(&self) -> Self {
-        if self.0 < 0.0 {
-            Self(-self.0)
-        } else {
-            *self
-        }
+    fn abs(self) -> Self {
+        Self(self.0.abs())
     }
 }
 
@@ -917,18 +913,18 @@ impl fmt::Display for Accidental {
 
 There is third accidental called "natural", `♮`, which cancels these out.  To represent a pitch in data we don't need it - that's a string-parsing concern and I'm skipping it for now.  Sorry, you can't pass a natural sign into this program as it stands.  The natural symbol is generally used for overriding a [key signature](https://en.wikipedia.org/wiki/Key_signature), which defines the default accidental for all the notes within a scale on [sheet music](https://en.wikipedia.org/wiki/Staff_(music)).  There are a series of accidentals on the margin of the staff that apply to all notes, which is how we ensure we play notes within a single given scale, or [key](https://en.wikipedia.org/wiki/Key_(music)).  However, you may choose to compose a melody that contains a note outside this key.  If encounter the note `F#♮` on your sheet, you play an F.
 
-With `NoteLetter`, we also want to assign a numeric index but it's not as simple as with the intervals - these don't all have the same value.  Instead, we're storing the number of semitones from C:
+With `NoteLetter`, we also want to assign a numeric index but it's not as simple as with the intervals - these don't all have the same value.  We will store an index:
 
 ```rust
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum NoteLetter {
     C = 0,
-    D = 2,
-    E = 4,
-    F = 5,
-    G = 7,
-    A = 9,
-    B = 11,
+    D,
+    E,
+    F,
+    G,
+    A,
+    B,
 }
 
 impl Default for NoteLetter {
@@ -938,9 +934,24 @@ impl Default for NoteLetter {
 }
 ```
 
-// TODO this NEEDS to be cooler - come on ben - do it from scale.
+However, these indices to not represent a straight sequence of semitones from C - some of them hop two semitones, but not all.  We need a method to map to exact intervals:
 
-We've seen something like this somewhere before:
+```rust
+#[test]
+fn test_note_letter_to_interval() {
+    use Interval::*;
+    use NoteLetter::*;
+    assert_eq!(C.from_c(), Unison);
+    assert_eq!(D.from_c(), Maj2);
+    assert_eq!(E.from_c(), Maj3);
+    assert_eq!(F.from_c(), Perfect4);
+    assert_eq!(G.from_c(), Perfect5);
+    assert_eq!(A.from_c(), Maj6);
+    assert_eq!(B.from_c(), Maj7);
+}
+```
+
+Check out that interval sequence - we've seen something like this somewhere before:
 
 ```bash
 split("0,2,4,5,7,9,11,12",a,",");
@@ -953,10 +964,27 @@ whole, whole, half, whole, whole, whole, half
   2  +  2   +  1  +   2   +  2  +   2  +  1
 0    2     4      5      7      9     11     12
 Un. Min2  Maj2  Perf4  Perf5   Maj6 Maj7   Octave
-A4    B4   C5    D5     E5      F5   G5      A5
+A4    B4   C5    D5     E5      F5   G5      A5 // TODO FIX THESE
 ```
 
-It just plays from 440Hz, so it's an A major scale.  We've way overshot this in just modelling the domain enough to define a `Key`.
+Luckily *we already told Rust about this* when we defined the major scale.  Now our modelling efforts are finally beginning to pay off:
+
+```rust
+impl NoteLetter {
+    fn from_c(self) -> Interval {
+        use Interval::Unison;
+        Scale::default()
+            .get_intervals()
+            .iter()
+            .take(self as usize)
+            .fold(Unison, |acc, i| acc + *i)
+    }
+}
+```
+
+We can work with scales using the Rust iterator methods!  This function takes the first n intervals of a scale, and then uses the special `impl Add for Interval` logic we defined to total everything up.  For instance, to calculate `F`, this function grabs the first 3 intervals, `[Maj2, Maj2, Min2]`, and then sums them up, using `Unison`, or 0, as the base.  This calculates the sum of `[2,2,1]`, which is `5` semitones, or `Interval::Perfect4`.
+
+// TODO can we use sum()?
 
 We have some more complicated requirements for getting them from strings:
 
@@ -1249,7 +1277,7 @@ TODO maybe?  maybe not?
 
 - A [`WAV`](https://en.wikipedia.org/wiki/WAV) file is an uncompressed audio stream.  Write out the digitized waveform you've defined with [`hound`](https://github.com/ruuda/hound).
 - Implement `Chord`.
-- Add more scales.
+- Instead of a base note and a scale, accept a `Key`.
 - Extend the notation system - support stacked accidentals, naturals, represent durations, etc.
 - Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation).
 - Port this program to another language.
