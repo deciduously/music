@@ -958,7 +958,73 @@ A4    B4   C5    D5     E5      F5   G5      A5
 
 It just plays from 440Hz, so it's an A major scale.  We've way overshot this in just modelling the domain enough to define a `Key`.
 
-We don't need to define an logic beyond `` To get from strings, you could do some math with the fact that it is an alphabetic sequence, but there's something to be said for the simple option:
+We have some more complicated requirements for getting them from strings:
+
+```rust
+#[test]
+fn test_new_piano_key() {
+    use Accidental::*;
+    use NoteLetter::*;
+    assert_eq!(
+        PianoKey::default(),
+        PianoKey {
+            note: Note {
+                letter: C,
+                accidental: None
+            },
+            octave: 0
+        }
+    );
+    assert_eq!(
+        PianoKey::new("A4").unwrap(),
+        PianoKey {
+            note: Note {
+                letter: A,
+                accidental: None
+            },
+            octave: 4
+        }
+    );
+    assert_eq!(
+        PianoKey::new("G♭2").unwrap(),
+        PianoKey {
+            note: Note {
+                letter: G,
+                accidental: Some(Flat)
+            },
+            octave: 2
+        }
+    );
+    assert_eq!(
+        PianoKey::new("F#8").unwrap(),
+        PianoKey {
+            note: Note {
+                letter: F,
+                accidental: Some(Sharp)
+            },
+            octave: 8
+        }
+    );
+}
+```
+
+We also ant to reject invalid letters - we can use `#[should_panic]` to indicate that a panic is the expected behavior.  No need to bother defining a real match:
+
+```rust
+#[test]
+#[should_panic]
+fn test_reject_piano_key_too_high() {
+    assert_eq!(PianoKey::new("A9").unwrap(), PianoKey::default());
+}
+
+#[test]
+#[should_panic]
+fn test_reject_piano_key_invalid_letter() {
+    assert_eq!(PianoKey::new("Q7").unwrap(), PianoKey::default());
+}
+```
+
+A more robust system would also accept multiple accidentals and coerce, e.g. `E#` -> `F`, but this gets us going.  To implement this, it's easiest to start at the bottom:
 
 ```rust
 impl FromStr for NoteLetter {
@@ -982,54 +1048,24 @@ impl FromStr for NoteLetter {
 }
 ```
 
-// TODO to/from Pitch here
-
 The notes are C-indexed, for better or for worse, so `Note::default()` should return that variant.  We'll talk more about why it's C and not A after learning about Modes below.   Don't worry, it's suitably disappointing.
 
-Thanks to all the nested `Default` blocks, the `Default` implementation that the compiler derives for `PianoKey` corresponds to the official base pitch of this system, `C0`.  We can use `PianoKey::default()` to procure one - here's a [playground link](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=943967b13c8c3a5d02201b2adb509371):
-
-```rust
-println!("{}", PianoKey::default()); // C0
-```
-
+Thanks to all the nested `Default` blocks, the `Default` implementation that the compiler derives for `PianoKey` corresponds to the official base pitch of this system, `C0`.
 It's defined at a set frequency:
 
 ```rust
-const C_ZERO: Hertz = 16.352;
+pub const C_ZERO: Hertz = Hertz(16.352);
 ```
 
-This is super low - most humans bottom out around 20Hz.  The 88-key piano's lowest note is up at A0, a 9-semitone [`major sixth`](https://en.wikipedia.org/wiki/Major_sixth) higher.  Note how even though this is a different abstraction for working with pitches, the frequencies baked in to the standard are still pinned to the A440 scale.  Do a quick sanity check before abstracting further:
-
-Creating one of these manually is no fun - this is how we need to define A440:
+This is super low - most humans bottom out around 20Hz.  The 88-key piano's lowest note is up at A0, a 9-semitone [`major sixth`](https://en.wikipedia.org/wiki/Major_sixth) higher.  Note how even though this is a different abstraction for working with pitches, the frequencies baked in to the standard are still pinned to the A440 scale.  We want to be able to convert from piano keys to pitches and have the frequencies work out for both standards:
 
 ```rust
-PianoKey {
-    note: Note {
-        letter: A,
-        accidental: None
-    },
-    octave: 4
+#[test]
+fn test_piano_key_to_pitch() {
+    assert_eq!(Pitch::from(PianoKey::new("A4").unwrap()), Pitch::default());
+    assert_eq!(Pitch::from(PianoKey::default()), Pitch::new(C_ZERO));
 }
 ```
-
-We want to be able to parse these from strings like "A4" instead.
-
-// TODO this should start with PianoKey::default() and use get_offset()
-
-```rust
-fn main() {
-    let mut pitch = Pitch::new(C_ZERO);
-    println!("{:?}", pitch); // Pitch { frequency: 16.352 }
-    for _ in 0..4 {
-        pitch += Semitones::from(Interval::Octave);
-    } // add 4 octaves - C0 -> C4
-    println!("{:?}", pitch); // Pitch { frequency: 261.632 }
-    pitch += Interval::Maj6; // C4 -> A4
-    println!("{:?}", pitch); // Pitch { frequency: 440.0108218313197 } // close enough
-}
-```
-
-Luckily, even being off by a full Hertz at 440 (~4 cents) is less than the just-noticeable difference of ~5-6 cents, so within the ranges we're working with that's not wrong enough to care.  To test, each piano key is [specified](https://en.wikipedia.org/wiki/Piano_key_frequencies)
 
 ##### Circle of Fifths
 

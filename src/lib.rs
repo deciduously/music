@@ -229,6 +229,44 @@ impl Note {
     }
 }
 
+fn char_strs<'a>(s: &'a str) -> Vec<&'a str> {
+    s.split("")
+        .skip(1)
+        .take_while(|c| *c != "")
+        .collect::<Vec<&str>>()
+}
+
+impl FromStr for Note {
+    type Err = io::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let char_strs = char_strs(s);
+        let mut char_strs = char_strs.iter();
+        // note will be first
+        if let Some(letter) = char_strs.next() {
+            let letter = NoteLetter::from_str(letter)?;
+            if let Some(accidental) = char_strs.next() {
+                // check if it's valid
+                use Accidental::*;
+                use NoteLetter::*;
+                let accidental = Accidental::from_str(accidental)?;
+                return Ok(Self {
+                    letter,
+                    accidental: Some(accidental),
+                });
+            } else {
+                return Ok(Self {
+                    letter,
+                    accidental: None,
+                });
+            }
+        }
+        Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("{} is not a valid note", s),
+        ))
+    }
+}
+
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct PianoKey {
     note: Note,
@@ -236,8 +274,8 @@ pub struct PianoKey {
 }
 
 impl PianoKey {
-    fn new(s: &str) -> Self {
-        Self::default()
+    fn new(s: &str) -> Result<Self, io::Error> {
+        Self::from_str(s)
     }
     //fn get_offset()
     fn all_pitches() -> &'static [Interval] {
@@ -257,7 +295,29 @@ impl FromStr for PianoKey {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // It makes sense to get the letter to Intervals
-        unimplemented!()
+        if let Some(octave) = char_strs(s).last() {
+            if let Ok(octave) = octave.parse::<u8>() {
+                let note = Note::from_str(&s[0..s.len() - 1])?;
+                if octave <= 8 {
+                    Ok(Self { note, octave })
+                } else {
+                    Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("{} is too high!", octave),
+                    ))
+                }
+            } else {
+                Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!("{} is too high for this keyboard", octave),
+                ))
+            }
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("{} is not a valid note", s),
+            ))
+        }
     }
 }
 

@@ -66,53 +66,8 @@ fn test_add_interval_to_pitch() {
 }
 
 #[test]
-fn test_standard_pitch_from_str() {
-    use Accidental::*;
-    use NoteLetter::*;
-    assert_eq!(
-        PianoKey::from_str("A4").unwrap(),
-        PianoKey {
-            note: Note {
-                letter: A,
-                accidental: None
-            },
-            octave: 4
-        }
-    );
-    assert_eq!(
-        PianoKey::from_str("F♭2").unwrap(),
-        PianoKey {
-            note: Note {
-                letter: E,
-                accidental: None
-            },
-            octave: 2
-        }
-    );
-    assert_eq!(
-        PianoKey::from_str("B#2").unwrap(),
-        PianoKey {
-            note: Note {
-                letter: C,
-                accidental: None
-            },
-            octave: 2
-        }
-    );
-    assert_eq!(
-        PianoKey::from_str("F#2").unwrap(),
-        PianoKey {
-            note: Note {
-                letter: F,
-                accidental: Some(Sharp),
-            },
-            octave: 2
-        }
-    );
-}
-
-#[test]
 fn test_new_piano_key() {
+    use Accidental::*;
     use NoteLetter::*;
     assert_eq!(
         PianoKey::default(),
@@ -125,7 +80,7 @@ fn test_new_piano_key() {
         }
     );
     assert_eq!(
-        PianoKey::new("A4"),
+        PianoKey::new("A4").unwrap(),
         PianoKey {
             note: Note {
                 letter: A,
@@ -134,6 +89,44 @@ fn test_new_piano_key() {
             octave: 4
         }
     );
+    assert_eq!(
+        PianoKey::new("G♭2").unwrap(),
+        PianoKey {
+            note: Note {
+                letter: G,
+                accidental: Some(Flat)
+            },
+            octave: 2
+        }
+    );
+    assert_eq!(
+        PianoKey::new("F#8").unwrap(),
+        PianoKey {
+            note: Note {
+                letter: F,
+                accidental: Some(Sharp)
+            },
+            octave: 8
+        }
+    );
+}
+
+#[test]
+#[should_panic]
+fn test_reject_piano_key_too_high() {
+    assert_eq!(PianoKey::new("A9").unwrap(), PianoKey::default());
+}
+
+#[test]
+#[should_panic]
+fn test_reject_piano_key_invalid_letter() {
+    assert_eq!(PianoKey::new("Q7").unwrap(), PianoKey::default());
+}
+
+#[test]
+fn test_piano_key_to_pitch() {
+    assert_eq!(Pitch::from(PianoKey::new("A4").unwrap()), Pitch::default());
+    assert_eq!(Pitch::from(PianoKey::default()), Pitch::new(C_ZERO));
 }
 
 #[test]
