@@ -141,6 +141,19 @@ impl NoteLetter {
             .take(self as usize)
             .fold(Unison, |acc, i| acc + *i)
     }
+    fn inc(self) -> Self {
+        use NoteLetter::*;
+        // TODO MAKE THIS COOLER
+        match self {
+            C => D,
+            D => E,
+            E => F,
+            F => G,
+            G => A,
+            A => B,
+            B => C,
+        }
+    }
 }
 
 impl Default for NoteLetter {
@@ -230,6 +243,26 @@ impl Note {
         let other_from_c = other.from_c();
         self_from_c - other_from_c
     }
+    fn inc(&mut self) {
+        use Accidental::*;
+        use NoteLetter::*;
+        if let Some(acc) = self.accidental {
+            self.accidental = None;
+            match acc {
+                Sharp => {
+                    self.letter = self.letter.inc();
+                }
+                Flat => {}
+            }
+        } else {
+            // check for special cases
+            if self.letter == B || self.letter == E {
+                self.letter = self.letter.inc();
+            } else {
+                self.accidental = Some(Sharp);
+            }
+        }
+    }
 }
 
 impl fmt::Display for Note {
@@ -271,7 +304,12 @@ impl Add<Interval> for Note {
     type Output = Self;
 
     fn add(self, rhs: Interval) -> Self {
-       // TODO HOW ???
+        let semitones = Semitones::from(rhs);
+        let mut ret = self;
+        for _ in 0..i8::from(semitones) {
+            ret.inc();
+        }
+        ret
     }
 }
 
@@ -584,10 +622,11 @@ impl Scale {
         }
     }
     fn get_notes(self, base_note: Note) -> Vec<Note> {
+        let mut ret = vec![base_note];
         self.get_intervals()
             .iter()
-            .map(|i| base_note + *i)
-            .collect::<Vec<Note>>()
+            .for_each(|i| ret.push(base_note + *i));
+        ret
     }
     //fn get_interval(&self, n: u8) -> Interval {
     //    use Scale::*;

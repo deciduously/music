@@ -200,6 +200,24 @@ fn test_get_note_offset() {
 }
 
 #[test]
+fn test_add_interval_to_note() {
+    use Interval::*;
+    let a = Note::from_str("A").unwrap();
+    assert_eq!(a + Unison, a);
+    assert_eq!(a + Min2, Note::from_str("A#").unwrap());
+    assert_eq!(a + Maj2, Note::from_str("B").unwrap());
+    assert_eq!(a + Min3, Note::from_str("C").unwrap());
+    assert_eq!(a + Maj3, Note::from_str("C#").unwrap());
+    assert_eq!(a + Perfect4, Note::from_str("D").unwrap());
+    assert_eq!(a + Tritone, Note::from_str("D#").unwrap());
+    assert_eq!(a + Perfect5, Note::from_str("E").unwrap());
+    assert_eq!(a + Min6, Note::from_str("F").unwrap());
+    assert_eq!(a + Maj6, Note::from_str("F#").unwrap());
+    assert_eq!(a + Min7, Note::from_str("G").unwrap());
+    assert_eq!(a + Maj7, Note::from_str("G#").unwrap());
+}
+
+#[test]
 fn test_get_c_major() {
     assert_eq!(
         Scale::default().get_notes(Note::default()),
@@ -210,7 +228,8 @@ fn test_get_c_major() {
             Note::from_str("F").unwrap(),
             Note::from_str("G").unwrap(),
             Note::from_str("A").unwrap(),
-            Note::from_str("B").unwrap()
+            Note::from_str("B").unwrap(),
+            Note::from_str("C").unwrap()
         ]
     );
 }
