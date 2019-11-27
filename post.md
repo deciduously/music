@@ -360,7 +360,7 @@ According to my super scientific smartphone stopwatch observations, this gif is 
 
 Recall above that we saw we're going to run a loop like this:  `for (i = 0; i < 1; i += 0.0001)`.  In that loop, the math we process includes the function `sin()`.  If one were to, say, calculate a bunch of points along a single cycle of a sine wave like this one, it sure seems like just such a loop could get the job done.
 
-The higher the frequency, or closer together the peaks of (maximum positive amplitudes), the higher the pitch.
+The higher the frequency, or closer together the peaks representing maximum positive amplitudes, the higher the pitch.
 
 ![frequency](https://upload.wikimedia.org/wikipedia/commons/e/ea/Wave_frequency.gif)
 
@@ -1057,7 +1057,11 @@ It's defined at a set frequency:
 pub const C_ZERO: Hertz = Hertz(16.352);
 ```
 
-This is super low - most humans bottom out around 20Hz.  The 88-key piano's lowest note is up at A0, a 9-semitone [`major sixth`](https://en.wikipedia.org/wiki/Major_sixth) higher.  Note how even though this is a different abstraction for working with pitches, the frequencies baked in to the standard are still pinned to the A440 scale.  We want to be able to convert from piano keys to pitches and have the frequencies work out for both standards:
+This is super low - most humans bottom out around 20Hz.  The 88-key piano's lowest note is up at A0, a 9-semitone [`major sixth`](https://en.wikipedia.org/wiki/Major_sixth) higher.  Note how even though this is a different abstraction for working with pitches, the frequencies baked in to the standard are still pinned to the A440 scale.
+
+// TODO go through the rest of FromStr
+
+We want to be able to convert from piano keys to pitches and have the frequencies work out for both standards:
 
 ```rust
 #[test]

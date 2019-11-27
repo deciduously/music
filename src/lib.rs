@@ -127,7 +127,7 @@ impl Div for Cents {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum NoteLetter {
-    C,
+    C = 0,
     D,
     E,
     F,
@@ -137,8 +137,13 @@ enum NoteLetter {
 }
 
 impl NoteLetter {
-    fn from_c() -> Interval {
-        unimplemented!()
+    fn from_c(self) -> Interval {
+        use Interval::Unison;
+        Scale::default()
+            .get_intervals()
+            .iter()
+            .take(self as usize)
+            .fold(Unison, |acc, i| acc + *i)
     }
 }
 
@@ -218,14 +223,11 @@ impl fmt::Display for Note {
     }
 }
 
-impl Note {
-    fn get_interval(self, other: Self) -> Interval {
-        let int_self = self.letter as i8;
-        let int_other = other.letter as i8;
-        // TODO accidental?
-        Interval::from(Semitones(
-            (int_self - int_other).abs() % NoteLetter::B as i8,
-        ))
+impl Add<Interval> for Note {
+    type Output = Self;
+
+    fn add(self, rhs: Interval) -> Self {
+        unimplemented!()
     }
 }
 
@@ -321,6 +323,14 @@ impl FromStr for PianoKey {
     }
 }
 
+impl Add<Interval> for PianoKey {
+    type Output = Self;
+
+    fn add(self, rhs: Interval) -> Self {
+        unimplemented!()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialOrd)]
 pub struct Pitch(Hertz);
 
@@ -371,7 +381,8 @@ impl From<PianoKey> for Pitch {
         for _ in 0..sp.octave {
             ret += Octave;
         }
-        // TODO Add note offset
+        // Add note offset
+        ret += sp.note.letter.from_c();
         ret
     }
 }
@@ -512,6 +523,12 @@ impl Scale {
             Chromatic => PianoKey::all_pitches(),
             Diatonic(_) => Mode::base_intervals(),
         }
+    }
+    fn get_notes(self, base_note: Note) -> Vec<Note> {
+        self.get_intervals()
+            .iter()
+            .map(|i| base_note + *i)
+            .collect::<Vec<Note>>()
     }
     //fn get_interval(&self, n: u8) -> Interval {
     //    use Scale::*;

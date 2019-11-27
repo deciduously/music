@@ -124,9 +124,38 @@ fn test_reject_piano_key_invalid_letter() {
 }
 
 #[test]
+fn test_note_letter_to_interval() {
+    use Interval::*;
+    use NoteLetter::*;
+    assert_eq!(C.from_c(), Unison);
+    assert_eq!(D.from_c(), Maj2);
+    assert_eq!(E.from_c(), Maj3);
+    assert_eq!(F.from_c(), Perfect4);
+    assert_eq!(G.from_c(), Perfect5);
+    assert_eq!(A.from_c(), Maj6);
+    assert_eq!(B.from_c(), Maj7);
+}
+
+#[test]
 fn test_piano_key_to_pitch() {
     assert_eq!(Pitch::from(PianoKey::new("A4").unwrap()), Pitch::default());
     assert_eq!(Pitch::from(PianoKey::default()), Pitch::new(C_ZERO));
+}
+
+#[test]
+fn test_get_c_major() {
+    assert_eq!(
+        Scale::default().get_notes(Note::default()),
+        &[
+            Note::from_str("C").unwrap(),
+            Note::from_str("D").unwrap(),
+            Note::from_str("E").unwrap(),
+            Note::from_str("F").unwrap(),
+            Note::from_str("G").unwrap(),
+            Note::from_str("A").unwrap(),
+            Note::from_str("B").unwrap()
+        ]
+    );
 }
 
 #[test]
