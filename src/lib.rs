@@ -1,18 +1,15 @@
-use core::time::Duration;
 use rand::random;
-use rodio::{default_output_device, source::SineWave, Sink};
+use rodio::source::SineWave;
 use std::{
-    f32,
-    f64::consts::PI,
     fmt, io,
-    ops::{Add, AddAssign, Div},
+    ops::{Add, AddAssign, Div, MulAssign, Sub},
     str::FromStr,
 };
 
 #[cfg(test)]
 mod test;
 
-pub const GREETING: &'static str = "Cool Tunes (tm)";
+pub const GREETING: &str = "Cool Tunes (tm)";
 
 #[derive(Default)]
 struct RandomBytes;
@@ -31,16 +28,53 @@ impl Iterator for RandomBytes {
     }
 }
 
-pub type Hertz = f64;
-pub const STANDARD_PITCH: Hertz = 440.0;
-pub const C_ZERO: Hertz = 16.352;
-pub const MIDDLE_C: Hertz = 261.626;
-pub const SAMPLE_RATE: Hertz = 44_100.0;
+#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
+pub struct Hertz(f64);
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+pub const STANDARD_PITCH: Hertz = Hertz(440.0);
+pub const C_ZERO: Hertz = Hertz(16.352);
+pub const MIDDLE_C: Hertz = Hertz(261.626);
+pub const SAMPLE_RATE: Hertz = Hertz(44_100.0);
+
+impl Hertz {
+    fn abs(self) -> Self {
+        if self.0 < 0.0 {
+            Self(-self.0)
+        } else {
+            self
+        }
+    }
+}
+
+impl From<Hertz> for f64 {
+    fn from(h: Hertz) -> Self {
+        h.0
+    }
+}
+
+impl From<f64> for Hertz {
+    fn from(f: f64) -> Self {
+        Self(f)
+    }
+}
+
+impl Sub for Hertz {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0)
+    }
+}
+
+impl MulAssign<f64> for Hertz {
+    fn mul_assign(&mut self, rhs: f64) {
+        self.0 *= rhs;
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Cents(f64);
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Semitones(i8);
 
 const SEMITONE_CENTS: Cents = Cents(100.0);
@@ -52,26 +86,26 @@ impl From<f64> for Cents {
 }
 
 impl From<Cents> for f64 {
-    fn from(cents: Cents) -> Self {
-        cents.0
+    fn from(c: Cents) -> Self {
+        c.0
     }
 }
 
 impl From<i8> for Semitones {
     fn from(i: i8) -> Self {
-        Semitones(i)
+        Self(i)
     }
 }
 
 impl From<Semitones> for i8 {
-    fn from(semitones: Semitones) -> Self {
-        semitones.0
+    fn from(s: Semitones) -> Self {
+        s.0
     }
 }
 
 impl From<Semitones> for Cents {
-    fn from(semitones: Semitones) -> Self {
-        Cents(i8::from(semitones) as f64 * f64::from(SEMITONE_CENTS))
+    fn from(s: Semitones) -> Self {
+        Cents(i8::from(s) as f64 * f64::from(SEMITONE_CENTS))
     }
 }
 
@@ -93,13 +127,19 @@ impl Div for Cents {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum NoteLetter {
-    C = 0,
+    C,
     D,
     E,
     F,
     G,
     A,
     B,
+}
+
+impl NoteLetter {
+    fn from_c() -> Interval {
+        unimplemented!()
+    }
 }
 
 impl Default for NoteLetter {
@@ -146,19 +186,20 @@ impl fmt::Display for Accidental {
     }
 }
 
-impl FromStr for NoteLetter {
+impl FromStr for Accidental {
     type Err = io::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use 
         match s {
             "b" | "♭" => Ok(Accidental::Flat),
             "#" => Ok(Accidental::Sharp),
-            
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("{} is not a valid accidental", s),
+            )),
         }
     }
 }
-
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 struct Note {
@@ -178,7 +219,7 @@ impl fmt::Display for Note {
 }
 
 impl Note {
-    fn get_interval(&self, other: Self) -> Interval {
+    fn get_interval(self, other: Self) -> Interval {
         let int_self = self.letter as i8;
         let int_other = other.letter as i8;
         // TODO accidental?
@@ -189,12 +230,12 @@ impl Note {
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
-pub struct StandardPitch {
+pub struct PianoKey {
     note: Note,
     octave: u8,
 }
 
-impl StandardPitch {
+impl PianoKey {
     fn new(s: &str) -> Self {
         Self::default()
     }
@@ -205,43 +246,40 @@ impl StandardPitch {
     }
 }
 
-impl fmt::Display for StandardPitch {
+impl fmt::Display for PianoKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{}", self.note, self.octave)
     }
 }
 
-impl FromStr for StandardPitch {
+impl FromStr for PianoKey {
     type Err = io::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // It makes sense to get the letter to Intervals
         unimplemented!()
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Pitch {
-    frequency: Hertz,
-}
+#[derive(Debug, Clone, Copy, PartialOrd)]
+pub struct Pitch(Hertz);
 
 impl Pitch {
     pub fn new(frequency: Hertz) -> Self {
-        Self { frequency }
+        Self(frequency)
     }
 }
 
 impl Default for Pitch {
     fn default() -> Self {
-        Self {
-            frequency: STANDARD_PITCH,
-        }
+        Self(STANDARD_PITCH)
     }
 }
 
 impl PartialEq for Pitch {
     fn eq(&self, other: &Pitch) -> bool {
-        let tolerance = 0.1;
-        let difference = (self.frequency - other.frequency).abs();
+        let tolerance = Hertz(0.1);
+        let difference = (self.0 - other.0).abs();
         difference < tolerance
     }
 }
@@ -249,7 +287,7 @@ impl PartialEq for Pitch {
 impl AddAssign<Cents> for Pitch {
     #[allow(clippy::suspicious_op_assign_impl)]
     fn add_assign(&mut self, rhs: Cents) {
-        self.frequency *= 2.0f64.powf((rhs / Cents::from(Interval::Octave)).into())
+        self.0 *= 2.0f64.powf((rhs / Cents::from(Interval::Octave)).into())
     }
 }
 
@@ -265,8 +303,8 @@ impl AddAssign<Interval> for Pitch {
     }
 }
 
-impl From<StandardPitch> for Pitch {
-    fn from(sp: StandardPitch) -> Self {
+impl From<PianoKey> for Pitch {
+    fn from(sp: PianoKey) -> Self {
         use Interval::*;
         let mut ret = Pitch::new(C_ZERO);
         // Add octaves
@@ -279,8 +317,8 @@ impl From<StandardPitch> for Pitch {
 }
 
 impl From<Pitch> for f64 {
-    fn from(pitch: Pitch) -> Self {
-        pitch.frequency
+    fn from(p: Pitch) -> Self {
+        p.0.into()
     }
 }
 
@@ -357,7 +395,7 @@ impl Add for Interval {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-enum ScaleLength {
+pub enum ScaleLength {
     Tetratonic = 4,
     Pentatonic = 5,
     Heptatonic = 7,
@@ -365,7 +403,7 @@ enum ScaleLength {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-enum Mode {
+pub enum Mode {
     Ionian = 0,
     Dorian,
     Phrygian,
@@ -386,8 +424,15 @@ impl Mode {
     //}
 }
 
+// TODO - REMOVE - FOR DEMO
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct DiatonicScale {
+    offset: Semitones,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
-enum Scale {
+pub enum Scale {
     Chromatic,
     Diatonic(Mode),
 }
@@ -404,7 +449,7 @@ impl Scale {
         // have THIS calculate an impl Iterator (or impl Scale??)
         use Scale::*;
         match self {
-            Chromatic => StandardPitch::all_pitches(),
+            Chromatic => PianoKey::all_pitches(),
             Diatonic(_) => Mode::base_intervals(),
         }
     }

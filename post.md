@@ -31,7 +31,7 @@ By the end of this post our program will:
 
 However, at the end of the day, it's just the thing in the cover image.
 
-The completed code can be found on [GitHub](https://github.com/deciduously/music).
+The completed code can be found on [GitHub](https://github.com/deciduously/music), along with the Markdown for this post.  Make a PR!  I'll keep it in sync with this post.
 
 ## Table of Contents
 
@@ -85,7 +85,7 @@ cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",
 
 The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this one, but that's not to discredit it at as a fantastic source.  That write-up and Wikipedia were all I needed to complete this translation, and I had absolutely not a clue how this whole thing worked going in.
 
-I've gotta be honest - I didn't even try the `bash` and immediately dove into the pure Rust solution.  Nevertheless, it serves as a solid [30,000ft](https://en.wikipedia.org/wiki/Flight_level) [roadmap](https://en.wikipedia.org/wiki/Plan):
+I've gotta be honest - I didn't even try the `bash` and immediately dove into the pure Rust solution.  Nevertheless, it serves as a [solid](https://en.wikipedia.org/wiki/Solid) [30,000ft](https://en.wikipedia.org/wiki/Flight_level) [roadmap](https://en.wikipedia.org/wiki/Plan):
 
 1. `cat /dev/urandom`: Get a stream of random binary data.
 1. `hexdump -v -e '/1 "%u\n"'`: Convert binary to 8-bit base-10 integers (0-255).
@@ -122,7 +122,7 @@ We'll use two crates - the Rust term for external libraries - to replace the fun
 
 `rand` is in place of [`/dev/urandom`](https://en.wikipedia.org/wiki//dev/random) and [`hexdump`](https://en.wikipedia.org/wiki/Hex_dump), and `rodio` will cover [`xxd`](https://www.systutorials.com/docs/linux/man/1-xxd/) and [`aplay`](https://linux.die.net/man/1/aplay).  For step 3, which is the bulk of the program, we'll just use the standard library.  If `awk` can do it in two statements, Rust can sure as heck do it in several hundred lines (don't panic).  I also use [`pretty_assertions`](https://docs.rs/pretty_assertions/0.6.1/pretty_assertions/) to make the [test runner](https://en.wikipedia.org/wiki/Unit_testing) output a little prettier:
 
-While unit testing does work out of the box, I like using [`pretty_assertions`](https://docs.rs/pretty_assertions/0.6.1/pretty_assertions/) to make the output from a failing `assert_eq!()` statement easier to read.
+While unit testing does work out of the box, I like using [`pretty_assertions`](https://docs.rs/pretty_assertions/0.6.1/pretty_assertions/) to make the output from a failing test easier to read.
 
 In `Cargo.toml`:
 
@@ -176,7 +176,7 @@ This test is importing a constant, `GREETING`, from our library, and expecting i
 #[cfg(test)]
 mod test;
 
-pub const GREETING: &'static str = "Cool Tunes (tm)";
+pub const GREETING: &str = "Cool Tunes (tm)";
 ```
 
 The `#[cfg(test)]` tag tells the compiler to only build the `test` module when we're using the test runner.  The compiler won't even look at it when using `cargo run`.
@@ -379,19 +379,45 @@ To start working with concrete numbers, we need some sort of standard to base ev
 We can keep track of Hertz with a double-precision floating-point value:
 
 ```rust
-pub type Hertz = f64;
+#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
+pub struct Hertz(f64);
+```
+
+This is just a floating point value, but I didn't just assign an alias like `type Hertz = f64`.   Instead, I made my very own fully-fledged new type.  A lot of this program will involve type conversions and unit conversions, but they will all be explicit and defined in places we expect.  When manipulating our increasing set of abstractions we don't want to have to think about things like floating point accuracy - it should just work as we expect.  The [tuple struct](https://doc.rust-lang.org/1.37.0/book/ch05-01-defining-structs.html#using-tuple-structs-without-named-fields-to-create-different-types) syntax is perfect for this, when the underlying value is just a single value but there may be complex relationships with other types.  This does add to our boilerplate, but reduces the element of surprise - my LEAST favorite element in programming.  Luckily, the compiler can actually derive a number of things for us straight from the inner value.  For the rest, we'll provide our own implementations that destructure the tuple:
+
+```rust
+impl Sub for Hertz {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0)
+    }
+}
+```
+
+This allows us to subtract two `Hertz` values with the subtraction operator `-`, and get a `Hertz` back.  We can also give ourselves some more helpful conversion traits - this gets us both the defined `from()` and the type-inferred `into()` in both directions with `f64`:
+
+```rust
+impl From<Hertz> for f64 {
+    fn from(h: Hertz) -> Self {
+        h.0
+    }
+}
+
+impl From<f64> for Hertz {
+    fn from(f: f64) -> Self {
+        Self(f)
+    }
+}
 ```
 
 Next, we need a way to represent a pitch:
 
 ```rust
-#[derive(Debug, Clone, Copy, PartialEq)]
-struct Pitch {
-    frequency: Hertz,
-}
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct Pitch(Hertz);
 ```
 
-We want our new `Pitch` type to default to A440, but also accept any arbitrary value:
+I didn't take `Default` this time - the default pitch is not 0Hz.  We want our new `Pitch` type to default to A440, but also accept any arbitrary value:
 
 ```rust
 #[test]
@@ -580,8 +606,6 @@ Discrete units like `Semitones` are useful for working with a keyboard, but as w
 struct Cents(f64);
 ```
 
-I didn't just assign aliases as with `type Hertz = f64`, because I need to re-define how to convert to and from `Cents` and `Semitones` with the [`From`](https://doc.rust-lang.org/std/convert/trait.From.html) [trait](https://doc.rust-lang.org/book/ch10-02-traits.html).  For that, I need my very own type, not just an alias of a primitive that already can convert to and from other primitives with the standard logic.  `Semitones` to `Cents` is not the same thing as `i8` to `f64`, we have a conversion factor.   The [tuple struct](https://doc.rust-lang.org/1.37.0/book/ch05-01-defining-structs.html#using-tuple-structs-without-named-fields-to-create-different-types) syntax is perfect for that.  I kept Hertz as an alias because it really is a more general unit of frequency.  It made sense to me to separate that concept from a `Pitch` that can be modulated by `Cents`.
-
 Now, bear with me - we're going to do a little plumbing to let ourselves work at this higher level of abstraction.  We need to be able to translate our discrete `Semitones` into `Cents` ergonomically:
 
 ```rust
@@ -715,6 +739,18 @@ impl AddAssign<Cents> for Pitch {
 }
 ```
 
+Oops, we also need to `*=` an `f64` to a `Hertz`:
+
+```rust
+impl MulAssign<f64> for Hertz {
+    fn mul_assign(&mut self, rhs: f64) {
+        self.0 *= rhs;
+    }
+}
+```
+
+Coincidentally, an `impl MulAssign<f64> for Frequency` in Hertz is the exact example on the official [`MulAssign`](https://doc.rust-lang.org/std/ops/trait.MulAssign.html) docs.  Their style might be better.  I don't know, you tell me?
+
 If that's not quite clear, this is the exact equation shown above with a bit of extra noise.  Dividing `cents` by `Cents::from(Interval::Octave)` leaves us with a `Cents` type, per the above `impl Div for Cents` block.  However, we then want to pass the result to `2.0.powf(cents_ratio)`.  The compiler knows it's an `f64` here because we explicitly specified it with `2.0_f64` to use [`powf()`](https://doc.rust-lang.org/std/primitive.f64.html#method.powf).  This is a method on `f64`, so `self` in `pub fn powf(self, n: f64) -> f64` is an `f64` when this gets run.  We implemented `From<Cents> for f64` already, which provides the `T::into() -> U` method like above for free as well as `U::from(T) -> U` in any context where the target type can be inferred, like right here.
 
 The `2.0_f64` literal is how we specify a concrete type - a `2.0` literal is just a `{float}` and stills need more context for the compiler to make into a `f32` (a.k.a. `float`) or `f64` (a.k.a. `double`) and use.  This is usually what we want, it gives us the flexibility to use this literal in any floating point context, but it also doesn't carry that information to help out with inference for other types.  Any numeric literal can take a concrete type suffix.   For example, `8` is an unqualified `{integer}` that can coerce to any unsigned integer type (`u8`,`u16`, `u32`, `u64`, or machine-dependent pointer-sized `usize`) until it's used in a specific context, but `8u8` begins its life as a `u8`, fully specified, so we know we can safely cast it to any larger type.  Any `_` found in a numeric literal is ignored and there for clarity - a 48KHz sample rate could be written `48_000.0_f64`.
@@ -729,11 +765,11 @@ Diff < left / right > :
  }
 ```
 
-Floating point arithmetic is not precise.  However, a change of a single Hertz isn't even large enough for any human to percieve, so for the purposes of testing, we just care that it's "close enough".  At a glance we can look at those results and understand that we got where we need to be.  To convince Rust of that, we can override the compiler-derived [`PartialEq`](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html) behavior for this type:
+Floating point arithmetic is not precise.  However, a delta of as much as a whole Hertz isn't large enough for any human to perceive, so in this type we just care that it's "close enough".  At a glance we can look at those results and understand that we got where we need to be.  To convince Rust we're good to go, we can override the compiler-derived [`PartialEq`](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html) behavior for this type:
 
 ```diff
-- #[derive(Debug, Clone, Copy, PartialEq)]
-+ #[derive(Debug, Clone, Copy)]
+- #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
++ #[derive(Debug, Clone, Copy, PartialOrd)]
   pub struct Pitch {
        frequency: Hertz,
   }
@@ -742,16 +778,26 @@ Floating point arithmetic is not precise.  However, a change of a single Hertz i
 We can specify a tolerance for equality in code.  I'm arbitrarily deciding that if two `Pitch` objects are within a tenth of a Hertz of each other, they're functionally equivalent:
 
 ```rust
+impl Hertz {
+    fn abs(&self) -> Self {
+        if self.0 < 0.0 {
+            Self(-self.0)
+        } else {
+            *self
+        }
+    }
+}
+
 impl PartialEq for Pitch {
     fn eq(&self, other: &Pitch) -> bool {
-        let tolerance = 0.1;
-        let difference = (self.frequency - other.frequency).abs();
+        let tolerance = Hertz(0.1);
+        let difference = (self.0 - other.0).abs();
         difference < tolerance
     }
 }
 ```
 
-Now the test we wrote will pass.  Try it out!
+There's no trait to define to get absolute values with `abs()`, but we can plop whatever method we want directly on `Hertz` too.  Now the test we wrote will pass.  Try it out!
 
 Instead of adding single cents at a time, it's easier to work by semitone:
 
@@ -807,7 +853,7 @@ Armed with this knowledge, we can start manipulating pitches in terms of [Scient
 
 ```rust
 #[derive(Default, Debug, Clone, Copy)]
-struct StandardPitch {
+struct PianoKey {
     note: Note,
     octave: u8,
 }
@@ -816,7 +862,7 @@ struct StandardPitch {
 To show them, we just want to print them out next to each other - the first three should be `C0 C#0 D0`:
 
 ```rust
-impl fmt::Display for StandardPitch {
+impl fmt::Display for PianoKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{}", self.note, self.octave)
     }
@@ -848,7 +894,7 @@ impl fmt::Display for Note {
 }
 ```
 
-The accidental itself is a simple switch:
+The [accidentals](https://en.wikipedia.org/wiki/Accidental_(music)) are represented in strings as `♭` for flat or `#` for sharp, which lower or raise the note by one semitone (or `Interval::Min2`) respectively.  This does produce 14 possible values for 12 possible semitones - the exceptions are wherever there's no black key in between two white keys.  `F♭` should parse as `E` and `B#` should parse as `C`.
 
 ```rust
 #[derive(Debug, Clone, Copy)]
@@ -869,22 +915,20 @@ impl fmt::Display for Accidental {
 }
 ```
 
-The [accidentals](https://en.wikipedia.org/wiki/Accidental_(music)) are represented in strings as `♭` for flat or `#` for sharp, which lower or raise the note by one semitone (or `Interval::Min2`) respectively.  This does produce 14 possible values for 12 possible semitones - the exceptions are wherever there's no black key in between two white keys.  `F♭` should parse as `E` and `B#` should parse as `C`.  Thankfully, we've already programmed it to do that!  // TODO have we??
+There is third accidental called "natural", `♮`, which cancels these out.  To represent a pitch in data we don't need it - that's a string-parsing concern and I'm skipping it for now.  Sorry, you can't pass a natural sign into this program as it stands.  The natural symbol is generally used for overriding a [key signature](https://en.wikipedia.org/wiki/Key_signature), which defines the default accidental for all the notes within a scale on [sheet music](https://en.wikipedia.org/wiki/Staff_(music)).  There are a series of accidentals on the margin of the staff that apply to all notes, which is how we ensure we play notes within a single given scale, or [key](https://en.wikipedia.org/wiki/Key_(music)).  However, you may choose to compose a melody that contains a note outside this key.  If encounter the note `F#♮` on your sheet, you play an F.
 
-There is third accidental called "natural", `♮`, which cancels these out.  To represent a pitch in data we don't need it - that's a string-parsing concern.  The natural symbol is generally used for overriding a [key signature](https://en.wikipedia.org/wiki/Key_signature), which defines the default accidental for all the notes within a scale on [sheet music](https://en.wikipedia.org/wiki/Staff_(music)).  There are a series of accidentals on the margin of the staff that apply to all notes, which is how we ensure we play notes within a single given scale, or [key](https://en.wikipedia.org/wiki/Key_(music)).  However, you may choose to compose a melody that contains a note outside this key.  If encounter the note `F#♮` on your sheet, you play an F.
-
-As for `NoteLetter`:
+With `NoteLetter`, we also want to assign a numeric index but it's not as simple as with the intervals - these don't all have the same value.  Instead, we're storing the number of semitones from C:
 
 ```rust
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum NoteLetter {
-    A,
-    B,
-    C,
-    D,
-    E,
-    F,
-    G,
+    C = 0,
+    D = 2,
+    E = 4,
+    F = 5,
+    G = 7,
+    A = 9,
+    B = 11,
 }
 
 impl Default for NoteLetter {
@@ -894,14 +938,58 @@ impl Default for NoteLetter {
 }
 ```
 
+// TODO this NEEDS to be cooler - come on ben - do it from scale.
+
+We've seen something like this somewhere before:
+
+```bash
+split("0,2,4,5,7,9,11,12",a,",");
+```
+
+Aha!  It's was major scale over one octave this whole time, as a series of semitone offsets:
+
+```txt
+whole, whole, half, whole, whole, whole, half
+  2  +  2   +  1  +   2   +  2  +   2  +  1
+0    2     4      5      7      9     11     12
+Un. Min2  Maj2  Perf4  Perf5   Maj6 Maj7   Octave
+A4    B4   C5    D5     E5      F5   G5      A5
+```
+
+It just plays from 440Hz, so it's an A major scale.  We've way overshot this in just modelling the domain enough to define a `Key`.
+
+We don't need to define an logic beyond `` To get from strings, you could do some math with the fact that it is an alphabetic sequence, but there's something to be said for the simple option:
+
+```rust
+impl FromStr for NoteLetter {
+    type Err = io::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_uppercase().as_str() {
+            "A" => Ok(NoteLetter::A),
+            "B" => Ok(NoteLetter::B),
+            "C" => Ok(NoteLetter::C),
+            "D" => Ok(NoteLetter::D),
+            "E" => Ok(NoteLetter::E),
+            "F" => Ok(NoteLetter::F),
+            "G" => Ok(NoteLetter::G),
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("{} is not a valid note", s),
+            )),
+        }
+    }
+}
+```
+
 // TODO to/from Pitch here
 
 The notes are C-indexed, for better or for worse, so `Note::default()` should return that variant.  We'll talk more about why it's C and not A after learning about Modes below.   Don't worry, it's suitably disappointing.
 
-Thanks to all the nested `Default` blocks, the `Default` implementation that the compiler derives for `StandardPitch` corresponds to the official base pitch of this system, `C0`.  We can use `StandardPitch::default()` to procure one - here's a [playground link](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=943967b13c8c3a5d02201b2adb509371):
+Thanks to all the nested `Default` blocks, the `Default` implementation that the compiler derives for `PianoKey` corresponds to the official base pitch of this system, `C0`.  We can use `PianoKey::default()` to procure one - here's a [playground link](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=943967b13c8c3a5d02201b2adb509371):
 
 ```rust
-println!("{}", StandardPitch::default()); // C0
+println!("{}", PianoKey::default()); // C0
 ```
 
 It's defined at a set frequency:
@@ -915,7 +1003,7 @@ This is super low - most humans bottom out around 20Hz.  The 88-key piano's lowe
 Creating one of these manually is no fun - this is how we need to define A440:
 
 ```rust
-StandardPitch {
+PianoKey {
     note: Note {
         letter: A,
         accidental: None
@@ -924,9 +1012,9 @@ StandardPitch {
 }
 ```
 
-We want to be able to parse these from strings like "A4" instead.  This has a few oddities - multiple accidentals need to reuce to just one, and adjacent notes like `E` and `F` shoudln't ever try to represent a note in between.  There's no such thing as `F♭`.  This test is long, see [the GitHub file]() for the full source.
+We want to be able to parse these from strings like "A4" instead.
 
-// TODO this should start with StandardPitch::default() and use get_offset()
+// TODO this should start with PianoKey::default() and use get_offset()
 
 ```rust
 fn main() {
@@ -1009,24 +1097,6 @@ impl Mode {
 }
 ```
 
-We've seen something like this somewhere before:
-
-```bash
-split("0,2,4,5,7,9,11,12",a,",");
-```
-
-What if we represent this octave as a series of semitone offsets from 440Hz:
-
-```txt
-whole, whole, half, whole, whole, whole, half
-  2  +  2   +  1  +   2   +  2  +   2  +  1
-0    2     4      5      7      9     11     12
-Un. Min2  Maj2  Perf4  Perf5   Maj6 Maj7   Octave
-A4    B4   C4    D4     E4      F4   G4      A5
-```
-
-Aha!  It's was an A major scale over one octave this whole time.
-
 // TODO show generated major scale of intervals
 
 The fact that Ionian Mode/C Major is Offset 0 is actually somewhat arbitrary - though definitely not completely.  There's a reason C major is so commonly found in music - it sounds good.  I did a [bare-minimum](https://lmgtfy.com/?q=why+does+it+start+from+C+not+A) amount of research and found it's an ["unfortunate historical accident"](https://music.stackexchange.com/questions/893/why-is-c-the-base-note-of-standard-notation-and-keys), which in retrospect is completely obvious and I should have seen coming.  The letters were originally numbered from A, of course, but got mapped to frequencies well before the modern modes we use now were honed and refined from previous systems.  The system eventually came to be based around the [C major scale](https://en.wikipedia.org/wiki/C_major), not A major.  By then the fact that what's now Middle C was 261.626Hz was long done and over with.
@@ -1089,7 +1159,7 @@ The only dodecatonic scale is the [chromatic scale](https://en.wikipedia.org/wik
 
 Who needs key signatures anyhow, that's a waste of all these other keys!  This one throws 'em all in the mix.
 
-This could be a potential natural application of [dependent types](https://en.wikipedia.org/wiki/Dependent_type), a programming language feature that Rust does not support.  Few languages do, one example is the [Haskell](https://en.wikipedia.org/wiki/Haskell_(programming_language))-alike [Idris](https://en.wikipedia.org/wiki/Idris_(programming_language)#Dependent_types).  wherein we codify in the type system some restraint further than a type.  The linked example describes a function that appends a list of `m` elements to a list `n` which specifies as part of the return type that the returned list has length `n + m`.  A caller can then trust this fact implicitly, because the compiler won't build a binary if it's not true.  I think this could be applied here to verify that a scale's intervals method returns an octave, regardless of length.  That can be tested for now, but not encoded in the type directly.
+This could be a potential natural application of [dependent types](https://en.wikipedia.org/wiki/Dependent_type), a programming language feature that Rust does not support.  Few languages do.  One example is [Idris](https://en.wikipedia.org/wiki/Idris_(programming_language)#Dependent_types), which is like [Haskell](https://en.wikipedia.org/wiki/Haskell_(programming_language))++.  A dependent type codifies a type restraint that's dependent on a *value* of that type.  The linked example describes a function that appends a list of `m` elements to a list `n` which specifies as part of the return type that the returned list has length `n + m`.  A caller can then trust this fact implicitly, because the compiler won't build a binary if it's not true.  I think this could be applied here to verify that a scale's intervals method returns an octave, regardless of length.  That can be tested for in code with Rust, of course, but not encoded into the type signature directly.
 
 ##### Key
 
@@ -1101,9 +1171,9 @@ We're finally ready to pull this all together.  For context, once again here's t
 split("0,2,4,5,7,9,11,12",a,",");
 ```
 
-We've now discovered that that list represents the list of semitone offsets from C4 that represent a C major scale.  The random notes that get produced will all be frequencies that correspond to these offsets from 440Hz.
+We've now discovered that that list represents the list of semitone offsets from A4 that represent an A major scale.  The random notes that get produced will all be frequencies that correspond to these offsets from 440Hz.
 
-We way, way overshot this in the process of modelling the domain.  We can now automatically generate sequences of `StandardPitch` structs that correspond to keys on an 88-key piano to select from: `[C4 D4 E4 F4 G4 A5 B5 C5]`, and each note already knows how to calculate it's frequency in Hertz.  If we want a different scale, we can just ask.
+We way, way overshot this in the process of modelling the domain.  We can now automatically generate sequences of `PianoKey` structs that correspond to keys on an 88-key piano to select from: `[C4 D4 E4 F4 G4 A5 B5 C5]`, and each note already knows how to calculate it's frequency in Hertz.  If we want a different scale, we can just ask.
 
 Two identical notes are called a [unison](https://en.wikipedia.org/wiki/Unison), with 0 cents.  These intervals are defined within a single octave, so any of them apply across octaves as well - A4 and A5 are in unison just like A4 and another A4, and C4 and A5 is still a major sixth.  The terms "major", "minor", and "perfect" are not arbitrary, but that discussion is outside the scope of this post.  I will note that the [tritone](https://en.wikipedia.org/wiki/Tritone), representing 3 whole tones or 6 semitones like `F-B`, is the only one that's none of the three.
 
@@ -1140,6 +1210,7 @@ TODO maybe?  maybe not?
 - A [`WAV`](https://en.wikipedia.org/wiki/WAV) file is an uncompressed audio stream.  Write out the digitized waveform you've defined with [`hound`](https://github.com/ruuda/hound).
 - Implement `Chord`.
 - Add more scales.
+- Extend the notation system - support stacked accidentals, naturals, represent durations, etc.
 - Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation).
 - Port this program to another language.
 
