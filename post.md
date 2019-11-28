@@ -90,7 +90,7 @@ I've gotta be honest - I didn't even try the `bash` and immediately dove into th
 1. `xxd -r -p`: Convert hexadecimal samples back to binary.
 1. `aplay -c 2 -f S32_LE -r 16000`: Play back binary samples as sound wave.
 
-Don't worry at all if some or all of this is incomprehensible.  You don't need to have a clue how any of it works yet.  This program is not a direct translation of that [code](https://en.wikipedia.org/wiki/Source_code), and I'm not going to elaborate much on what any of the specific commands in the pipeline mean (read the linked post for that), just the releavant logic.   By the time we're done, you'll be able to pick apart the whole thing yourself.
+Don't worry at all if some or all of this is incomprehensible.  You don't need to have a clue how any of it works yet.  This program is not a direct translation of that [code](https://en.wikipedia.org/wiki/Source_code), and I'm not going to elaborate much on what any of the specific commands in the pipeline mean (read the linked post for that), just the relevant logic.   By the time we're done, you'll be able to pick apart the whole thing yourself.
 
 If you'd like the challenge of implementing this yourself from scratch in your own language, **stop right here**.  If you get stuck, this should all apply to whatever you've got going unless you've gone real funky with it - in which case, it sounds cool and you should show me.
 
@@ -283,9 +283,11 @@ fn main() {
 
 I'm not bothering to show you the full snippet - this program doesn't use any of this code.   You don't need to type any of this in.  In a `bash` one-liner you've got to take your randomness where you can get it, but the `rand` crate proivdes a richer set of tools.  Before streaming in something random, we need to think about what exactly it is we're randomizing.
 
-In this application, we want to pick a musical note from a set of valid choices at random.  The `awk` code does this with code like this:  `list[n % listLength]`, to take a random index that's ensured to be a valid list member.  See if you can spot the correspinding section ofthe cover image.  We get to use the [`rand::seq::IteratorRandom`](https://docs.rs/rand/0.7.2/rand/seq/trait.IteratorRandom.html) trait.  This gives us a `choose()` method, that can handle that for it - it uses a random number generator we specify to get the same job done.
+In this application, we want to pick a musical note from a set of valid choices at random.  The `awk` code does this with the modulo operator:  `list[n % listLength]`.  That will take a random index that's ensured to be a valid list member.  See if you can spot the corresponding section of the cover image code.
 
-So, no `RandomBytes` iterator.  Instead, we need to define a list of notes and call `choose()` on it to get a specific note to play.  Where does that list come from?
+We get to use the [`rand::seq::IteratorRandom`](https://docs.rs/rand/0.7.2/rand/seq/trait.IteratorRandom.html) trait here.  This gives us a `choose()` method that we can call on any iterator to pull a random member.
+
+So, there's no need for a  `RandomBytes` iterator.  Instead, we need to define a list of notes and call `choose()` on it to get a specific note to play.
 
 ### Mapping Bytes To Notes
 
@@ -300,9 +302,11 @@ for (i = 0; i < 1; i += 0.0001)
            100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i))
 ```
 
-This is probably still not too helpful for most - there's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) (oh, my) - and its written in freakin' [`AWK`](https://en.wikipedia.org/wiki/AWK).  Don't despair if this still doesn't mean much (or literally anything) to you.  We're going to explicitly define all constituent components and their relationships, and by the time we get to the real logic it will all just already work.
+This is probably still not too helpful for most - there's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) (oh, my) - and its written in freakin' [`AWK`](https://en.wikipedia.org/wiki/AWK).  Don't despair if this still doesn't mean much (or literally anything) to you.
 
-We can glean a bit of information at a glance, though, and depending on your current comfort with this domain you may be able to kind of understand the general idea here.  It looks like we're going to tick up floating point values by ten-thousandths from zero to one (`0.0`, `0.0001`, `0.0002`, etc.) with `for (i = 0; i < 1; i += 0.0001)`, and do... I don't know, some math - `100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i)` - on each value.  In that math we're using both `i`, the current fractional part from 0 to 1, and `$1`, which is the random 8-bit integer being piped in.  Specifically, we're indexing into a list `a`:  `a[$1 % 8]`.  In other words, we're using the random byte `0-255` to select an index `0-7` from this list.  The list is defined with `split("0,2,4,5,7,9,11,12",a,",");`, which means split the first parameter string input by the third parameter  `","`, and store the resulting list of elements to the second parameter `a` (`awk` is terse).  After we do the math, we're going to print it out as an 8-digit hex number: `printf("%08X\n", someResult)` - this [`printf`](https://en.wikipedia.org/wiki/Printf_format_string) formatter means we want a [0-padded](https://en.wikipedia.org/wiki/Npm_(software)#Notable_breakages) number that's 8 digits long in [upper-case](https://en.wikipedia.org/wiki/Letter_case) [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal).  The [base 10](https://en.wikipedia.org/wiki/Decimal) integer [`42`](https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_(42)) would be printed as `0000002A`.
+We can glean a bit of information at a glance, though, and depending on your current comfort with this domain you may be able to kind of understand the general idea here.  It looks like we're going to tick up floating point values by ten-thousandths from zero to one (`0.0`, `0.0001`, `0.0002`, etc.) with `for (i = 0; i < 1; i += 0.0001)`, and do... I don't know, some math - `100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i)` - on each value.  In that math we're using both `i`, the current fractional part from 0 to 1, and `$1`, which is the random 8-bit integer being piped in.  Specifically, we're indexing into a list `a`:  `a[$1 % 8]`.  In other words, we're using the random byte `0-255` to select an index `0-7` from this list.
+
+The list is defined with `split("0,2,4,5,7,9,11,12",a,",");`, which means split the first parameter string input by the third parameter  `","`, and store the resulting list of elements to the second parameter `a` (`awk` is terse).  After we do the math, we're going to print it out as an 8-digit hex number: `printf("%08X\n", someResult)` - this [`printf`](https://en.wikipedia.org/wiki/Printf_format_string) formatter means we want a [0-padded](https://en.wikipedia.org/wiki/Npm_(software)#Notable_breakages) number that's 8 digits long in [upper-case](https://en.wikipedia.org/wiki/Letter_case) [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal).  The [base 10](https://en.wikipedia.org/wiki/Decimal) integer [`42`](https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_(42)) would be printed as `0000002A`.
 
 TL;DR for each ten-thousandth between 0 and 1 `i`, select a value `n` from `[0,2,4,5,7,9,11,12]` and return the result of `100 * sin(1382 * exp((n / 12) * log(2) * i)`.
 
@@ -326,7 +330,7 @@ If the x-axis is time, a sine wave represents a recurring action with a smooth (
 
 Instead of height above the ground on the y axis, we have a [pressure gradient](https://en.wikipedia.org/wiki/Sound_pressure) from an equilibrium.  The air is getting rapidly pushed and pulled by this vibration across space as a wave.  It's still a physical phenomenon - a pressure gradient rises to a peak and then falls back to equilibrium and then below to an opposite peak, oscillating back and forth.  It doesn't just magically become a different higher value all at once.  A guitar string wobbling passes through each point in space between the two extremes it's tensing to and from, so the vibrations it causes oscillate in kind.
 
-You can actually use [math](https://en.wikipedia.org/wiki/Fourier_transform) to represent multi-component sound waves as a single wave - the ability to do so is what enables the whole field of [telecommunications](https://en.wikipedia.org/wiki/Telecommunication).  We're not going to touch that today, partially because I don't actually know how to perform a Fourier transform myself (yet).  One single sine wave is enough of a signal to produce a tone, so we can keep it simple for today.
+You can actually use [math](https://en.wikipedia.org/wiki/Fourier_transform) to represent multi-component sound waves as a single wave - the ability to do so is what enables the whole field of [telecommunications](https://en.wikipedia.org/wiki/Telecommunication).  We're not going to touch that today, partially because I don't actually know how to perform a Fourier transform myself (yet).  One single sine wave is enough of a signal to produce a tone, so we can keep it simple.
 
 There are two interesting properties of a sine wave: the [amplitude](https://en.wikipedia.org/wiki/Amplitude), which measures the current deviation from the 0 axis for a given *x*, and the [frequency](https://en.wikipedia.org/wiki/Frequency), which is how close together these peaks at maximal amplitudes are, or how frequently this recurring thing happens.  The combination of the two dictate how we perceive the sound.  The amplitude will be perceived as [volume](https://en.wikipedia.org/wiki/Loudness) and the frequency as [pitch](https://en.wikipedia.org/wiki/Pitch_(music)).
 
@@ -360,7 +364,7 @@ One of the super cool things about it is the [octave](https://en.wikipedia.org/w
 
 It turns out the relationship is physical - to increase any pitch by an octave, you double the frequency.  Not only that, this fixed ratio actually holds for any arbitrary smaller or larger interval as well.  This system is called ["equal temperament"](https://en.wikipedia.org/wiki/Equal_temperament) - every pair of adjacent notes has the same ratio, regardless of how you define "adjacent".  To get halfway to the next octave, you multiply by 1.5 instead of 2.
 
-To start working with concrete numbers, we need some sort of standard to base everything around.   Some of the world has settled on [440Hz](https://en.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO](https://en.wikipedia.org/wiki/International_Organization_for_Standardization) [16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
+To start working with concrete numbers, we need some sort of standard to start multiplying from.   Some of the world has settled on [440Hz](https://en.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO](https://en.wikipedia.org/wiki/International_Organization_for_Standardization) [16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
 
 ![stuttgart](https://i.imgflip.com/3h0y3g.jpg)
 
@@ -452,7 +456,7 @@ A sine wave, as we've seen, is smooth.  However, what's a graph but a visualizat
 
 The [sample rate](https://en.wikipedia.org/wiki/Sampling_(signal_processing)#Sampling_rate) of an audio stream is how many points to store for each one of these cycles, or is how high-fidelity this "digital snapshot" of the wave is.  Lots of applications use a [44.1KHz](https://en.wikipedia.org/wiki/44,100_Hz) sample rate - a bit higher than 10KHz like the example.  According to the [sampling theorem](https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem), the threshold for ensuring you've captured a sufficient sample from an analog signal is that the sample rate must be greater than twice the frequency you you're sampling.  Humans can hear about 20Hz to 20,000Hz.  This means we need at least 40,000 samples, and 44,100 exceeds that.  I [don't understand](https://en.wikipedia.org/wiki/Transition_band) the reason for the specific 4.1k. Similarly, [16-bit samples](https://en.wikipedia.org/wiki/Audio_bit_depth) is commonly seen.  In this application, we're using 48KHz.  The maximum amplitude this struct can represent is the maximum wave that fits in a 16-bit sample, because that's the biggest *x* will ever be in either direction - `1` or `-1`.
 
-The `rodio` crate actually has a built-in [`rodio::source::SineWave`](https://docs.rs/rodio/0.10.0/rodio/source/struct.SineWave.html).  We could give ourselves a `From` implementation to play theirs - this code should produce an A440 tone:
+The `rodio` crate actually has a built-in [`rodio::source::SineWave`](https://docs.rs/rodio/0.10.0/rodio/source/struct.SineWave.html).  This code should produce an A440 tone:
 
 ```rust
 use rodio::{Sink, source::SineWave, default_output_device};
@@ -466,7 +470,7 @@ fn main() {
 }
 ```
 
-This source produces an infinite sound source at the given frequency a 48KHz sample rate.  We can go ahead and throw a quick conversion in for our `Pitch` type - could be useful for testing:
+This source produces an infinite sound source at the given frequency a 48KHz sample rate.  Go ahead and throw a quick conversion in for our `Pitch` type:
 
 ```rust
 // lib.rs
@@ -494,7 +498,7 @@ Much better.  I'll briefly cover the other tidbits: `default_output_device()` at
 
 Finally, we have to `sleep_until_end()` the thread until the sound completes playing (which for `SineWave` is never), or else the program will move right along and exit.  You'll have to kill this run with `Ctrl-C`, this sound will play forever.
 
-By simply modulating the pitch passed to `SineWave`, we could generate any pitch we want.  That's what the onle-liner does, it's selecting an offset to pass from the list `[0,2,4,5,7,9,11,12]`, so we know that works. And, like, *cool*, I guess.  We can do a lot better, though.  What's so special about these numbers?
+By simply modulating the pitch passed to `SineWave`, we could generate any pitch we want.  That's what the one-liner does, it's selecting an offset to pass from the list `[0,2,4,5,7,9,11,12]`, so we know that sequence works. And, like, *cool*, I guess.  We can do a lot better, though.  What's so special about these numbers?
 
 #### A Little Music Theory
 
