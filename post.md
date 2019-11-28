@@ -254,13 +254,11 @@ You can run a faster compilation pass with `cargo check` if you just want the co
 
 *[top](#table-of-contents)*
 
-// TODO maybe skip this whole thing, come back after it's done and decide.
-
 The first part of the one-liner is  `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'`, which gets a source of random bytes (8-bit binary values) and shows them to the user formatted as base-10 integers.
 
-When I sat down to write this program, I decided to knock out this functionality first, mostly because I immediately knew how.  The `rand` crate can give us random 8-bit integers out of the box by ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html)ing a type: `random::<u8>()` will produce a random [unsigned](https://en.wikipedia.org/wiki/Signedness) [8 bit](https://en.wikipedia.org/wiki/8-bit) integer ([`u8`](https://doc.rust-lang.org/nightly/std/primitive.u8.html)) with the default generator settings.
+When I sat down to write this program, I decided to knock out this functionality first mostly because I immediately knew how.  The `rand` crate can give us random 8-bit integers out of the box by ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html)ing a type: `random::<u8>()` will produce a random [unsigned](https://en.wikipedia.org/wiki/Signedness) [8 bit](https://en.wikipedia.org/wiki/8-bit) integer ([`u8`](https://doc.rust-lang.org/nightly/std/primitive.u8.html)) with the default generator settings.
 
-To match the one-liner exactly, we coul write an `Iterator` with a `next()` method like this:
+To match the one-liner exactly, we could write an `Iterator` with a `next()` method like this:
 
 ```rust
 impl Iterator for RandomBytes {
@@ -272,7 +270,7 @@ impl Iterator for RandomBytes {
 }
 ```
 
-If we nedlessly call this method, we'll get output that matches `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'` exactly:
+If we endlessly call this method, we'll get output that matches `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'` exactly:
 
 ```rust
 fn main() {
@@ -283,7 +281,7 @@ fn main() {
 }
 ```
 
-I'm not bothering to show you the full snippet - this program doesn't use any of this code, you don't need to type any of this in.  In a `bash` one-liner you've got to take your randomness where you can get it, but the `rand` crate proivdes a richer set of tools.  Before streaming in something random, we need to think about what exactly it is we're randomizing.
+I'm not bothering to show you the full snippet - this program doesn't use any of this code.   You don't need to type any of this in.  In a `bash` one-liner you've got to take your randomness where you can get it, but the `rand` crate proivdes a richer set of tools.  Before streaming in something random, we need to think about what exactly it is we're randomizing.
 
 In this application, we want to pick a musical note from a set of valid choices at random.  The `awk` code does this with code like this:  `list[n % listLength]`, to take a random index that's ensured to be a valid list member.  See if you can spot the correspinding section ofthe cover image.  We get to use the [`rand::seq::IteratorRandom`](https://docs.rs/rand/0.7.2/rand/seq/trait.IteratorRandom.html) trait.  This gives us a `choose()` method, that can handle that for it - it uses a random number generator we specify to get the same job done.
 
