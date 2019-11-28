@@ -90,7 +90,7 @@ I've gotta be honest - I didn't even try the `bash` and immediately dove into th
 1. `xxd -r -p`: Convert hexadecimal samples back to binary.
 1. `aplay -c 2 -f S32_LE -r 16000`: Play back binary samples as sound wave.
 
-Don't worry at all if some or all of this is incomprehensible.  You don't need to have a clue how any of it works yet.  This program is not a direct translation of that [code](https://en.wikipedia.org/wiki/Source_code), and I'm not going to elaborate much on what any of the specific commands in the pipeline mean (read the linked post for that), just the releavant logic.   By the time we're done, you'll be able to pick apart the whole thing yourself anyway.
+Don't worry at all if some or all of this is incomprehensible.  You don't need to have a clue how any of it works yet.  This program is not a direct translation of that [code](https://en.wikipedia.org/wiki/Source_code), and I'm not going to elaborate much on what any of the specific commands in the pipeline mean (read the linked post for that), just the releavant logic.   By the time we're done, you'll be able to pick apart the whole thing yourself.
 
 If you'd like the challenge of implementing this yourself from scratch in your own language, **stop right here**.  If you get stuck, this should all apply to whatever you've got going unless you've gone real funky with it - in which case, it sounds cool and you should show me.
 
@@ -569,7 +569,7 @@ A    A#    B     C     C#    D     D#    E     F     F#    G    G#
 
 Clearly, there isn't a black key between every white key - there must be a method to the madness.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern all the way through.  The distribution pattern begins on C, but the keyboard itself starts at A0 and ends at C8.  A piano is thus designed because it can play music across the full range of diatonic scales.  This is where we get those base 8 sequences - just start on a different note.
 
-That pattern, that the numbering system is based around, is the C [major scale](https://en.wikipedia.org/wiki/Major_scale).  Start at Middle C, the one highlighted in cyan above, and count up to the next C key, eight white keys to the left.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get counting up to the next C, when the pattern repeats.  This totals 12 semitones per octave:
+That base pattern is the C [major scale](https://en.wikipedia.org/wiki/Major_scale).  Start at Middle C, the one highlighted in cyan above, and count up to the next C key, eight white keys to the left.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get counting up to the next C, when the pattern repeats.  This totals 12 semitones per octave:
 
 ```txt
 whole, whole, half, whole, whole, whole, half
@@ -832,9 +832,9 @@ Using the same intervals as the C major scale starting on a different note will 
 
 ![circle](https://upload.wikimedia.org/wikipedia/commons/3/33/Circle_of_fifths_deluxe_4.svg)
 
-The C major scale has all white keys.  To find the version of the major scale that adds one single black key to augment a tone, you go up 7 semitones: [`Interval::Perfect5`](https://en.wikipedia.org/wiki/Perfect_fifth).  This has a ratio 3:2.
+The C major scale has all white keys.  To find the version of the major scale that adds one single black key to augment a tone, you go up a perfect fifth, or 7 semitones: [`Interval::Perfect5`](https://en.wikipedia.org/wiki/Perfect_fifth).  This has a ratio 3:2.
 
-The first major scale around the circle is [G major](https://en.wikipedia.org/wiki/G_major).  It has one sharp: A.  Go [back up](#a-little-music-theory) to the piano diagram and count up the major scale sequence from G, for example one note below the yellow A4.  You'll need the `F#` black key at the last step right before G5, but all the other hops white stick to the white keys.  [D major](https://en.wikipedia.org/wiki/D_major) will need two black keys, `F#` and `C#`.  If you continue incrementing a fifth (remember, octave is irrelevant here), you'll hit all 12 possible patterns before getting back to C.  To get through all the key signatures incrementally, one accidental at a time, you keep going up by perfect fifths.  Once you come all the way back to C, you'll have hit all 12 keys, encompassing all possible key signatures.
+One perfect fifth up from `C` is `G`, so the next scale around the circle is [G major](https://en.wikipedia.org/wiki/G_major).  It has one sharp: A.  Go [back up](#a-little-music-theory) to the piano diagram and count up the major scale sequence from G, for example one note below the yellow A4.  You'll need the `F#` black key at the last step right before G5, but all the other hops white stick to the white keys.  [D major](https://en.wikipedia.org/wiki/D_major) will need two black keys, `F#` and `C#`.  If you continue incrementing a fifth (remember, octave is irrelevant here), you'll hit all 12 possible patterns before getting back to C.  To get through all the key signatures incrementally, one accidental at a time, you keep going up by perfect fifths.  Once you come all the way back to C, you'll have hit all 12 keys, encompassing all possible key signatures.
 
 This diagram also shows the [relative natural minor](https://en.wikipedia.org/wiki/Relative_key) for each.  We saw how to get [A minor](https://en.wikipedia.org/wiki/A_minor) from C major, so by definition of equal temperament that interval holds all the way around.
 
@@ -966,6 +966,8 @@ Who needs key signatures anyhow, that's a waste of all these other keys!  This o
 
 This could be a potential natural application of [dependent types](https://en.wikipedia.org/wiki/Dependent_type), a programming language feature that Rust does not support.  Few languages do.  One example is [Idris](https://en.wikipedia.org/wiki/Idris_(programming_language)#Dependent_types), which is like [Haskell](https://en.wikipedia.org/wiki/Haskell_(programming_language))++.  A dependent type codifies a type restraint that's dependent on a *value* of that type.  The linked example describes a function that appends a list of `m` elements to a list `n` which specifies as part of the return type that the returned list has length `n + m`.  A caller can then trust this fact implicitly, because the compiler won't build a binary if it's not true.  I think this could be applied here to verify that a scale's intervals method returns an octave, regardless of length.  That can be tested for in code with Rust, of course, but not encoded into the type signature directly.
 
+// TODO show off all the scales, maybe?
+
 ##### Key
 
 *[top](#table-of-contents)*
@@ -1072,7 +1074,7 @@ There's one more step to get from our brand new floating point `Cents` to freque
 
 We know that to increase by one octave we double the frequency: `440 * 2`.  We'd need to increase by a 12th of what doubling the number would do for a single semitone: `440 * 2^(1/12)`.  Looks innocuous enough, but my calculator gives me 466.164, Rust gives me 466.1637615180899 - not enough to perceptually matter, but enough that it's important that the standard is the interval ratio and not the specific amount of Hertz to add or subtract.  Those amounts will only be precise in floating point decimal representations at exact octaves from the base note, because that's integral factor after multiplying by 1 in either direction, 2 or 1/2.
 
-Otherwise stated, the ratio between frequencies separated by a single cent is the 1200th root of 2, or 2^(1/1200).  In decimal, it's about 1.0005777895.  You wouldn't be able to hear a distinction between two tones a single cent apart.  The [just-noticeable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents, or 5*2^(1/1200).  Using this math, it works out to just shy of 4 cents to cause an increase of 1Hz, more precisely around 3.9302 for a base frequency of 440.0.
+Otherwise stated, the ratio between frequencies separated by a single cent is the 1200th root of 2, or 2^(1/1200).  In decimal, it's about 1.0005777895.  You wouldn't be able to hear a distinction between two tones a single cent apart.  Using this math, it works out to just shy of 4 cents to cause an increase of 1Hz, more precisely around 3.9302 for a base frequency of 440.0.
 
 Logarithmic units are helpful when the range of the y axis, in our case frequency, increases exponentially.  We know the graph of frequency to pitch does because to jump by any single octave, we double what we have - we're multiplying at each step, not adding (which results in a linear graph).  A4 is 440Hz, A5 is 880Hz, and by A6 we're already at 1,760Hz.  The graph `f(x) = x^2` looks like this:
 
@@ -1141,9 +1143,7 @@ impl MulAssign<f64> for Hertz {
 
 Coincidentally, an `impl MulAssign<f64> for Frequency` in Hertz is the exact example on the official [`MulAssign`](https://doc.rust-lang.org/std/ops/trait.MulAssign.html) docs.  Their style might be better.  I don't know, you tell me?
 
-If that's not quite clear, this is the exact equation shown above with a bit of extra noise.  Dividing `cents` by `Cents::from(Interval::Octave)` leaves us with a `Cents` type, per the above `impl Div for Cents` block.  However, we then want to pass the result to `2.0.powf(cents_ratio)`.  The compiler knows it's an `f64` here because we explicitly specified it with `2.0_f64` to use [`powf()`](https://doc.rust-lang.org/std/primitive.f64.html#method.powf).  This is a method on `f64`, so `self` in `pub fn powf(self, n: f64) -> f64` is an `f64` when this gets run.  We implemented `From<Cents> for f64` already, which provides the `T::into() -> U` method like above for free as well as `U::from(T) -> U` in any context where the target type can be inferred, like right here.
-
-The `2.0_f64` literal is how we specify a concrete type - a `2.0` literal is just a `{float}` and stills need more context for the compiler to make into a `f32` (a.k.a. `float`) or `f64` (a.k.a. `double`) and use.  This is usually what we want, it gives us the flexibility to use this literal in any floating point context, but it also doesn't carry that information to help out with inference for other types.  Any numeric literal can take a concrete type suffix.   For example, `8` is an unqualified `{integer}` that can coerce to any unsigned integer type (`u8`,`u16`, `u32`, `u64`, or machine-dependent pointer-sized `usize`) until it's used in a specific context, but `8u8` begins its life as a `u8`, fully specified, so we know we can safely cast it to any larger type.  Any `_` found in a numeric literal is ignored and there for clarity - a 48KHz sample rate could be written `48_000.0_f64`.
+If that's not quite clear, this is the exact equation shown above with a bit of extra noise.  Dividing `cents` by `Cents::from(Interval::Octave)` leaves us with a `Cents` type, per the above `impl Div for Cents` block.  However, we then want to pass the result to `2.0.powf(cents_ratio)`.  The compiler knows it's an `f64` here because we explicitly specified it with `2.0_f64` to use as a base for [`powf()`](https://doc.rust-lang.org/std/primitive.f64.html#method.powf).
 
 Sadly, though, `cargo test` tells us we have a problem:
 
@@ -1155,7 +1155,7 @@ Diff < left / right > :
  }
 ```
 
-Floating point arithmetic is not precise.  However, a delta of as much as a whole Hertz isn't large enough for any human to perceive, so in this type we just care that it's "close enough".  At a glance we can look at those results and understand that we got where we need to be.  To convince Rust we're good to go, we can override the compiler-derived [`PartialEq`](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html) behavior for this type:
+Floating point arithmetic is not precise.  However, a delta of as much as a whole Hertz, or almost 4 cents, isn't large enough for any human to perceive.   The [just-noticeable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents, or 5*2^(1/1200).  In this type we just care that it's "close enough".  At a glance we can look at those results and understand that we got where we need to be.  To convince Rust we're good to go, we can override the compiler-derived [`PartialEq`](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html) behavior for this type:
 
 ```diff
 - #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -1296,7 +1296,7 @@ This code is written in an extensible, modifiable manner, and there are a number
 - Generate key signatures from strings like `"Cmaj"` or `"Amin7`.
 - Support even more types of key signatures like the [harmonic minor](https://en.wikipedia.org/wiki/Minor_scale#Harmonic_minor_scale), which is the Aeolean mode with the seventh note one semitone higher.
 - Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation).
-- Instead of picking notes at random, provde differnet kinds of seeds.  For instance, every file on your computer is a stream of bytes.
+- Instead of picking notes at random, provde different kinds of seeds.  For instance, every file on your computer is a stream of bytes.
 - Support other types of wave forms than sines, such as square waves or sawtooth waves.
 - We can already read piano keys from strings like `"D#4"`.  Parse and play back predefined sequences of notes from text files.  This will involve some work: stacked accidentals, naturals, represent durations, etc.
 - A [`WAV`](https://en.wikipedia.org/wiki/WAV) file is an uncompressed audio stream, like the one we'eve build.  Write audo files containing your music with with [`hound`](https://github.com/ruuda/hound).
