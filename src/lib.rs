@@ -1,6 +1,9 @@
-use rand::random;
-use rodio::source::SineWave;
+use core::time::Duration;
+use lazy_static::lazy_static;
+use rand::{random, rngs::SmallRng, seq::IteratorRandom, Rng, SeedableRng};
+use rodio::source::{SineWave, Source};
 use std::{
+    f32::consts::PI,
     fmt, io,
     ops::{Add, AddAssign, Div, MulAssign, Sub},
     str::FromStr,
@@ -9,24 +12,30 @@ use std::{
 #[cfg(test)]
 mod test;
 
+lazy_static! {
+// TODO OPT
+}
+
 pub const GREETING: &str = "Cool Tunes (tm)";
 
 #[derive(Default)]
-struct RandomBytes;
+struct RandomMelody;
 
-impl RandomBytes {
+impl RandomMelody {
     fn new() -> Self {
         Self::default()
     }
 }
 
-impl Iterator for RandomBytes {
+impl Iterator for RandomMelody {
     type Item = u8;
 
     fn next(&mut self) -> Option<Self::Item> {
         Some(random::<Self::Item>())
     }
 }
+
+//impl Source for RandomMelody {}
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Hertz(f64);
@@ -133,7 +142,11 @@ enum NoteLetter {
 }
 
 impl NoteLetter {
-    fn from_c(self) -> Interval {
+    fn all() -> &'static [Self] {
+        use NoteLetter::*;
+        &[C, D, E, F, G, A, B]
+    }
+    fn interval_from_c(self) -> Interval {
         use Interval::Unison;
         Scale::default()
             .get_intervals()
@@ -222,9 +235,9 @@ struct Note {
 }
 
 impl Note {
-    fn from_c(&self) -> Interval {
+    fn interval_from_c(self) -> Interval {
         use Accidental::*;
-        let ret = self.letter.from_c();
+        let ret = self.letter.interval_from_c();
         if let Some(acc) = self.accidental {
             match acc {
                 // TODO refactor
@@ -234,14 +247,14 @@ impl Note {
         };
         ret
     }
-    fn get_offset_from_interval(&self, other: Interval) -> Interval {
-        let self_from_c = self.from_c();
-        self_from_c - other
+    fn get_offset_from_interval(self, other: Interval) -> Interval {
+        let self_interval_from_c = self.interval_from_c();
+        self_interval_from_c - other
     }
-    fn get_offset(&self, other: Self) -> Interval {
-        let self_from_c = self.from_c();
-        let other_from_c = other.from_c();
-        self_from_c - other_from_c
+    fn get_offset(self, other: Self) -> Interval {
+        let self_interval_from_c = self.interval_from_c();
+        let other_interval_from_c = other.interval_from_c();
+        self_interval_from_c - other_interval_from_c
     }
     fn inc(&mut self) {
         use Accidental::*;
@@ -280,23 +293,11 @@ impl From<Interval> for Note {
     // Take an interval from C
     fn from(i: Interval) -> Self {
         use Interval::*;
-        // TODO MAKE THIS COOL - define Chromatic scale first??
+        let mut offset = Unison;
         // That's a series of Min2
-        match i {
-            Unison => Self::from_str("C").unwrap(),
-            Min2 => Self::from_str("C#").unwrap(),
-            Maj2 => Self::from_str("D").unwrap(),
-            Min3 => Self::from_str("D#").unwrap(),
-            Maj3 => Self::from_str("E").unwrap(),
-            Perfect4 => Self::from_str("F").unwrap(),
-            Tritone => Self::from_str("F#").unwrap(),
-            Perfect5 => Self::from_str("G").unwrap(),
-            Min6 => Self::from_str("G#").unwrap(),
-            Maj6 => Self::from_str("A").unwrap(),
-            Min7 => Self::from_str("A#").unwrap(),
-            Maj7 => Self::from_str("B").unwrap(),
-            Octave => Self::from_str("C").unwrap(),
-        }
+        let scale = Scale::Chromatic.get_intervals();
+        scale.iter().take(i as usize).for_each(|i| offset += *i);
+        Note::default() + offset
     }
 }
 
@@ -360,9 +361,14 @@ impl PianoKey {
         Self::from_str(s)
     }
     //fn get_offset()
-    fn all_pitches() -> &'static [Interval] {
-        unimplemented!()
-        // Need to do FromStr first
+    fn all_pitches() -> Vec<PianoKey> {
+        NoteLetter::all()
+            .iter()
+            .zip([0..8].iter())
+            .map(|(letter, octave)| {
+                PianoKey::from_str(&format!("{:?}{:?}", letter, octave)).unwrap()
+            })
+            .collect::<Vec<PianoKey>>()
     }
 }
 
@@ -462,7 +468,7 @@ impl From<PianoKey> for Pitch {
             ret += Octave;
         }
         // Add note offset
-        ret += sp.note.letter.from_c();
+        ret += sp.note.letter.interval_from_c();
         ret
     }
 }
@@ -476,6 +482,12 @@ impl From<Pitch> for f64 {
 impl From<Pitch> for SineWave {
     fn from(p: Pitch) -> Self {
         SineWave::new(f64::from(p) as u32)
+    }
+}
+
+impl From<Pitch> for Sample {
+    fn from(p: Pitch) -> Self {
+        f64::from(p) as f32
     }
 }
 
@@ -550,7 +562,7 @@ impl Sub for Interval {
     fn sub(self, rhs: Self) -> Self {
         let mut delta = i8::from(self) - i8::from(rhs);
         if delta < 0 {
-            delta = Interval::Octave as i8 + delta;
+            delta += Interval::Octave as i8;
         };
         Interval::from(Semitones(delta))
     }
@@ -567,7 +579,7 @@ pub enum ScaleLength {
     Tetratonic = 4,
     Pentatonic = 5,
     Heptatonic = 7,
-    Chromatic = 12,
+    Dodecatonic = 12,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -582,9 +594,9 @@ pub enum Mode {
 }
 
 impl Mode {
-    fn base_intervals() -> &'static [Interval] {
+    fn base_intervals() -> Vec<Interval> {
         use Interval::*;
-        &[Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
+        vec![Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
     }
     //fn get_intervals(&self) -> impl Iterator {
     //    let intervals = Mode::base_intervals();
@@ -612,12 +624,19 @@ impl Default for Scale {
 }
 
 impl Scale {
-    fn get_intervals(self) -> &'static [Interval] {
-        // TODO this needs to be a method, come here next!
-        // have THIS calculate an impl Iterator (or impl Scale??)
+    fn circle_of_fifths() -> Vec<Vec<Interval>> {
+        unimplemented!()
+    }
+    fn get_intervals(self) -> Vec<Interval> {
+        use Interval::*;
         use Scale::*;
         match self {
-            Chromatic => PianoKey::all_pitches(),
+            Chromatic => [Min2]
+                .iter()
+                .cycle()
+                .take(ScaleLength::Dodecatonic as usize)
+                .copied()
+                .collect::<Vec<Interval>>(),
             Diatonic(_) => Mode::base_intervals(),
         }
     }
@@ -640,4 +659,109 @@ impl Scale {
     //    let idx = n as usize + offset % c.size_hint().0;
     //    c.nth(idx).unwrap()
     // }
+}
+
+impl fmt::Display for Scale {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+struct Key {
+    base_note: Note,
+    scale: Scale,
+}
+
+impl Key {
+    fn all_keys(self) -> Vec<PianoKey> {
+        let notes = self.scale.get_notes(self.base_note);
+        let mut ret = Vec::new();
+        for i in 3..6 {
+            notes
+                .iter()
+                .for_each(|n| ret.push(PianoKey::from_str(&format!("{}{}", *n, i)).unwrap()));
+        }
+        ret
+    }
+}
+
+pub struct MusicMaker {
+    key: Key,
+    seed: SmallRng,
+    current_note: PianoKey,
+    current_sample: usize,
+    sample_rate: Hertz,
+    volume: f32,
+}
+
+impl Default for MusicMaker {
+    fn default() -> Self {
+        Self {
+            key: Key::default(),
+            seed: SmallRng::from_entropy(),
+            current_note: PianoKey::from_str("C4").unwrap(),
+            current_sample: usize::default(),
+            sample_rate: SAMPLE_RATE,
+            volume: 2.0,
+        }
+    }
+}
+
+type Sample = f32;
+
+impl MusicMaker {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    fn get_frequency(&mut self) -> Sample {
+        let pitch = Pitch::from(self.current_note);
+        println!("{:?}", pitch);
+        pitch.into()
+    }
+    fn new_note(&mut self) {
+        let keys = self.key.all_keys();
+        self.current_note = *keys.iter().choose(&mut self.seed).unwrap();
+    }
+}
+
+impl Iterator for MusicMaker {
+    type Item = Sample; // Sampled amplitude
+    fn next(&mut self) -> Option<Self::Item> {
+        self.current_sample = self.current_sample.wrapping_add(1); // will cycle
+
+        let value = self.volume
+            * PI
+            * Sample::from(Pitch::from(self.current_note))
+            * self.current_sample as Sample
+            / f64::from(self.sample_rate) as Sample;
+        // when to switch notes?
+        if self.current_sample as f64 >= f64::from(self.sample_rate) {
+            self.current_sample = 0;
+            self.new_note();
+        }
+        Some(value.sin())
+    }
+}
+
+impl Source for MusicMaker {
+    #[inline]
+    fn current_frame_len(&self) -> Option<usize> {
+        None
+    }
+
+    #[inline]
+    fn channels(&self) -> u16 {
+        1
+    }
+
+    #[inline]
+    fn sample_rate(&self) -> u32 {
+        f64::from(self.sample_rate) as u32
+    }
+
+    #[inline]
+    fn total_duration(&self) -> Option<Duration> {
+        None
+    }
 }

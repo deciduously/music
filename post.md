@@ -460,7 +460,7 @@ To do so, we're going to perform an [analog-to-digital conversion](https://en.wi
 
 A sine wave, as we've seen, is smooth.  However, what's a graph but a visualization of a function.  There's some function `mySineWave(x)` that's this wave when we put in a bunch of fractional numbers between *0* and *1*.  The  `for (i = 0; i < 1; i += 0.0001)` loop is doing exactly that, calculating a series of adjacent points at a fixed interval (`0.0001`) that satisfy the function of this wave.  That's our analog-to-digital conversion  - we've taken something smooth, a sine wave, and made it digital, or made up of discrete points.  For `Pitch::default()`, this cycle repeats 440 times each second.
 
-The sample rate of an audio stream is how many points to store for each one of these cycles, or is how high-fidelity this "digital snapshot" of the wave is.  Lots of applications use a [44.1KHz](https://en.wikipedia.org/wiki/44,100_Hz) [sample rate](https://en.wikipedia.org/wiki/Sampling_(signal_processing)#Sampling_rate) - a bit higher than 10KHz like the example.  According to the [sampling theorem](https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem), the threshold for ensuring you've captured a sufficient sample from an analog signal is that the sample rate must be greater than twice the frequency you you're sampling.  Humans can hear about 20Hz to 20,000Hz.  This means we need at least 40,000 samples, and 44,100 exceeds that.  I [don't understand](https://en.wikipedia.org/wiki/Transition_band) the reason for the specific 4.1k overage, but it's The Standard. Similarly, [16-bit samples](https://en.wikipedia.org/wiki/Audio_bit_depth) is commonly seen thing, so who am I to say otherwise.  In this application, we're using 48KHz.  The maximum amplitude this struct can represent is the maximum wave that fits in a 16-bit sample, because that's the biggest *x* will ever be in either direction - `1` or `-1`.
+The [sample rate](https://en.wikipedia.org/wiki/Sampling_(signal_processing)#Sampling_rate) of an audio stream is how many points to store for each one of these cycles, or is how high-fidelity this "digital snapshot" of the wave is.  Lots of applications use a [44.1KHz](https://en.wikipedia.org/wiki/44,100_Hz) sample rate - a bit higher than 10KHz like the example.  According to the [sampling theorem](https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem), the threshold for ensuring you've captured a sufficient sample from an analog signal is that the sample rate must be greater than twice the frequency you you're sampling.  Humans can hear about 20Hz to 20,000Hz.  This means we need at least 40,000 samples, and 44,100 exceeds that.  I [don't understand](https://en.wikipedia.org/wiki/Transition_band) the reason for the specific 4.1k. Similarly, [16-bit samples](https://en.wikipedia.org/wiki/Audio_bit_depth) is commonly seen.  In this application, we're using 48KHz.  The maximum amplitude this struct can represent is the maximum wave that fits in a 16-bit sample, because that's the biggest *x* will ever be in either direction - `1` or `-1`.
 
 The `rodio` crate actually has a built-in [`rodio::source::SineWave`](https://docs.rs/rodio/0.10.0/rodio/source/struct.SineWave.html).  We could give ourselves a `From` implementation to play theirs - this code should produce an A440 tone:
 
@@ -544,7 +544,16 @@ Note how each octave starts at C, not A, so A4 is actually higher in pitch than 
 
 *[top](#table-of-contents)*
 
-A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  The smallest of these intervals on a piano (and most of Western music) is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second or half step.  We'll need to keep track of these as the basic unit of a keyboard interval:
+A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  We'll talk a little more about more kinds later, but we'll start off with the simplest one:
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Scale {
+    Chromatic,
+}
+```
+
+The smallest of these intervals on a piano (and most of Western music) is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second or half step.  We'll need to keep track of these as the basic unit of a keyboard interval:
 
 ```rust
 struct Semitones(i8);
@@ -573,7 +582,13 @@ enum Interval {
 
 By including a numeric index with `Unison = 0`, each variant also gets assigned the next successive ID.  This way we can refer to each by name but also get an integer corresponding to the number of semitones when needed: `Interval::Maj2 as i8` returns `2_i8`.
 
-Clearly, there isn't a black key between every white key.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern all the way through.  The distribution pattern begins on C, but the keyboard itself starts at A0 and ends at C8.  A piano is thus designed because it can play music across the full range of diatonic scales.  This is where we get those base 8 sequences.
+The chromatic scale is for people who don't have time to muck about with petty concerns like key signatures and sounding good, and don't want to waste any notes - it's just 11 successive minor 2nds, giving you every note.
+
+```rust
+half, half, half, half, half, half, half, half, half, half, half
+```
+
+Clearly, there isn't a black key between every white key - there must be a method to the madness.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern all the way through.  The distribution pattern begins on C, but the keyboard itself starts at A0 and ends at C8.  A piano is thus designed because it can play music across the full range of diatonic scales.  This is where we get those base 8 sequences - just start on a different note.
 
 That pattern, that the numbering system is based around, is the C [major scale](https://en.wikipedia.org/wiki/Major_scale).  Start at Middle C, the one highlighted in cyan above, and count up to the next C key, eight white keys to the left.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get counting up to the next C, when the pattern repeats.  This totals 12 semitones per octave:
 
@@ -600,7 +615,7 @@ It's the same pattern, just starting at a different offset.  You can play a corr
 
 *[top](#table-of-contents)*
 
-Discrete units like `Semitones` are useful for working with a keyboard, but as we know, sound is analog and continuous.  We need to subdivide these intervals even more granularly, and because of equal temperament we're free to do so at any arbitrary level.  Beyond the twelve 12 semitones in an octave, each semitone is divided into 100 [cents](https://en.wikipedia.org/wiki/Cent_(music)).  This means a full octave, representing a 2:1 ratio in frequency, spans 1200 cents, and each cent can be divided without losing the ratio as well if needed:
+Right then!  Now that we've got some scales under our belt, we need to translate those to notes.  Discrete units like `Semitones` are useful for working with a keyboard, but as we know, sound is analog and continuous.  We need to subdivide these intervals even more granularly, and because of equal temperament we're free to do so at any arbitrary level.  Beyond the twelve 12 semitones in an octave, each semitone is divided into 100 [cents](https://en.wikipedia.org/wiki/Cent_(music)).  This means a full octave, representing a 2:1 ratio in frequency, spans 1200 cents, and each cent can be divided without losing the ratio as well if needed:
 
 ```rust
 struct Cents(f64);
@@ -941,13 +956,13 @@ However, these indices to not represent a straight sequence of semitones from C 
 fn test_note_letter_to_interval() {
     use Interval::*;
     use NoteLetter::*;
-    assert_eq!(C.from_c(), Unison);
-    assert_eq!(D.from_c(), Maj2);
-    assert_eq!(E.from_c(), Maj3);
-    assert_eq!(F.from_c(), Perfect4);
-    assert_eq!(G.from_c(), Perfect5);
-    assert_eq!(A.from_c(), Maj6);
-    assert_eq!(B.from_c(), Maj7);
+    assert_eq!(C.interval_from_c(), Unison);
+    assert_eq!(D.interval_from_c(), Maj2);
+    assert_eq!(E.interval_from_c(), Maj3);
+    assert_eq!(F.interval_from_c(), Perfect4);
+    assert_eq!(G.interval_from_c(), Perfect5);
+    assert_eq!(A.interval_from_c(), Maj6);
+    assert_eq!(B.interval_from_c(), Maj7);
 }
 ```
 
@@ -971,7 +986,7 @@ Luckily *we already told Rust about this* when we defined the major scale.  Now 
 
 ```rust
 impl NoteLetter {
-    fn from_c(self) -> Interval {
+    fn interval_from_c(self) -> Interval {
         use Interval::Unison;
         Scale::default()
             .get_intervals()
@@ -1075,6 +1090,8 @@ impl FromStr for NoteLetter {
     }
 }
 ```
+
+This could be fancy, too, but this works in a pinch.
 
 The notes are C-indexed, for better or for worse, so `Note::default()` should return that variant.  We'll talk more about why it's C and not A after learning about Modes below.   Don't worry, it's suitably disappointing.
 

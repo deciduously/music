@@ -148,13 +148,13 @@ fn test_reject_piano_key_invalid_letter() {
 fn test_note_letter_to_interval() {
     use Interval::*;
     use NoteLetter::*;
-    assert_eq!(C.from_c(), Unison);
-    assert_eq!(D.from_c(), Maj2);
-    assert_eq!(E.from_c(), Maj3);
-    assert_eq!(F.from_c(), Perfect4);
-    assert_eq!(G.from_c(), Perfect5);
-    assert_eq!(A.from_c(), Maj6);
-    assert_eq!(B.from_c(), Maj7);
+    assert_eq!(C.interval_from_c(), Unison);
+    assert_eq!(D.interval_from_c(), Maj2);
+    assert_eq!(E.interval_from_c(), Maj3);
+    assert_eq!(F.interval_from_c(), Perfect4);
+    assert_eq!(G.interval_from_c(), Perfect5);
+    assert_eq!(A.interval_from_c(), Maj6);
+    assert_eq!(B.interval_from_c(), Maj7);
 }
 
 #[test]
@@ -164,21 +164,21 @@ fn test_piano_key_to_pitch() {
 }
 
 #[test]
-fn test_get_note_from_c() {
+fn test_get_note_interval_from_c() {
     use Interval::*;
-    assert_eq!(Note::from_str("A").unwrap().from_c(), Maj6);
-    assert_eq!(Note::from_str("A#").unwrap().from_c(), Min7);
-    assert_eq!(Note::from_str("Bb").unwrap().from_c(), Min7);
-    assert_eq!(Note::from_str("B").unwrap().from_c(), Maj7);
-    assert_eq!(Note::from_str("C").unwrap().from_c(), Unison);
-    assert_eq!(Note::from_str("C#").unwrap().from_c(), Min2);
-    assert_eq!(Note::from_str("D").unwrap().from_c(), Maj2);
-    assert_eq!(Note::from_str("D#").unwrap().from_c(), Min3);
-    assert_eq!(Note::from_str("E").unwrap().from_c(), Maj3);
-    assert_eq!(Note::from_str("F").unwrap().from_c(), Perfect4);
-    assert_eq!(Note::from_str("F#").unwrap().from_c(), Tritone);
-    assert_eq!(Note::from_str("G").unwrap().from_c(), Perfect5);
-    assert_eq!(Note::from_str("G#").unwrap().from_c(), Min6);
+    assert_eq!(Note::from_str("A").unwrap().interval_from_c(), Maj6);
+    assert_eq!(Note::from_str("A#").unwrap().interval_from_c(), Min7);
+    assert_eq!(Note::from_str("Bb").unwrap().interval_from_c(), Min7);
+    assert_eq!(Note::from_str("B").unwrap().interval_from_c(), Maj7);
+    assert_eq!(Note::from_str("C").unwrap().interval_from_c(), Unison);
+    assert_eq!(Note::from_str("C#").unwrap().interval_from_c(), Min2);
+    assert_eq!(Note::from_str("D").unwrap().interval_from_c(), Maj2);
+    assert_eq!(Note::from_str("D#").unwrap().interval_from_c(), Min3);
+    assert_eq!(Note::from_str("E").unwrap().interval_from_c(), Maj3);
+    assert_eq!(Note::from_str("F").unwrap().interval_from_c(), Perfect4);
+    assert_eq!(Note::from_str("F#").unwrap().interval_from_c(), Tritone);
+    assert_eq!(Note::from_str("G").unwrap().interval_from_c(), Perfect5);
+    assert_eq!(Note::from_str("G#").unwrap().interval_from_c(), Min6);
 }
 
 #[test]
@@ -235,8 +235,62 @@ fn test_get_c_major() {
 }
 
 #[test]
-fn test_note_interval() {
-    // TODO
+fn test_get_a_major() {
+    assert_eq!(
+        Scale::default().get_notes(Note::from_str("A").unwrap()),
+        &[
+            Note::from_str("A").unwrap(),
+            Note::from_str("B").unwrap(),
+            Note::from_str("C#").unwrap(),
+            Note::from_str("D").unwrap(),
+            Note::from_str("E").unwrap(),
+            Note::from_str("F#").unwrap(),
+            Note::from_str("G#").unwrap(),
+            Note::from_str("A").unwrap()
+        ]
+    );
 }
 
-// TODO demonstrate above, then talk about FromStr
+#[test]
+fn test_get_g_major() {
+    assert_eq!(
+        Scale::default().get_notes(Note::from_str("G").unwrap()),
+        &[
+            Note::from_str("G").unwrap(),
+            Note::from_str("A").unwrap(),
+            Note::from_str("B").unwrap(),
+            Note::from_str("C").unwrap(),
+            Note::from_str("D").unwrap(),
+            Note::from_str("E").unwrap(),
+            Note::from_str("F#").unwrap(),
+            Note::from_str("G").unwrap()
+        ]
+    );
+}
+
+#[test]
+fn test_get_chromatic() {
+    assert_eq!(
+        Scale::Chromatic.get_notes(Note::from_str("A").unwrap()),
+        &[
+            Note::from_str("A").unwrap(),
+            Note::from_str("A#").unwrap(),
+            Note::from_str("B").unwrap(),
+            Note::from_str("C").unwrap(),
+            Note::from_str("C#").unwrap(),
+            Note::from_str("D").unwrap(),
+            Note::from_str("D#").unwrap(),
+            Note::from_str("E").unwrap(),
+            Note::from_str("F").unwrap(),
+            Note::from_str("F#").unwrap(),
+            Note::from_str("G").unwrap(),
+            Note::from_str("G#").unwrap(),
+            Note::from_str("A").unwrap()
+        ]
+    )
+}
+
+#[test]
+fn test_all_keys() {
+    //
+}

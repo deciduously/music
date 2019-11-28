@@ -8,8 +8,14 @@ edition = "2018"
 
 [dependencies]
 
-rand = "0.7"
+lazy_static = "1.4"
 rodio = "0.10"
+structopt = "0.3"
+
+[dependencies.rand]
+
+features = [ "small_rng" ]
+version = "0.7"
 
 [dev-dependencies]
 
