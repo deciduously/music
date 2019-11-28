@@ -22,7 +22,7 @@ The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover im
 
 By the end of this post our program will:
 
-1. Support over a hundred different key signatures. - 1 (Chromatic) + (7x12) (Diatonic) + (5x12??) (Pentatonic)
+1. Support over a hundred different key signatures. - 1 (Chromatic) + (7x12) (Diatonic) + (5x12??) (Pentatonic) + 1 Tetratonic / TODO
 1. Support a full 108-key extended [piano](https://en.wikipedia.org/wiki/Piano) [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard), allowing the user to pick a range.
 1. Produce any arbitrary tone we ask for.
 1. Compile and run on Windows, MacOS, or Linux with no extra effort or code changes (I tried all three).
@@ -52,9 +52,7 @@ The completed code can be found on [GitHub](https://github.com/deciduously/music
       * [Non Heptatonic Scales](#non-heptatonic-scales)
       * [Key](#key)
       * [Cents](#cents)
-    - [Back To The Bytes](#back-to-the-bytes)
-  * [Listen To Your Files](#listen-to-your-files)
-  * [Write Your Own Tunes](#write-your-own-tunes)
+    - [Generating Music](#generating-music)
 - [Challenges](#challenges)
 
 ## Preamble
@@ -65,7 +63,7 @@ This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and
 
 I have two disclaimers before getting started:
 
-1. [There are](https://en.wikipedia.org/wiki/Existence) [217](https://en.wikipedia.org/wiki/217_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Boston), [173](https://en.wikipedia.org/wiki/173_(number)) [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
+1. [There are](https://en.wikipedia.org/wiki/Existence) [219](https://en.wikipedia.org/wiki/219_(number)) [links](https://en.wikipedia.org/wiki/Hyperlink) [here](https://en.wikipedia.org/wiki/Boston), [173](https://en.wikipedia.org/wiki/173_(number)) [of them](https://en.wikipedia.org/wiki/Element_(mathematics)) [to](https://en.wikipedia.org/wiki/Codomain) [Wikipedia](https://en.wikipedia.org/wiki/Main_Page).  [If](https://en.wikipedia.org/wiki/Conditional_(computer_programming)) [you're](https://en.wikipedia.org/wiki/You) [that](https://en.wikipedia.org/wiki/Autodidacticism) [kind](https://en.wikipedia.org/wiki/Impulsivity) [of](https://en.wikipedia.org/wiki/Preposition_and_postposition) [person](https://en.wikipedia.org/wiki/Person), [set](https://en.wikipedia.org/wiki/Innovation) [rules](https://en.wikipedia.org/wiki/Law).
 1. Further to Point 1, most of this I learned myself on Wikipedia, some of it while writing this post.  The rest is what I remember from [high school](https://en.wikipedia.org/wiki/High_school_(North_America)) as a [band geek](https://en.wikipedia.org/wiki/Euphonium), which was over [ten years](https://en.wikipedia.org/wiki/Decade) [ago](https://en.wikipedia.org/wiki/Past).  I do believe it's generally on the mark, but I am making no claims of authority.  If you see something, [say something](https://en.wikipedia.org/wiki/Allen_Kay#Advertisements).
 
 ## The Meme
