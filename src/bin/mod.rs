@@ -1,5 +1,10 @@
+use lazy_static::lazy_static;
 use music::*;
 use rodio::{default_output_device, Sink};
+
+lazy_static! {
+// TODO OPT
+}
 
 fn main() {
     println!("{}", GREETING);

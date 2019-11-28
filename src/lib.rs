@@ -1,6 +1,5 @@
 use core::time::Duration;
-use lazy_static::lazy_static;
-use rand::{random, rngs::SmallRng, seq::IteratorRandom, Rng, SeedableRng};
+use rand::{rngs::SmallRng, seq::IteratorRandom, SeedableRng};
 use rodio::source::{SineWave, Source};
 use std::{
     f32::consts::PI,
@@ -12,30 +11,7 @@ use std::{
 #[cfg(test)]
 mod test;
 
-lazy_static! {
-// TODO OPT
-}
-
 pub const GREETING: &str = "Cool Tunes (tm)";
-
-#[derive(Default)]
-struct RandomMelody;
-
-impl RandomMelody {
-    fn new() -> Self {
-        Self::default()
-    }
-}
-
-impl Iterator for RandomMelody {
-    type Item = u8;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        Some(random::<Self::Item>())
-    }
-}
-
-//impl Source for RandomMelody {}
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Hertz(f64);
