@@ -601,8 +601,7 @@ impl Default for Scale {
 
 impl Scale {
     pub fn circle_of_fifths() -> Vec<Key> {
-        // get all base notes
-        // for each, return the as
+        // TODO actually go up by fifths, not just use chromatic scale
         let mut ret = Vec::new();
         let all_notes = Scale::Chromatic.get_notes(Note::from_str("A").unwrap());
         all_notes
