@@ -291,6 +291,31 @@ fn test_get_chromatic() {
 }
 
 #[test]
+fn test_a_minor() {
+    assert_eq!(
+        Scale::Diatonic(Mode::Aeolian).get_notes(Note::from_str("A").unwrap()),
+        &[
+            Note::from_str("A").unwrap(),
+            Note::from_str("B").unwrap(),
+            Note::from_str("C").unwrap(),
+            Note::from_str("D").unwrap(),
+            Note::from_str("E").unwrap(),
+            Note::from_str("F").unwrap(),
+            Note::from_str("G").unwrap(),
+            Note::from_str("A").unwrap()
+        ]
+    );
+}
+
+#[test]
+fn test_display_chromatic() {
+    assert_eq!(
+        &format!("{}", Key::new(Scale::Chromatic, "A")),
+        "[ A A# B C C# D D# E F F# G G# A ]"
+    )
+}
+
+#[test]
 fn test_all_keys() {
     //
 }

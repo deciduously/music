@@ -205,7 +205,7 @@ impl FromStr for Accidental {
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
-struct Note {
+pub struct Note {
     accidental: Option<Accidental>,
     letter: NoteLetter,
 }
@@ -600,8 +600,15 @@ impl Default for Scale {
 }
 
 impl Scale {
-    fn circle_of_fifths() -> Vec<Vec<Interval>> {
-        unimplemented!()
+    pub fn circle_of_fifths() -> Vec<Key> {
+        // get all base notes
+        // for each, return the as
+        let mut ret = Vec::new();
+        let all_notes = Scale::Chromatic.get_notes(Note::from_str("A").unwrap());
+        all_notes
+            .iter()
+            .for_each(|n| ret.push(Key::new(Scale::default(), &format!("{}", *n))));
+        ret
     }
     fn get_intervals(self) -> Vec<Interval> {
         use Interval::*;
@@ -613,10 +620,16 @@ impl Scale {
                 .take(ScaleLength::Dodecatonic as usize)
                 .copied()
                 .collect::<Vec<Interval>>(),
-            Diatonic(_) => Mode::base_intervals(),
+            Diatonic(mode) => Mode::base_intervals()
+                .iter()
+                .cycle()
+                .skip(mode as usize)
+                .take(ScaleLength::Heptatonic as usize)
+                .copied()
+                .collect::<Vec<Interval>>(),
         }
     }
-    fn get_notes(self, base_note: Note) -> Vec<Note> {
+    pub fn get_notes(self, base_note: Note) -> Vec<Note> {
         let mut ret = vec![base_note];
         let mut offset = Interval::Unison;
         self.get_intervals().iter().for_each(|i| {
@@ -625,31 +638,21 @@ impl Scale {
         });
         ret
     }
-    //fn get_interval(&self, n: u8) -> Interval {
-    //    use Scale::*;
-    //    let offset = match self {
-    //        Aeolian => 5,
-    //        Ionian => 0,
-    //    };
-    //    let c = self.get_intervals();
-    //    let idx = n as usize + offset % c.size_hint().0;
-    //    c.nth(idx).unwrap()
-    // }
-}
-
-impl fmt::Display for Scale {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        unimplemented!()
-    }
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
-struct Key {
+pub struct Key {
     base_note: Note,
     scale: Scale,
 }
 
 impl Key {
+    pub fn new(scale: Scale, base_note_str: &str) -> Self {
+        Self {
+            base_note: Note::from_str(base_note_str).unwrap(),
+            scale,
+        }
+    }
     fn all_keys(self) -> Vec<PianoKey> {
         let notes = self.scale.get_notes(self.base_note);
         let mut ret = Vec::new();
@@ -659,6 +662,16 @@ impl Key {
                 .for_each(|n| ret.push(PianoKey::from_str(&format!("{}{}", *n, i)).unwrap()));
         }
         ret
+    }
+}
+
+impl fmt::Display for Key {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let notes = self.scale.get_notes(self.base_note);
+        let mut ret = String::from("[ ");
+        notes.iter().for_each(|n| ret.push_str(&format!("{} ", n)));
+        ret.push_str("]");
+        write!(f, "{}", ret)
     }
 }
 

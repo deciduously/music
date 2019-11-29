@@ -47,10 +47,10 @@ The completed code can be found on [GitHub](https://github.com/deciduously/music
     - [A Little Music Theory](#a-little-music-theory)
       * [Scales](#scales)
       * [Scientific Pitch Notation](#scientific-pitch-notation)
+      * [Key](#key)
       * [Diatonic Modes](#diatonic-modes)
       * [Circle of Fifths](#circle-of-fifths)
       * [Non Heptatonic Scales](#non-heptatonic-scales)
-      * [Key](#key)
       * [Cents](#cents)
     - [Generating Music](#generating-music)
 - [Challenges](#challenges)
@@ -70,6 +70,8 @@ I have two disclaimers before getting started:
 
 *[top](#table-of-contents)*
 
+// Marisa was confused by the two adjacent links - be consistent about adjacent links, if you're doing it, just stick to one word.
+
 This post was inspired by [this](https://www.reddit.com/r/linuxmasterrace/comments/dyqri7/like_god_would_have_wanted/) [meme](https://en.wikipedia.org/wiki/Internet_meme) I saw when I was *attempting* to casually browse [Reddit](https://en.wikipedia.org/wiki/Reddit):
 
 ![the meme](https://i.redd.it/uirqnamnjpz31.jpg)
@@ -80,7 +82,7 @@ I couldn't let myself just scroll past that one, [clearly](https://en.wikipedia.
 cat /dev/urandom | hexdump -v -e '/1 "%u\n"' | awk '{ split("0,2,4,5,7,9,11,12",a,","); for (i = 0; i < 1; i+= 0.0001) printf("%08X\n", 100*sin(1382*exp((a[$1 % 8]/12)*log(2))*i)) }' | xxd -r -p | aplay -c 2 -f S32_LE -r 16000
 ```
 
-The linked blogpost is considerably more brief and assumes a greater degree of background knowledge than this one, but that's not to discredit it at as a fantastic source.  That write-up and Wikipedia were all I needed to complete this translation, and I had absolutely not a clue how this whole thing worked going in.
+The linked blog post is considerably more brief and assumes a greater degree of background knowledge than this one, but that's not to discredit it at as a fantastic source.  That write-up and Wikipedia were all I needed to complete this translation, and I had absolutely not a clue how this whole thing worked going in.
 
 I've gotta be honest - I didn't even try the `bash` and immediately dove into the pure Rust solution.  Nevertheless, it serves as a [solid](https://en.wikipedia.org/wiki/Solid) [30,000ft](https://en.wikipedia.org/wiki/Flight_level) [roadmap](https://en.wikipedia.org/wiki/Plan):
 
@@ -284,6 +286,8 @@ fn main() {
 I'm not bothering to show you the full snippet - this program doesn't use any of this code.   You don't need to type any of this in.  In a `bash` one-liner you've got to take your randomness where you can get it, but the `rand` crate proivdes a richer set of tools.  Before streaming in something random, we need to think about what exactly it is we're randomizing.
 
 In this application, we want to pick a musical note from a set of valid choices at random.  The `awk` code does this with the modulo operator:  `list[n % listLength]`.  That will take a random index that's ensured to be a valid list member.  See if you can spot the corresponding section of the cover image code.
+
+// TODO you just need SliceRandom, not IteratorRandom
 
 We get to use the [`rand::seq::IteratorRandom`](https://docs.rs/rand/0.7.2/rand/seq/trait.IteratorRandom.html) trait here.  This gives us a `choose()` method that we can call on any iterator to pull a random member.
 
@@ -560,14 +564,57 @@ pub enum Scale {
 }
 ```
 
-The chromatic scale is for people who don't have time to muck about with petty concerns like key signatures and sounding good, and don't want to waste any notes - it's just 11 successive minor 2nds, giving you every note.
+The chromatic scale is for people who don't have time to muck about with petty concerns like sounding good, and don't want to waste any piano keys - it's just 11 successive minor 2nds, giving you every note.
 
 ```rust
 half, half, half, half, half, half, half, half, half, half, half
 A    A#    B     C     C#    D     D#    E     F     F#    G    G#
 ```
 
-// TODO show chromatic scale
+That's only half the battle though - this only gives us intervals, we need to be able to calculate it from any base note.  A scale has two parts to the definition: you need both a series of intervals and a base note to begin counting from:
+
+```rust
+#[test]
+fn test_get_chromatic() {
+    assert_eq!(
+        Scale::Chromatic.get_notes(Note::from_str("A").unwrap()),
+        &[
+            Note::from_str("A").unwrap(),
+            Note::from_str("A#").unwrap(),
+            Note::from_str("B").unwrap(),
+            Note::from_str("C").unwrap(),
+            Note::from_str("C#").unwrap(),
+            Note::from_str("D").unwrap(),
+            Note::from_str("D#").unwrap(),
+            Note::from_str("E").unwrap(),
+            Note::from_str("F").unwrap(),
+            Note::from_str("F#").unwrap(),
+            Note::from_str("G").unwrap(),
+            Note::from_str("G#").unwrap(),
+            Note::from_str("A").unwrap()
+        ]
+    )
+}
+```
+
+```rust
+impl Scale {
+    fn get_intervals(self) -> Vec<Interval> {
+        use Interval::*;
+        use Scale::*;
+        match self {
+            Chromatic => [Min2]
+                .iter()
+                .cycle()
+                .take(ScaleLength::Dodecatonic as usize)
+                .copied()
+                .collect::<Vec<Interval>>(),
+        }
+    }
+}
+```
+
+In this program, we'll work with scales as iterators.  The above uses `[Min2]` as a base and returns a `Vec` containing eleven copies.
 
 Clearly, there isn't a black key between every white key - there must be a method to the madness.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern all the way through.  The distribution pattern begins on C, but the keyboard itself starts at A0 and ends at C8.  A piano is thus designed because it can play music across the full range of diatonic scales.  This is where we get those base 8 sequences - just start on a different note.
 
@@ -780,7 +827,7 @@ fn test_new_piano_key() {
 }
 ```
 
-We also ant to reject invalid letters - we can use `#[should_panic]` to indicate that a panic is the expected behavior.  No need to bother defining a real match:
+We also want to reject invalid letters - we can use `#[should_panic]` to indicate that a panic is the expected behavior.  No need to bother defining a real match:
 
 ```rust
 #[test]
@@ -826,6 +873,81 @@ The notes are C-indexed, for better or for worse, so `Note::default()` should re
 
 Thanks to all the nested `Default` blocks, the `Default` implementation that the compiler derives for `PianoKey` corresponds to the official base pitch of this system, `C0`.
 
+##### Key
+
+*[top](#table-of-contents)*
+
+We're finally ready to pull this all together.  For context, once again here's the original line we're dealing with:
+
+```bash
+split("0,2,4,5,7,9,11,12",a,",");
+```
+
+We've now discovered that that list represents the list of semitone offsets from A4 that represent an A major scale.  The random notes that get produced will all be frequencies that correspond to these offsets from 440Hz.
+
+We way, way overshot this in the process of modelling the domain.  We can now automatically generate sequences of `PianoKey` structs that correspond to keys on an 88-key piano to select from: `[C4 D4 E4 F4 G4 A5 B5 C5]`, and each note already knows how to calculate it's frequency in Hertz.  If we want a different scale, we can just ask.
+
+We don't necessarily want to stick within a single octave, though. We want to make available the full 108 keys from C0 to B8 (even larger than the standard piano from the diagram), letting the user decide how many octaves to pick from, but only use notes in the key.
+
+TODO Explain:
+
+```rust
+#[test]
+fn test_display_chromatic() {
+    assert_eq!(
+        &format!("{}", Key::new(Scale::Chromatic, "A")),
+        "[ A A# B C C# D D# E F F# G G# A ]"
+    )
+}
+```
+
+TODO See:
+
+```rust
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct Key {
+    base_note: Note,
+    scale: Scale,
+}
+
+impl Key {
+    pub fn new(scale: Scale, base_note_str: &str) -> Self {
+        Self {
+            base_note: Note::from_str(base_note_str).unwrap(),
+            scale,
+        }
+    }
+    fn all_keys(self) -> Vec<PianoKey> {
+        let notes = self.scale.get_notes(self.base_note);
+        let mut ret = Vec::new();
+        for i in 3..6 {
+            notes
+                .iter()
+                .for_each(|n| ret.push(PianoKey::from_str(&format!("{}{}", *n, i)).unwrap()));
+        }
+        ret
+    }
+}
+```
+
+To produce all the piano keys, we need to calcualte them from the scale and the base note:
+
+```rust
+impl Scale {
+    pub fn get_notes(self, base_note: Note) -> Vec<Note> {
+        let mut ret = vec![base_note];
+        let mut offset = Interval::Unison;
+        self.get_intervals().iter().for_each(|i| {
+            offset += *i;
+            ret.push(base_note + offset)
+        });
+        ret
+    }
+}
+```
+
+This uses the `impl Add for Interval` logic we'd previous defined to count up successive intervals across a scale, resulting in a more concrete set of notes:
+
 ##### Circle of Fifths
 
 *[top](#table-of-contents)*
@@ -844,7 +966,38 @@ It's true that, e.g. `D#` and `E♭` represent the same pitch - what's different
 
 To go counter-clockwise, go up by a perfect fourth every time, which is 5 semitones.  This is known as "circle of fourths", and is more commonly associated with [jazz](https://en.wikipedia.org/wiki/Jazz) music whereas fifths are seen in more [classical](https://en.wikipedia.org/wiki/Classical_music) contexts.
 
-// TODO show off all 12 Ionian scales
+We can generate all of them by just passing each note into `Key::new()`:
+
+```rust
+impl Scale {
+    pub fn circle_of_fifths() -> Vec<Key> {
+        let mut ret = Vec::new();
+        let all_notes = Scale::Chromatic.get_notes(Note::from_str("A").unwrap());
+        all_notes
+            .iter()
+            .for_each(|n| ret.push(Key::new(Scale::default(), &format!("{}", *n))));
+        ret
+    }
+}
+```
+
+That's twelve scales for free:
+
+```txt
+[ A B C# D E F# G# A ]
+[ A# C D D# F G A A# ]
+[ B C# D# E F# G# A# B ]
+[ C D E F G A B C ]
+[ C# D# F F# G# A# C C# ]
+[ D E F# G A B C# D ]
+[ D# F G G# A# C D D# ]
+[ E F# G# A B C# D# E ]
+[ F G A A# C D E F ]
+[ F# G# A# B C# D# F F# ]
+[ G A B C D E F# G ]
+[ G# A# C C# D# F G G# ]
+[ A B C# D E F# G# A ]
+```
 
 ##### Diatonic Modes
 
@@ -895,13 +1048,26 @@ whole, whole, half, whole, whole, whole, half
   2  +  2   +  1  +   2   +  2  +   2  +  1
 ```
 
-```rust
-impl Mode {
-    fn base_intervals() -> &'static [Interval] {
-        use Interval::*;
-        &[Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
-    }
-}
+```diff
+  fn get_intervals(self) -> Vec<Interval> {
+          use Interval::*;
+          use Scale::*;
+          match self {
+              Chromatic => [Min2]
+                  .iter()
+                  .cycle()
+                  .take(ScaleLength::Dodecatonic as usize)
+                  .copied()
+                  .collect::<Vec<Interval>>(),
++             Diatonic(mode) => Mode::base_intervals()
++                 .iter()
++                 .cycle()
++                 .skip(mode as usize)
++                 .take(ScaleLength::Heptatonic as usize)
++                 .copied()
++                 .collect::<Vec<Interval>>(),
++         }
+      }
 ```
 
 // TODO show generated major scale of intervals
@@ -969,24 +1135,6 @@ Who needs key signatures anyhow, that's a waste of all these other keys!  This o
 This could be a potential natural application of [dependent types](https://en.wikipedia.org/wiki/Dependent_type), a programming language feature that Rust does not support.  Few languages do.  One example is [Idris](https://en.wikipedia.org/wiki/Idris_(programming_language)#Dependent_types), which is like [Haskell](https://en.wikipedia.org/wiki/Haskell_(programming_language))++.  A dependent type codifies a type restraint that's dependent on a *value* of that type.  The linked example describes a function that appends a list of `m` elements to a list `n` which specifies as part of the return type that the returned list has length `n + m`.  A caller can then trust this fact implicitly, because the compiler won't build a binary if it's not true.  I think this could be applied here to verify that a scale's intervals method returns an octave, regardless of length.  That can be tested for in code with Rust, of course, but not encoded into the type signature directly.
 
 // TODO show off all the scales, maybe?
-
-##### Key
-
-*[top](#table-of-contents)*
-
-We're finally ready to pull this all together.  For context, once again here's the original line we're dealing with:
-
-```bash
-split("0,2,4,5,7,9,11,12",a,",");
-```
-
-We've now discovered that that list represents the list of semitone offsets from A4 that represent an A major scale.  The random notes that get produced will all be frequencies that correspond to these offsets from 440Hz.
-
-We way, way overshot this in the process of modelling the domain.  We can now automatically generate sequences of `PianoKey` structs that correspond to keys on an 88-key piano to select from: `[C4 D4 E4 F4 G4 A5 B5 C5]`, and each note already knows how to calculate it's frequency in Hertz.  If we want a different scale, we can just ask.
-
-We don't necessarily want to stick within a single octave, though. We want to make available the full 108 keys from C0 to B8 (even larger than the standard piano from the diagram), letting the user decide how many octaves to pick from, but only use notes in the key.
-
-// TODO show Key struct
 
 ##### Cents
 
