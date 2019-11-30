@@ -603,7 +603,7 @@ impl Scale {
     pub fn circle_of_fifths() -> Vec<Key> {
         // TODO actually go up by fifths, not just use chromatic scale
         let mut ret = Vec::new();
-        let all_notes = Scale::Chromatic.get_notes(Note::from_str("A").unwrap());
+        let all_notes = Key::new(Scale::Chromatic, "A").get_notes();
         all_notes
             .iter()
             .for_each(|n| ret.push(Key::new(Scale::default(), &format!("{}", *n))));
@@ -628,15 +628,6 @@ impl Scale {
                 .collect::<Vec<Interval>>(),
         }
     }
-    pub fn get_notes(self, base_note: Note) -> Vec<Note> {
-        let mut ret = vec![base_note];
-        let mut offset = Interval::Unison;
-        self.get_intervals().iter().for_each(|i| {
-            offset += *i;
-            ret.push(base_note + offset)
-        });
-        ret
-    }
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
@@ -653,7 +644,7 @@ impl Key {
         }
     }
     fn all_keys(self) -> Vec<PianoKey> {
-        let notes = self.scale.get_notes(self.base_note);
+        let notes = self.get_notes();
         let mut ret = Vec::new();
         for i in 3..6 {
             notes
@@ -662,11 +653,20 @@ impl Key {
         }
         ret
     }
+    pub fn get_notes(self) -> Vec<Note> {
+        let mut ret = vec![self.base_note];
+        let mut offset = Interval::Unison;
+        self.scale.get_intervals().iter().for_each(|i| {
+            offset += *i;
+            ret.push(self.base_note + offset)
+        });
+        ret
+    }
 }
 
 impl fmt::Display for Key {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let notes = self.scale.get_notes(self.base_note);
+        let notes = self.get_notes();
         let mut ret = String::from("[ ");
         notes.iter().for_each(|n| ret.push_str(&format!("{} ", n)));
         ret.push_str("]");

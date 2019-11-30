@@ -220,7 +220,7 @@ fn test_add_interval_to_note() {
 #[test]
 fn test_get_c_major() {
     assert_eq!(
-        Scale::default().get_notes(Note::default()),
+        Key::new(Scale::default(), "C").get_notes(),
         &[
             Note::from_str("C").unwrap(),
             Note::from_str("D").unwrap(),
@@ -237,7 +237,7 @@ fn test_get_c_major() {
 #[test]
 fn test_get_a_major() {
     assert_eq!(
-        Scale::default().get_notes(Note::from_str("A").unwrap()),
+        Key::new(Scale::default(), "A").get_notes(),
         &[
             Note::from_str("A").unwrap(),
             Note::from_str("B").unwrap(),
@@ -254,7 +254,7 @@ fn test_get_a_major() {
 #[test]
 fn test_get_g_major() {
     assert_eq!(
-        Scale::default().get_notes(Note::from_str("G").unwrap()),
+        Key::new(Scale::default(), "G").get_notes(),
         &[
             Note::from_str("G").unwrap(),
             Note::from_str("A").unwrap(),
@@ -271,7 +271,7 @@ fn test_get_g_major() {
 #[test]
 fn test_get_chromatic() {
     assert_eq!(
-        Scale::Chromatic.get_notes(Note::from_str("A").unwrap()),
+        Key::new(Scale::Chromatic, "A").get_notes(),
         &[
             Note::from_str("A").unwrap(),
             Note::from_str("A#").unwrap(),
@@ -293,7 +293,7 @@ fn test_get_chromatic() {
 #[test]
 fn test_a_minor() {
     assert_eq!(
-        Scale::Diatonic(Mode::Aeolian).get_notes(Note::from_str("A").unwrap()),
+        Key::new(Scale::Diatonic(Mode::Aeolian), "A").get_notes(),
         &[
             Note::from_str("A").unwrap(),
             Note::from_str("B").unwrap(),
