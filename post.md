@@ -22,7 +22,7 @@ The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover im
 
 By the end of this post our program will:
 
-1. Support over a hundred different key signatures. - 1 (Chromatic) + (7x12) (Diatonic) + (5x12??) (Pentatonic) + 1 Tetratonic / TODO
+1. Support 146 different key signatures.
 1. Support a full 108-key extended [piano](https://en.wikipedia.org/wiki/Piano) [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard), allowing the user to pick a range.
 1. Produce any arbitrary tone we ask for.
 1. Compile and run on Windows, MacOS, or Linux with no extra effort or code changes (I tried all three).
@@ -30,7 +30,7 @@ By the end of this post our program will:
 
 However, at the end of the day, it's just the thing in the cover image.
 
-The completed code can be found on [GitHub](https://github.com/deciduously/music), along with the Markdown for this post.  I'm a beginner myself and am sure this code could be improved.  Make a PR!  I'll keep it in sync here.
+The completed code can be found on [GitHub](https://github.com/deciduously/music), along with the Markdown for this post.  Feel free to make a PR!  I'll keep it in sync here.
 
 ## Table of Contents
 
@@ -45,14 +45,16 @@ The completed code can be found on [GitHub](https://github.com/deciduously/music
       * [Pitch](#pitch)
       * [Singing](#singing)
     - [A Little Music Theory](#a-little-music-theory)
-      * [Scales](#scales)
       * [Scientific Pitch Notation](#scientific-pitch-notation)
+      * [Intervals](#intervals)
+      * [Scales](#scales)
       * [Key](#key)
       * [Diatonic Modes](#diatonic-modes)
       * [Circle of Fifths](#circle-of-fifths)
       * [Non Heptatonic Scales](#non-heptatonic-scales)
-      * [Cents](#cents)
     - [Generating Music](#generating-music)
+      * [Cents](#cents)
+      * [User Parameters](#user-parameters)
 - [Challenges](#challenges)
 
 ## Preamble
@@ -69,8 +71,6 @@ I have two disclaimers before getting started:
 ## The Meme
 
 *[top](#table-of-contents)*
-
-// Marisa was confused by the two adjacent links - be consistent about adjacent links, if you're doing it, just stick to one word.
 
 This post was inspired by [this](https://www.reddit.com/r/linuxmasterrace/comments/dyqri7/like_god_would_have_wanted/) [meme](https://en.wikipedia.org/wiki/Internet_meme) I saw when I was *attempting* to casually browse [Reddit](https://en.wikipedia.org/wiki/Reddit):
 
@@ -308,7 +308,7 @@ for (i = 0; i < 1; i += 0.0001)
 
 This is probably still not too helpful for most - there's [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and [sines](https://en.wikipedia.org/wiki/Sine) and [logarithms](https://en.wikipedia.org/wiki/Logarithm) (oh, my) - and its written in freakin' [`AWK`](https://en.wikipedia.org/wiki/AWK).  Don't despair if this still doesn't mean much (or literally anything) to you.
 
-We can glean a bit of information at a glance, though, and depending on your current comfort with this domain you may be able to kind of understand the general idea here.  It looks like we're going to tick up floating point values by ten-thousandths from zero to one (`0.0`, `0.0001`, `0.0002`, etc.) with `for (i = 0; i < 1; i += 0.0001)`, and do... I don't know, some math - `100 * sin(1382 * exp((a[$1 % 8] / 12) * log(2)) * i)` - on each value.  In that math we're using both `i`, the current fractional part from 0 to 1, and `$1`, which is the random 8-bit integer being piped in.  Specifically, we're indexing into a list `a`:  `a[$1 % 8]`.  In other words, we're using the random byte `0-255` to select an index `0-7` from this list.
+We can glean a bit of information at a glance, though, and depending on your current comfort with this domain you may be able to kind of understand the general idea here.  It looks like we're going to tick up floating point values by ten-thousandths from zero to one (`0.0`, `0.0001`, `0.0002`, etc.) with `for (i = 0; i < 1; i += 0.0001)`, and do... I don't know, some math on each value.  In that math we're using both `i`, the current fractional part from 0 to 1, and `$1`, which is the random 8-bit integer being piped in.  Specifically, we're indexing into a list `a`:  `a[$1 % 8]`.  In other words, we're using the random byte `0-255` to select an index `0-7` from this list.
 
 The list is defined with `split("0,2,4,5,7,9,11,12",a,",");`, which means split the first parameter string input by the third parameter  `","`, and store the resulting list of elements to the second parameter `a` (`awk` is terse).  After we do the math, we're going to print it out as an 8-digit hex number: `printf("%08X\n", someResult)` - this [`printf`](https://en.wikipedia.org/wiki/Printf_format_string) formatter means we want a [0-padded](https://en.wikipedia.org/wiki/Npm_(software)#Notable_breakages) number that's 8 digits long in [upper-case](https://en.wikipedia.org/wiki/Letter_case) [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal).  The [base 10](https://en.wikipedia.org/wiki/Decimal) integer [`42`](https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_(42)) would be printed as `0000002A`.
 
@@ -512,6 +512,203 @@ While it's great to have a voice we can sing with with, I'm sure we'd all prefer
 
 ![piano](https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Piano_Frequencies.svg/2560px-Piano_Frequencies.svg.png)
 
+##### Scientific Pitch Notation
+
+*[top](#table-of-contents)*
+
+Instead of frequencies in Hertz, it's much easier to manipulate pitches in terms of [Scientific Pitch Notation](https://en.wikipedia.org/wiki/Scientific_pitch_notation), another fancy name for a simple concept.  The piano keyboard above was labelled according to this standard.  The A440 pitch is deonted `"A4"` in this system.
+
+A standard pitch is composed of two components: a note from A-G with an optional accidental and a 0-indexed octave:
+
+```rust
+#[derive(Default, Debug, Clone, Copy)]
+struct PianoKey {
+    note: Note,
+    octave: u8,
+}
+```
+
+To show them, we just want to print them out next to each other - the first three should be `C0 C#0 D0`:
+
+```rust
+TODO TEST
+```
+
+```rust
+impl fmt::Display for PianoKey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}{}", self.note, self.octave)
+    }
+}
+```
+
+The octave just starts at 0 and won't ever realistically rise above 255, so a `u8` is fine.  A note consists of a letter and optionally an accidental:
+
+```rust
+#[derive(Default, Debug, Clone, Copy)]
+struct Note {
+    accidental: Option<Accidental>,
+    letter: NoteLetter,
+}
+```
+
+For this one, we only want to display a character for an accidental if there's anything there:
+
+```rust
+impl fmt::Display for Note {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let acc_str = if let Some(a) = self.accidental {
+            format!("{}", a)
+        } else {
+            "".to_string()
+        };
+        write!(f, "{:?}{}", self.letter, acc_str)
+    }
+}
+```
+
+The [accidentals](https://en.wikipedia.org/wiki/Accidental_(music)) are represented in strings as `♭` for flat or `#` for sharp, which lower or raise the note by one semitone (or `Interval::Min2`) respectively.  This does produce 14 possible values for 12 possible semitones - the exceptions are wherever there's no black key in between two white keys.  `F♭` should parse as `E` and `B#` should parse as `C`.
+
+```rust
+#[derive(Debug, Clone, Copy)]
+enum Accidental {
+    Flat,
+    Sharp,
+}
+
+impl fmt::Display for Accidental {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Accidental::*;
+        let acc_str = match self {
+            Flat => "♭",
+            Sharp => "#",
+        };
+        write!(f, "{}", acc_str)
+    }
+}
+```
+
+There is third accidental called "natural", `♮`, which cancels these out.  To represent a pitch in data we don't need it - that's a string-parsing concern and I'm skipping it for now.  Sorry, you can't pass a natural sign into this program as it stands.  The natural symbol is generally used for overriding a [key signature](https://en.wikipedia.org/wiki/Key_signature), which defines the default accidental for all the notes within a scale on [sheet music](https://en.wikipedia.org/wiki/Staff_(music)).  There are a series of accidentals on the margin of the staff that apply to all notes, which is how we ensure we play notes within a single given scale, or [key](https://en.wikipedia.org/wiki/Key_(music)).  However, you may choose to compose a melody that contains a note outside this key.  If encounter the note `F#♮` on your sheet, you play an F.
+
+With `NoteLetter`, we also want to assign a numeric index but it's not as simple as with the intervals - these don't all have the same value.  We will store an index:
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum NoteLetter {
+    C = 0,
+    D,
+    E,
+    F,
+    G,
+    A,
+    B,
+}
+
+impl Default for NoteLetter {
+    fn default() -> Self {
+        NoteLetter::C
+    }
+}
+```
+
+We have some more complicated requirements for getting them from strings:
+
+```rust
+#[test]
+fn test_new_piano_key() {
+    use Accidental::*;
+    use NoteLetter::*;
+    assert_eq!(
+        PianoKey::default(),
+        PianoKey {
+            note: Note {
+                letter: C,
+                accidental: None
+            },
+            octave: 0
+        }
+    );
+    assert_eq!(
+        PianoKey::new("A4").unwrap(),
+        PianoKey {
+            note: Note {
+                letter: A,
+                accidental: None
+            },
+            octave: 4
+        }
+    );
+    assert_eq!(
+        PianoKey::new("G♭2").unwrap(),
+        PianoKey {
+            note: Note {
+                letter: G,
+                accidental: Some(Flat)
+            },
+            octave: 2
+        }
+    );
+    assert_eq!(
+        PianoKey::new("F#8").unwrap(),
+        PianoKey {
+            note: Note {
+                letter: F,
+                accidental: Some(Sharp)
+            },
+            octave: 8
+        }
+    );
+}
+```
+
+We also want to reject invalid letters - we can use `#[should_panic]` to indicate that a panic is the expected behavior.  No need to bother defining a real match:
+
+```rust
+#[test]
+#[should_panic]
+fn test_reject_piano_key_too_high() {
+    assert_eq!(PianoKey::new("A9").unwrap(), PianoKey::default());
+}
+
+#[test]
+#[should_panic]
+fn test_reject_piano_key_invalid_letter() {
+    assert_eq!(PianoKey::new("Q7").unwrap(), PianoKey::default());
+}
+```
+
+A more robust system would also accept multiple accidentals and coerce, e.g. `E#` -> `F`, but this gets us going.  To implement this, it's easiest to start at the bottom:
+
+```rust
+impl FromStr for NoteLetter {
+    type Err = io::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_uppercase().as_str() {
+            "A" => Ok(NoteLetter::A),
+            "B" => Ok(NoteLetter::B),
+            "C" => Ok(NoteLetter::C),
+            "D" => Ok(NoteLetter::D),
+            "E" => Ok(NoteLetter::E),
+            "F" => Ok(NoteLetter::F),
+            "G" => Ok(NoteLetter::G),
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("{} is not a valid note", s),
+            )),
+        }
+    }
+}
+```
+
+This could be fancy, too, but this works in a pinch.
+
+The notes are C-indexed, for better or for worse, so `Note::default()` should return that variant.  We'll talk more about why it's C and not A after learning about Modes below.   Don't worry, it's suitably disappointing.
+
+Thanks to all the nested `Default` blocks, the `Default` implementation that the compiler derives for `PianoKey` corresponds to the official base pitch of this system, `C0`.
+
+##### Intervals
+
 The cyan key is Middle C, and A440 is highlighted in yellow.  The octaves on an 88-key piano are numbered as shown, so often A440 is simply denoted "A4" especially when dealing with a keyboard.  You may own a tuner that marks 440Hz/A4 specifically if you're a musician.  This pitch is used for calibrating musical instruments and tuning a group, as well as a baseline constant for calculating frequencies.
 
 Note how each octave starts at C, not A, so A4 is actually higher in pitch than C4.  Octaves are "C-indexed" and base 8: `C D E F G A B C` is the base unmodified scale.
@@ -616,7 +813,9 @@ impl Scale {
 
 In this program, we'll work with scales as iterators.  The above uses `[Min2]` as a base and returns a `Vec` containing eleven copies.
 
-Clearly, there isn't a black key between every white key - there must be a method to the madness.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  We can see this visually on the keyboard - it has the same 8-length whole/half step pattern all the way through.  The distribution pattern begins on C, but the keyboard itself starts at A0 and ends at C8.  A piano is thus designed because it can play music across the full range of diatonic scales.  This is where we get those base 8 sequences - just start on a different note.
+Clearly, there isn't a black key between every white key - there must be a method to the madness.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  That's why our `NoteLetter` indices needed some extra logic - while each pair of adjacent keys is one semitone, that doesn't always mean a white key to a blakc key or vice versa - the note pairs B/C and E/F are both only separated by one semintone.
+
+We can see this visually on the keyboard - it has the same 8-length whole/half step pattern all the way through.  The distribution pattern begins on C, but the keyboard itself starts at A0 and ends at C8.  A piano is thus designed because it can play music across the full range of diatonic scales.  This is where we get those base 8 sequences - just start on a different note.
 
 That base pattern is the C [major scale](https://en.wikipedia.org/wiki/Major_scale).  Start at Middle C, the one highlighted in cyan above, and count up to the next C key, eight white keys to the left.  Each time you skip a black key is a whole step and if the two white keys are adjacent it's a half step.  These are the steps you get counting up to the next C, when the pattern repeats.  This totals 12 semitones per octave:
 
@@ -628,104 +827,9 @@ C    D     E      F       G      A     B     C
 
 TODO embed sound
 
-// TODO major show scale intervals/tess
+// TODO major scale intervals here - you use it for circle of fifths before filling out diatonic modes
 
-Doing the same exercise with the same intervals starting on a different while key will also produce a major scale but you will start using the black keys to do so.  C is the note that allows you to stick to only white keys with this interval pattern, or has no sharps or flats in the key signature.  Before we start generating sequences of notes, though, we need a way to represent a note.
-
-##### Scientific Pitch Notation
-
-*[top](#table-of-contents)*
-
-Armed with this knowledge, we can start manipulating pitches in terms of [Scientific Pitch Notation](https://en.wikipedia.org/wiki/Scientific_pitch_notation), another fancy name for a simple concept.  The piano keyboard above was labelled according to this standard - "A4" for example.  A standard pitch is composed of two components: a note from A-G with an optional accidental and a 0-indexed octave:
-
-```rust
-#[derive(Default, Debug, Clone, Copy)]
-struct PianoKey {
-    note: Note,
-    octave: u8,
-}
-```
-
-To show them, we just want to print them out next to each other - the first three should be `C0 C#0 D0`:
-
-```rust
-impl fmt::Display for PianoKey {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", self.note, self.octave)
-    }
-}
-```
-
-The octave just starts at 0 and won't ever realistically rise above 255, so a `u8` is fine.  A note consists of a letter and optionally an accidental:
-
-```rust
-#[derive(Default, Debug, Clone, Copy)]
-struct Note {
-    accidental: Option<Accidental>,
-    letter: NoteLetter,
-}
-```
-
-For this one, we only want to display a character for an accidental if there's anything there:
-
-```rust
-impl fmt::Display for Note {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let acc_str = if let Some(a) = self.accidental {
-            format!("{}", a)
-        } else {
-            "".to_string()
-        };
-        write!(f, "{:?}{}", self.letter, acc_str)
-    }
-}
-```
-
-The [accidentals](https://en.wikipedia.org/wiki/Accidental_(music)) are represented in strings as `♭` for flat or `#` for sharp, which lower or raise the note by one semitone (or `Interval::Min2`) respectively.  This does produce 14 possible values for 12 possible semitones - the exceptions are wherever there's no black key in between two white keys.  `F♭` should parse as `E` and `B#` should parse as `C`.
-
-```rust
-#[derive(Debug, Clone, Copy)]
-enum Accidental {
-    Flat,
-    Sharp,
-}
-
-impl fmt::Display for Accidental {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use Accidental::*;
-        let acc_str = match self {
-            Flat => "♭",
-            Sharp => "#",
-        };
-        write!(f, "{}", acc_str)
-    }
-}
-```
-
-There is third accidental called "natural", `♮`, which cancels these out.  To represent a pitch in data we don't need it - that's a string-parsing concern and I'm skipping it for now.  Sorry, you can't pass a natural sign into this program as it stands.  The natural symbol is generally used for overriding a [key signature](https://en.wikipedia.org/wiki/Key_signature), which defines the default accidental for all the notes within a scale on [sheet music](https://en.wikipedia.org/wiki/Staff_(music)).  There are a series of accidentals on the margin of the staff that apply to all notes, which is how we ensure we play notes within a single given scale, or [key](https://en.wikipedia.org/wiki/Key_(music)).  However, you may choose to compose a melody that contains a note outside this key.  If encounter the note `F#♮` on your sheet, you play an F.
-
-With `NoteLetter`, we also want to assign a numeric index but it's not as simple as with the intervals - these don't all have the same value.  We will store an index:
-
-```rust
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum NoteLetter {
-    C = 0,
-    D,
-    E,
-    F,
-    G,
-    A,
-    B,
-}
-
-impl Default for NoteLetter {
-    fn default() -> Self {
-        NoteLetter::C
-    }
-}
-```
-
-However, these indices to not represent a straight sequence of semitones from C - some of them hop two semitones, but not all.  We need a method to map to exact intervals:
+We need a method to map to exact intervals:
 
 ```rust
 #[test]
@@ -777,107 +881,13 @@ We can work with scales using the Rust iterator methods!  This function takes th
 
 // TODO can we use sum()?
 
-We have some more complicated requirements for getting them from strings:
-
-```rust
-#[test]
-fn test_new_piano_key() {
-    use Accidental::*;
-    use NoteLetter::*;
-    assert_eq!(
-        PianoKey::default(),
-        PianoKey {
-            note: Note {
-                letter: C,
-                accidental: None
-            },
-            octave: 0
-        }
-    );
-    assert_eq!(
-        PianoKey::new("A4").unwrap(),
-        PianoKey {
-            note: Note {
-                letter: A,
-                accidental: None
-            },
-            octave: 4
-        }
-    );
-    assert_eq!(
-        PianoKey::new("G♭2").unwrap(),
-        PianoKey {
-            note: Note {
-                letter: G,
-                accidental: Some(Flat)
-            },
-            octave: 2
-        }
-    );
-    assert_eq!(
-        PianoKey::new("F#8").unwrap(),
-        PianoKey {
-            note: Note {
-                letter: F,
-                accidental: Some(Sharp)
-            },
-            octave: 8
-        }
-    );
-}
-```
-
-We also want to reject invalid letters - we can use `#[should_panic]` to indicate that a panic is the expected behavior.  No need to bother defining a real match:
-
-```rust
-#[test]
-#[should_panic]
-fn test_reject_piano_key_too_high() {
-    assert_eq!(PianoKey::new("A9").unwrap(), PianoKey::default());
-}
-
-#[test]
-#[should_panic]
-fn test_reject_piano_key_invalid_letter() {
-    assert_eq!(PianoKey::new("Q7").unwrap(), PianoKey::default());
-}
-```
-
-A more robust system would also accept multiple accidentals and coerce, e.g. `E#` -> `F`, but this gets us going.  To implement this, it's easiest to start at the bottom:
-
-```rust
-impl FromStr for NoteLetter {
-    type Err = io::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_uppercase().as_str() {
-            "A" => Ok(NoteLetter::A),
-            "B" => Ok(NoteLetter::B),
-            "C" => Ok(NoteLetter::C),
-            "D" => Ok(NoteLetter::D),
-            "E" => Ok(NoteLetter::E),
-            "F" => Ok(NoteLetter::F),
-            "G" => Ok(NoteLetter::G),
-            _ => Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("{} is not a valid note", s),
-            )),
-        }
-    }
-}
-```
-
-This could be fancy, too, but this works in a pinch.
-
-The notes are C-indexed, for better or for worse, so `Note::default()` should return that variant.  We'll talk more about why it's C and not A after learning about Modes below.   Don't worry, it's suitably disappointing.
-
-Thanks to all the nested `Default` blocks, the `Default` implementation that the compiler derives for `PianoKey` corresponds to the official base pitch of this system, `C0`.
+Doing the same exercise with the same intervals starting on a different while key will also produce a major scale but you will start using the black keys to do so.  C is the note that allows you to stick to only white keys with this interval pattern, or has no sharps or flats in the key signature.  Before we start generating sequences of notes, though, we need a way to represent a note.
 
 ##### Key
 
 *[top](#table-of-contents)*
 
-We're finally ready to pull this all together.  For context, once again here's the original line we're dealing with:
+For context, once again here's the original line we're dealing with:
 
 ```bash
 split("0,2,4,5,7,9,11,12",a,",");
@@ -885,7 +895,7 @@ split("0,2,4,5,7,9,11,12",a,",");
 
 We've now discovered that that list represents the list of semitone offsets from A4 that represent an A major scale.  The random notes that get produced will all be frequencies that correspond to these offsets from 440Hz.
 
-We way, way overshot this in the process of modelling the domain.  We can now automatically generate sequences of `PianoKey` structs that correspond to keys on an 88-key piano to select from: `[C4 D4 E4 F4 G4 A5 B5 C5]`, and each note already knows how to calculate it's frequency in Hertz.  If we want a different scale, we can just ask.
+We way, way overshot this in the process of modelling the domain.  We can now automatically generate sequences of `PianoKey` structs that correspond to keys on an 88-key piano to select from: `[C4 D4 E4 F4 G4 A5 B5 C5]`.  If we want a different scale, we can just ask.
 
 We don't necessarily want to stick within a single octave, though. We want to make available the full 108 keys from C0 to B8 (even larger than the standard piano from the diagram), letting the user decide how many octaves to pick from, but only use notes in the key.
 
@@ -930,10 +940,10 @@ impl Key {
 }
 ```
 
-To produce all the piano keys, we need to calcualte them from the scale and the base note:
+To produce all the notes in a given key, we need to calculate them from the scale and the base note:
 
 ```rust
-impl Scale {
+impl Key {
     pub fn get_notes(self, base_note: Note) -> Vec<Note> {
         let mut ret = vec![base_note];
         let mut offset = Interval::Unison;
@@ -951,6 +961,8 @@ This uses the `impl Add for Interval` logic we'd previous defined to count up su
 ##### Circle of Fifths
 
 *[top](#table-of-contents)*
+
+With `Key` defined, we can start talking about other scales.
 
 Using the same intervals as the C major scale starting on a different note will also produce a major scale but you will start using the black keys.  This is called the key signature, and there's one for each variant of the major scale starting from each black key.  They're related by the [circle of fifths](https://en.wikipedia.org/wiki/Circle_of_fifths):
 
@@ -1070,11 +1082,9 @@ whole, whole, half, whole, whole, whole, half
       }
 ```
 
-// TODO show generated major scale of intervals
+The fact that Ionian Mode/C Major is Offset 0 is actually somewhat arbitrary - though definitely not completely.  There's a reason C major is so commonly found in music - it sounds good.
 
-The fact that Ionian Mode/C Major is Offset 0 is actually somewhat arbitrary - though definitely not completely.  There's a reason C major is so commonly found in music - it sounds good.  I did a [bare-minimum](https://lmgtfy.com/?q=why+does+it+start+from+C+not+A) amount of research and found it's an ["unfortunate historical accident"](https://music.stackexchange.com/questions/893/why-is-c-the-base-note-of-standard-notation-and-keys), which in retrospect is completely obvious and I should have seen coming.  The letters were originally numbered from A, of course, but got mapped to frequencies well before the modern modes we use now were honed and refined from previous systems.  The system eventually came to be based around the [C major scale](https://en.wikipedia.org/wiki/C_major), not A major.  By then the fact that what's now Middle C was 261.626Hz was long done and over with.
-
-TL;DR the concept of "mode" in an equally tempered system predates the modern scales and `C == 0` is a historical artifact.
+I did a [bare-minimum](https://lmgtfy.com/?q=why+does+it+start+from+C+not+A) amount of research and found it's an ["unfortunate historical accident"](https://music.stackexchange.com/questions/893/why-is-c-the-base-note-of-standard-notation-and-keys).  In a sentence, the concept of "mode" in an equally tempered system predates the modern scales and `C == 0` is a historical artifact.  The letters were originally numbered from A, of course, but got mapped to frequencies well before the modern modes we use now were honed and refined from previous systems.  The system eventually came to be based around the [C major scale](https://en.wikipedia.org/wiki/C_major), not A major.  By then the fact that what's now Middle C was 261.626Hz was long done and over with.
 
 ##### Non Heptatonic Scales
 
@@ -1136,11 +1146,19 @@ This could be a potential natural application of [dependent types](https://en.wi
 
 // TODO show off all the scales, maybe?
 
+
+
+#### Generating Music
+
+*[top](#table-of-contents)*
+
+It's finally time to make some music.  We've now built ourselves a toolkit for working with piano keys and intervals, and a separate type for dealing with a frequency in Hertz, and they both know how to interact with the same `Interval` variants.  Now we need to get from `PianoKey` obtects to `Pitch`es.
+
 ##### Cents
 
 *[top](#table-of-contents)*
 
-We've now modelled the concept of a key signature, but we need to translate those to notes for output.  Discrete units like `Semitones` are useful for working with a keyboard, but as we know, sound is analog and continuous.  We need to subdivide these intervals even more granularly, and because of equal temperament we're free to do so at any arbitrary level.
+Discrete units like `Semitones` are useful for working with a keyboard, but as we know, sound is analog and continuous.  We need to subdivide these intervals even more granularly, and because of equal temperament we're free to do so at any arbitrary level.
 
 Beyond the twelve 12 semitones in an octave, each semitone is divided into 100 [cents](https://en.wikipedia.org/wiki/Cent_(music)).  This means a full octave, representing a 2:1 ratio in frequency, spans 1200 cents, and each cent can be divided without losing the ratio as well if needed:
 
@@ -1401,11 +1419,8 @@ fn test_piano_key_to_pitch() {
 }
 ```
 
-#### Generating Music
 
-*[top](#table-of-contents)*
-
-It's finally time to make some music.  We've now built ourselves a toolkit for working with piano keys and intervals that know how to map themselves to frquencies in Hertz, we just need to pick the notes to play.
+The only missing thing is picking what notes to play we just need to pick the notes to play.
 
 Check out this section of the [source code](https://docs.rs/rodio/0.10.0/src/rodio/source/sine.rs.html#24) from the `rodio` crate for the `rodio::source::SineWave` we used above to check our A440 tone:
 
@@ -1436,6 +1451,12 @@ We can actually use the linked source code as a template to provide our own `rod
 // TODO show MusicMaker struct
 
 ![human music](https://thepracticaldev.s3.amazonaws.com/i/92xyu0xcenfmpvrf6kbq.gif)
+
+##### User Parameters
+
+There are several elements of this that are tweakable - the program that runs is a little lackluster given all the capability we've defined.
+
+// TODO StructOpt
 
 ## Challenges
 
