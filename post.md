@@ -1822,11 +1822,10 @@ Playing from the Tetratonic scale from C4 over 1 octave(s)
 
 ```txt
 $ cargo run -- -s locrian -n Eb3
-    Finished dev [unoptimized + debuginfo] target(s) in 2.16s
-     Running `target\debug\mod.exe -s locrian -b Eb3`
+    Finished dev [unoptimized + debuginfo] target(s) in 0.07s
+     Running `target\debug\mod.exe -s locrian -b Eb2 -o 3`
 Cool Tunes (tm)
-Cool Tunes (tm)
-Playing from the Locrian scale from E♭3 over 1 octave(s)
+Playing from the Locrian scale from E♭2 over 3 octave(s)
 [ E♭ E F# G# A B C# E♭ ]
 ```
 

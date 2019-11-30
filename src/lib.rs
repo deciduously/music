@@ -677,6 +677,11 @@ pub struct Key {
 
 impl Key {
     pub fn new(scale: Scale, base_note: PianoKey, octaves: u8) -> Self {
+        let octaves = if base_note.octave + octaves > 8 {
+            PianoKey::max_octave() - base_note.octave
+        } else {
+            octaves
+        };
         Self {
             base_note,
             octaves,
