@@ -237,7 +237,7 @@ Great!  Near the top, we can see our `cool_greeting` test function passing.
 
 *[top](#table-of-contents)*
 
-Finally, create a directory called `src/bin`.  This optional module is where Cargo will by default expect an executable, if present.  Place a file at `src/bin/mod.rs`:
+Finally, create a directory called `src/bin`.  This optional module is where Cargo will by default expect an executable, if present.  Place a file at `src/bin/music.rs` - this filename will be the name of the executable, so when distributed you'd execute `./music` to run the code in `main()`:
 
 ```rust
 use music::*;
@@ -253,11 +253,15 @@ Give it a go with `cargo run`:
 $ cargo run
    Compiling music v0.1.0 (C:\Users\you\code\music)
     Finished dev [unoptimized + debuginfo] target(s) in 0.57s
-     Running `target\debug\mod.exe`
+     Running `target\debug\music.exe`
 Cool Tunes (tm)
 ```
 
-The *coolest* tunes.  Your `music` directory should look something like the following:
+The *coolest* tunes.  You can see right above the output the actual name of the executable file being run - you can find it right in your project's `target` directory:
+
+![executable screenshot](https://thepracticaldev.s3.amazonaws.com/i/33xen72m4tqi69ofino2.png)
+
+Your `music` directory should look something like the following:
 
 ```txt
 │   .gitignore
@@ -269,7 +273,7 @@ The *coolest* tunes.  Your `music` directory should look something like the foll
     │   test.rs
     │
     └───bin
-            mod.rs
+            music.rs
 ```
 
 This is a good time for an initial commit:
@@ -510,7 +514,7 @@ impl From<Pitch> for SineWave {
 This code should produce an A440 tone when executed with `cargo run`:
 
 ```rust
-// bin/mod.rs
+// bin/music.rs
 use rodio::{Sink, source::SineWave, default_output_device};
 
 fn main() {
@@ -1619,7 +1623,7 @@ Now we're finally ready to call that `choose()` method on something.  First, tho
 }
 ```
 
-Now our `MusicMaker` can plug right into an audio output track.  Replace your entry point `main()` function in `src/bin/mod.rs` with this:
+Now our `MusicMaker` can plug right into an audio output track.  Replace your entry point `main()` function in `src/bin/music.rs` with this:
 
 ```rust
 fn main() {
@@ -1646,7 +1650,7 @@ There are several elements of this that are tweakable - the program that runs is
 Let's give a `base note`, a `scale` option, and a number of octaves to span upwards to define the valid notes, as well as a boolean to choose to instead just play a single tone:
 
 ```rust
-// src/bin/mod.rs
+// src/bin/music.rs
 /// music is a procedural single-tone melody generator
 #[derive(StructOpt, Debug)]
 #[structopt(name = "music")]
@@ -1757,7 +1761,7 @@ Now we just need to instantiate the structopt object, and we can pass in whateve
 $ cargo run -- -h  
    Compiling music v0.1.0 (C:\Users\you\code\music)
     Finished dev [unoptimized + debuginfo] target(s) in 2.10s
-     Running `target\debug\mod.exe -h`
+     Running `target\debug\music.exe -h`
 music 0.1.0
 music is a procedural single-tone melody generator
 
@@ -1805,7 +1809,7 @@ Now we should see the current key at the top - both options are optional, and th
 ```txt
 $ cargo run
     Finished dev [unoptimized + debuginfo] target(s) in 0.07s
-     Running `target\debug\mod.exe`
+     Running `target\debug\music.exe`
 Cool Tunes (tm)
 Playing from the Ionian scale from C4 over 1 octave(s)
 [ C D E F G A B C ]
@@ -1814,7 +1818,7 @@ Playing from the Ionian scale from C4 over 1 octave(s)
 ```txt
 $ cargo run -- -s chromatic
     Finished dev [unoptimized + debuginfo] target(s) in 0.07s
-     Running `target\debug\mod.exe -s chromatic`
+     Running `target\debug\music.exe -s chromatic`
 Cool Tunes (tm)
 Playing from the Chromatic scale from C4 over 1 octave(s)
 [ C C# D D# E F F# G G# A A# B C ]
@@ -1823,7 +1827,7 @@ Playing from the Chromatic scale from C4 over 1 octave(s)
 ```txt
 $ cargo run -- -s locrian -n Eb3
     Finished dev [unoptimized + debuginfo] target(s) in 0.07s
-     Running `target\debug\mod.exe -s locrian -b Eb2 -o 3`
+     Running `target\debug\music.exe -s locrian -b Eb2 -o 3`
 Cool Tunes (tm)
 Playing from the Locrian scale from E♭2 over 3 octave(s)
 [ E♭ E F# G# A B C# E♭ ]
@@ -1832,7 +1836,7 @@ Playing from the Locrian scale from E♭2 over 3 octave(s)
 ```txt
 $ cargo run -- -p -b C3
     Finished dev [unoptimized + debuginfo] target(s) in 0.07s
-     Running `target\debug\mod.exe -p -b C3`
+     Running `target\debug\music.exe -p -b C3`
 Cool Tunes (tm)
 Playing single tone C3
 ```
