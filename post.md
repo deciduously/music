@@ -38,22 +38,23 @@ The completed code can be found on [GitHub](https://github.com/deciduously/music
 - [The Meme](#the-meme)
 - [The Program](#the-program)
   - [Project Structure](#project-structure)
-    - [Dependencies](#dependencies)
-    - [Test-Driven Development](#test-driven-development)
+        - [Dependencies](#dependencies)
+        - [Test-Driven Development](#test-driven-development)
+        - [Entry Point](#entry-point)
   - [Random Numbers](#random-numbers)
   - [Mapping Numbers To Notes](#mapping-numbers-to-notes)
-    - [A Little Physics](#a-little-physics)
-      - [Sine Waves](#sine-waves)
-      - [Pitch](#pitch)
-      - [Singing](#singing)
-    - [A Little Music Theory](#a-little-music-theory)
-      - [Scientific Pitch Notation](#scientific-pitch-notation)
-      - [Intervals](#intervals)
-      - [Scales](#scales)
-      - [Key](#key)
-      - [Diatonic Modes](#diatonic-modes)
-      - [Circle of Fifths](#circle-of-fifths)
-      - [Non Heptatonic Scales](#non-heptatonic-scales)
+        - [A Little Physics](#a-little-physics)
+          - [Sine Waves](#sine-waves)
+          - [Pitch](#pitch)
+          - [Singing](#singing)
+        - [A Little Music Theory](#a-little-music-theory)
+          - [Scientific Pitch Notation](#scientific-pitch-notation)
+          - [Intervals](#intervals)
+          - [Scales](#scales)
+          - [Key](#key)
+          - [Circle of Fifths](#circle-of-fifths)
+          - [Diatonic Modes](#diatonic-modes)
+          - [Non Heptatonic Scales](#non-heptatonic-scales)
     - [Generating Music](#generating-music)
       - [Cents](#cents)
       - [Random Notes](#random-notes)
@@ -221,6 +222,10 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 
 Great!  Near the top, we can see our `cool_greeting` test function passing.
 
+#### Entry Point
+
+*[top](#table-of-contents)*
+
 Finally, create a directory called `src/bin`.  This optional module is where Cargo will by default expect an executable, if present.  Place a file at `src/bin/mod.rs`:
 
 ```rust
@@ -296,7 +301,7 @@ fn main() {
 }
 ```
 
-I'm not bothering to show you the full snippet - this program doesn't use any of this code.   You don't need to type any of this in.  In a `bash` one-liner you've got to take your randomness where you can get it, but the `rand` crate proivdes a richer set of tools.  Before streaming in something random, we need to think about what exactly it is we're randomizing.
+I'm not bothering to show you the full snippet - this program doesn't use any of this code.   You don't need to type any of this in.  In a `bash` one-liner you've got to take your randomness where you can get it, but the `rand` crate provides a richer set of tools.  Before streaming in something random, we need to think about what exactly it is we're randomizing.
 
 In this application, we want to pick a musical note from a set of valid choices at random.  The `awk` code does this with the modulo operator:  `list[n % listLength]`.  That will take a random index that's ensured to be a valid list member.  See if you can spot the corresponding section of the cover image code.
 
@@ -433,28 +438,32 @@ I didn't take `Default` this time - the default pitch is not 0Hz.  We want our n
 ```rust
 #[test]
 fn test_new_pitch() {
-    assert_eq!(Pitch::default(), Pitch { frequency: 440.0 });
-    assert_eq!(Pitch::new(MIDDLE_C), Pitch { frequency: 261.626 });
+    assert_eq!(Pitch::default(), Pitch(Hertz(440.0)));
+    assert_eq!(Pitch::new(MIDDLE_C), Pitch(Hertz(261.621)));
 }
+
 ```
 
 The following code gets us there:
 
 ```rust
-pub const STANDARD_PITCH: Hertz = 440.0;
-pub const MIDDLE_C: Hertz = 261.626;
+pub const STANDARD_PITCH: Hertz = Hertz(440.0);
+pub const MIDDLE_C: Hertz = Hertz(261.626);
 
 // ..
 
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct Pitch(Hertz);
+
 impl Pitch {
-    fn new(frequency: Hertz) -> Self {
-        Self { frequency }
+    pub fn new(frequency: Hertz) -> Self {
+        Self(frequency)
     }
 }
 
 impl Default for Pitch {
     fn default() -> Self {
-        Self { frequency: STANDARD_PITCH }
+        Self(STANDARD_PITCH)
     }
 }
 ```
@@ -471,26 +480,15 @@ To do so, we're going to perform an [analog-to-digital conversion](https://en.wi
 
 A sine wave, as we've seen, is smooth.  However, what's a graph but a visualization of a function.  There's some function `mySineWave(x)` that's this wave when we put in a bunch of fractional numbers between *0* and *1*.  The  `for (i = 0; i < 1; i += 0.0001)` loop is doing exactly that, calculating a series of adjacent points at a fixed interval (`0.0001`) that satisfy the function of this wave.  That's our analog-to-digital conversion  - we've taken something smooth, a sine wave, and made it digital, or made up of discrete points.  For `Pitch::default()`, this cycle repeats 440 times each second.
 
-The [sample rate](https://en.wikipedia.org/wiki/Sampling_(signal_processing)#Sampling_rate) of an audio stream is how many points to store for each one of these cycles, or is how high-fidelity this "digital snapshot" of the wave is.  Lots of applications use a [44.1KHz](https://en.wikipedia.org/wiki/44,100_Hz) sample rate - a bit higher than 10KHz like the example.  According to the [sampling theorem](https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem), the threshold for ensuring you've captured a sufficient sample from an analog signal is that the sample rate must be greater than twice the frequency you you're sampling.  Humans can hear about 20Hz to 20,000Hz.  This means we need at least 40,000 samples, and 44,100 exceeds that.  I [don't understand](https://en.wikipedia.org/wiki/Transition_band) the reason for the specific 4.1k. Similarly, [16-bit samples](https://en.wikipedia.org/wiki/Audio_bit_depth) is commonly seen.  In this application, we're using 48KHz.  The maximum amplitude this struct can represent is the maximum wave that fits in a 16-bit sample, because that's the biggest *x* will ever be in either direction - `1` or `-1`.
+The [sample rate](https://en.wikipedia.org/wiki/Sampling_(signal_processing)#Sampling_rate) of an audio stream is how many points to store for each one of these cycles, or is how high-fidelity this "digital snapshot" of the wave is.  Lots of applications use a [44.1KHz](https://en.wikipedia.org/wiki/44,100_Hz) sample rate - a bit higher than 10KHz like the example.  According to the [sampling theorem](https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem), the threshold for ensuring you've captured a sufficient sample from an analog signal is that the sample rate must be greater than twice the frequency you you're sampling.  Humans can hear about 20Hz to 20,000Hz.  This means we need at least 40,000 samples, and 44,100 exceeds that.  The `rodio` crate defaults to 48KHz, which per that same link is the standard for professional digital audio equipment.
 
-The `rodio` crate actually has a built-in [`rodio::source::SineWave`](https://docs.rs/rodio/0.10.0/rodio/source/struct.SineWave.html).  This code should produce an A440 tone:
+The maximum amplitude this struct can represent is the maximum wave that fits in whatever type is used for the sample, because that's the biggest *x* will ever be in either direction - `1` or `-1`.  This code uses an `f32`, or single-precision 4-byte float.
 
-```rust
-use rodio::{Sink, source::SineWave, default_output_device};
-
-fn main() {
-    let device = default_output_device().unwrap();
-    let sink = Sink::new(&device);
-    let source = SineWave::from(STANDARD_PITCH);
-    sink.append(source);
-    sink.sleep_until_end();
-}
-```
-
-This source produces an infinite sound source at the given frequency a 48KHz sample rate.  Go ahead and throw a quick conversion in for our `Pitch` type:
+The `rodio` crate actually has a built-in [`rodio::source::SineWave`](https://docs.rs/rodio/0.10.0/rodio/source/struct.SineWave.html) that takes a frequency in Hertz but as an unsigned integer.  Go ahead and throw a quick conversion in for our `Pitch` type:
 
 ```rust
 // lib.rs
+use rodio::source::SineWave;
 impl From<Pitch> for SineWave {
     fn from(p: Pitch) -> Self {
         SineWave::new(f64::from(p) as u32)
@@ -498,20 +496,22 @@ impl From<Pitch> for SineWave {
 }
 ```
 
-Now we can play the same tone using our own toolkit:
+This code should produce an A440 tone when executed with `cargo run`:
 
-```diff
-  fn main() {
-      let device = default_output_device().unwrap();
-      let sink = Sink::new(&device);
--     let source = SineWave::from(STANDARD_PITCH);
-+     let source = SineWave::from(Pitch::default());
-      sink.append(source);
-      sink.sleep_until_end();
-  }
+```rust
+// bin/mod.rs
+use rodio::{Sink, source::SineWave, default_output_device};
+
+fn main() {
+    let device = default_output_device().unwrap();
+    let sink = Sink::new(&device);
+    let source =  SineWave::from(Pitch::default());
+    sink.append(source);
+    sink.sleep_until_end();
+}
 ```
 
-Much better.  I'll briefly cover the other tidbits: `default_output_device()` attempts to find the running system's currently configured default audio device, and a [`Sink`](https://docs.rs/rodio/0.10.0/rodio/struct.Sink.html) is an abstraction for handling multiple sounds.  It works like an audio track.  You can `append()` a new `Source` of sound, and the first one appended starts the track.  A newly appended track will play after whatever is playing finishes, but a `rodioL::source::SineWive` is an infinite source.
+I'll briefly cover the other tidbits: `default_output_device()` attempts to find the running system's currently configured default audio device, and a [`Sink`](https://docs.rs/rodio/0.10.0/rodio/struct.Sink.html) is an abstraction for handling multiple sounds.  It works like an audio track.  You can `append()` a new `Source` of sound, and the first one appended starts the track.  A newly appended track will play after whatever is playing finishes, but a `rodioL::source::SineWive` is an infinite source.
 
 Finally, we have to `sleep_until_end()` the thread until the sound completes playing (which for `SineWave` is never), or else the program will move right along and exit.  You'll have to kill this run with `Ctrl-C`, this sound will play forever.
 
@@ -765,68 +765,11 @@ If interested, I recommend [harmony](https://en.wikipedia.org/wiki/Harmony) for 
 
 *[top](#table-of-contents)*
 
-A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  We'll talk a little more about more kinds later, but we'll start off with the simplest one:
+A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  
 
-```rust
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Scale {
-    Chromatic,
-}
-```
+// Todo Major Scale for demo - eventually becomes Diatonic(Mode) below
 
-The chromatic scale is for people who don't have time to muck about with petty concerns like sounding good, and don't want to waste any piano keys - it's just 11 successive minor 2nds, giving you every note.
-
-```rust
-half, half, half, half, half, half, half, half, half, half, half
-A    A#    B     C     C#    D     D#    E     F     F#    G    G#
-```
-
-That's only half the battle though - this only gives us intervals, we need to be able to calculate it from any base note.  A scale has two parts to the definition: you need both a series of intervals and a base note to begin counting from:
-
-```rust
-#[test]
-fn test_get_chromatic() {
-    assert_eq!(
-        Scale::Chromatic.get_notes(Note::from_str("A").unwrap()),
-        &[
-            Note::from_str("A").unwrap(),
-            Note::from_str("A#").unwrap(),
-            Note::from_str("B").unwrap(),
-            Note::from_str("C").unwrap(),
-            Note::from_str("C#").unwrap(),
-            Note::from_str("D").unwrap(),
-            Note::from_str("D#").unwrap(),
-            Note::from_str("E").unwrap(),
-            Note::from_str("F").unwrap(),
-            Note::from_str("F#").unwrap(),
-            Note::from_str("G").unwrap(),
-            Note::from_str("G#").unwrap(),
-            Note::from_str("A").unwrap()
-        ]
-    )
-}
-```
-
-```rust
-impl Scale {
-    fn get_intervals(self) -> Vec<Interval> {
-        use Interval::*;
-        use Scale::*;
-        match self {
-            Chromatic => [Min2]
-                .iter()
-                .cycle()
-                .take(ScaleLength::Dodecatonic as usize)
-                .copied()
-                .collect::<Vec<Interval>>(),
-        }
-    }
-}
-```
-
-In this program, we'll work with scales as iterators.  The above uses `[Min2]` as a base and returns a `Vec` containing eleven copies.
-
-Clearly, there isn't a black key between every white key - there must be a method to the madness.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  That's why our `NoteLetter` indices needed some extra logic - while each pair of adjacent keys is one semitone, that doesn't always mean a white key to a blakc key or vice versa - the note pairs B/C and E/F are both only separated by one semintone.
+Clearly, there isn't a black key between every white key - there must be a method to the madness.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  That's why our `NoteLetter` indices needed some extra logic - while each pair of adjacent keys is one semitone, that doesn't always mean a white key to a black key or vice versa - the note pairs B/C and E/F are both only separated by one semintone.
 
 We can see this visually on the keyboard - it has the same 8-length whole/half step pattern all the way through.  The distribution pattern begins on C, but the keyboard itself starts at A0 and ends at C8.  A piano is thus designed because it can play music across the full range of diatonic scales.  This is where we get those base 8 sequences - just start on a different note.
 
@@ -892,8 +835,6 @@ impl NoteLetter {
 
 We can work with scales using the Rust iterator methods!  This function takes the first n intervals of a scale, and then uses the special `impl Add for Interval` logic we defined to total everything up.  For instance, to calculate `F`, this function grabs the first 3 intervals, `[Maj2, Maj2, Min2]`, and then sums them up, using `Unison`, or 0, as the base.  This calculates the sum of `[2,2,1]`, which is `5` semitones, or `Interval::Perfect4`.
 
-// TODO can we use sum()?
-
 Doing the same exercise with the same intervals starting on a different while key will also produce a major scale but you will start using the black keys to do so.  C is the note that allows you to stick to only white keys with this interval pattern, or has no sharps or flats in the key signature.  Before we start generating sequences of notes, though, we need a way to represent a note.
 
 ##### Key
@@ -916,9 +857,9 @@ TODO Explain:
 
 ```rust
 #[test]
-fn test_display_chromatic() {
+fn test_chromatic() {
     assert_eq!(
-        &format!("{}", Key::new(Scale::Chromatic, "A")),
+        &Key::new(Scale::Chromatic, "A").to_string()),
         "[ A A# B C C# D D# E F F# G G# A ]"
     )
 }
@@ -969,7 +910,19 @@ impl Key {
 }
 ```
 
-This uses the `impl Add for Interval` logic we'd previous defined to count up successive intervals across a scale, resulting in a more concrete set of notes:
+This uses the `impl Add for Interval` logic we'd previous defined to count up successive intervals across a scale, resulting in a more concrete set of notes.  Now we can add the `Display` implementation used in the test code -  this trait also provides the `to_string()` method:
+
+```rust
+impl fmt::Display for Key {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let notes = self.get_notes();
+        let mut ret = String::from("[ ");
+        notes.iter().for_each(|n| ret.push_str(&n.to_string()));
+        ret.push_str("]");
+        write!(f, "{}", ret)
+    }
+}
+```
 
 ##### Circle of Fifths
 
@@ -1026,7 +979,7 @@ That's twelve scales for free:
 [ F G A A# C D E F ]
 ```
 
-This implementation isn't smart enough to switch to flats halfway through to represent the black keys used - could be a fun challenge!
+This implementation isn't smart enough to switch to flats halfway through to represent the black keys used - could be a fun mini-challenge!
 
 ##### Diatonic Modes
 
@@ -1034,11 +987,11 @@ This implementation isn't smart enough to switch to flats halfway through to rep
 
 Now we can produce the 12 transpositions of major scale from C - just pick any note of the keyboard and count up the same intervals.  However, this pattern of white and black repeats all the way up and down the whole length of the keyboard - what if we didn't start at C?
 
-If you start on any other white key and count up one octave skipping all the black keys, you will get a *different* diatonic scale than a major scale.  These scale variations are called [`Modes`](https://en.wikipedia.org/wiki/Mode_(music)#Modern_modes), and while high-school me was terrified of and terrible at whipping out arbitrary ones on a brass instrument from memory (mental math is *not* one of my talents), they're easy to work with programmatically (and much less stressful).
+If you start on any other white key and count up one octave skipping all the black keys, you will get a *different* diatonic scale than a major scale.  These scale variations are called [Modes](https://en.wikipedia.org/wiki/Mode_(music)#Modern_modes), and while high-school me was terrified of and terrible at whipping out arbitrary ones on a brass instrument from memory (mental math is *not* one of my talents), they're easy to work with programmatically (and much less stressful).
 
-The major scale is also known as the [`Ionian mode`](https://en.wikipedia.org/wiki/Ionian_mode).  This is the base mode, each other is some offset from this scale.  As we've seen, the key you need to start on to play this mode with no black keys (accidentals) is C.
+The major scale is also known as the [Ionian mode](https://en.wikipedia.org/wiki/Ionian_mode).  This is the base mode, each other is some offset from this scale.  As we've seen, the key you need to start on to play this mode with no black keys (accidentals) is C.
 
-The natural minor scale, is obtained by starting at A4 and counted up white keys, is called the [`Aeolian mode`](https://en.wikipedia.org/wiki/Aeolian_mode).  Try it yourself on the diagram - march on up the white keys from A4 to A5:
+The natural minor scale, is obtained by starting at A4 and counted up white keys, is called the [Aeolian mode](https://en.wikipedia.org/wiki/Aeolian_mode).  Try it yourself on the diagram - march on up the white keys from A4 to A5:
 
 ```txt
 whole, half, whole, whole, half, whole, whole
@@ -1063,7 +1016,7 @@ enum Mode {
     Aeolian,
     Locrian,
 }
-
+```
 
 ```diff
 TODO remove Scale::Major in favor of Scale::Diatonic(Mode)
@@ -1132,6 +1085,8 @@ Interestingly, the scale shown is [tetratonic](https://en.wikipedia.org/wiki/Tet
 [4, 5, 7, 11]
 ```
 
+// TODO TETRATONIC RUST
+
 which is primarily associated with pre-historic music.  Maybe they spoke `AWK`?I also don't understand how that snippet works, because it's still indexed with `a[$1 % 8]`, but I'm too lazy to find out why.
 
 A more common variant is the [pentatonic scale](https://en.wikipedia.org/wiki/Pentatonic_scale), with 5 tones per octave.   There are a number of ways to construct a pentatonic scale, see the link for more, I'll just define one here:
@@ -1145,7 +1100,7 @@ A more common variant is the [pentatonic scale](https://en.wikipedia.org/wiki/Pe
 This one is fun because it's what you get when you start at `E♭` and only play the *black* keys.  Like the major scales, this type of scale also has modes, one for each black key:
 
 ```rust
-// TODO PENTATONIC MODES
+// TODO PENTATONIC MODES - if no time, skip it, less important
 ```
 
 The only dodecatonic scale is the [chromatic scale](https://en.wikipedia.org/wiki/Chromatic_scale) is just all the notes:
@@ -1157,6 +1112,53 @@ The only dodecatonic scale is the [chromatic scale](https://en.wikipedia.org/wik
 ```
 
 Who needs key signatures anyhow, that's a waste of all these other keys!  This one throws 'em all in the mix.
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Scale {
+    Chromatic,
+    // ..
+}
+```
+
+The chromatic scale is for people who don't have time to muck about with petty concerns like sounding good, and don't want to waste any piano keys - it's just 11 successive minor 2nds, giving you every note.
+
+```txt
+half, half, half, half, half, half, half, half, half, half, half
+A    A#    B     C     C#    D     D#    E     F     F#    G    G#
+```
+
+Or, in Rust:
+
+```rust
+#[test]
+fn test_chromatic_intervals() {
+    use Interval::Min2;
+    assert_eq!(
+        Scale::Chromatic.get_intervals(),
+        vec![Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2]
+    );
+}
+```
+
+For this definition, we can cycle an iterator of just this element and take the number we need:
+
+```rust
+impl Scale {
+    fn get_intervals(self) -> Vec<Interval> {
+        use Interval::*;
+        use Scale::*;
+        match self {
+            Chromatic => [Min2]
+                .iter()
+                .cycle()
+                .take(ScaleLength::Dodecatonic as usize)
+                .copied()
+                .collect::<Vec<Interval>>(),
+        }
+    }
+}
+```
 
 This could be a potential natural application of [dependent types](https://en.wikipedia.org/wiki/Dependent_type), a programming language feature that Rust does not support.  Few languages do.  One example is [Idris](https://en.wikipedia.org/wiki/Idris_(programming_language)#Dependent_types), which is like [Haskell](https://en.wikipedia.org/wiki/Haskell_(programming_language))++.  A dependent type codifies a type restraint that's dependent on a *value* of that type.  The linked example describes a function that appends a list of `m` elements to a list `n` which specifies as part of the return type that the returned list has length `n + m`.  A caller can then trust this fact implicitly, because the compiler won't build a binary if it's not true.  I think this could be applied here to verify that a scale's intervals method returns an octave, regardless of length.  That can be tested for in code with Rust, of course, but not encoded into the type signature directly.
 
@@ -1461,23 +1463,163 @@ This `impl Iterator` block is handling the `for` loop in the cover image.  It's 
 
 The math, in other words, is `440.0 * Pi * (current sample / total samples)`, multiplied by some value, in this case `2.0`.  This code is calculating the sine wave at a given point within a cycle - for 0 to 1, there are 48,000 points to collect, so the current point is the sine wave of this frequency at whatever point we're at, stored as `self.num_sample`, between 0 and 1.
 
-For some reason they've hardcoded [Pi](https://en.wikipedia.org/wiki/Pi), there are constants available like [`std::f64::consts::PI`](https://doc.rust-lang.org/std/f64/consts/constant.PI.html).  I'd be interested to know if anyone would know why that's a good choice instead of relying on the language constant!
+For some reason they've hardcoded [Pi](https://en.wikipedia.org/wiki/Pi), there are constants available like [`std::f32::consts::PI`](https://doc.rust-lang.org/std/f64/consts/constant.PI.html).  I'd be interested to know if anyone would know why that's a good choice instead of relying on the language constant!
 
 The `SineWave` struct reliably produces a single tone infinitely, but we want to change the pitch.  The actual wave calculation is the same, though, we just need to add some extra logic to change up the pitch being produced.
 
 We can actually use the linked source code as a template to provide our own `rodio::Source` implementation to append to the `Sink`.
 
-// TODO show MusicMaker struct
+Set up a data structure to hold on to some of the hardcoded values found in the above library snipper:
 
-![human music](https://thepracticaldev.s3.amazonaws.com/i/92xyu0xcenfmpvrf6kbq.gif)
+```rust
+pub struct MusicMaker {
+    key: Key,
+    current_note: PianoKey,
+    current_sample: usize,
+    sample_rate: Hertz,
+    volume: f32, // TODO is that correct?
+}
+
+impl Default for MusicMaker {
+    fn default() -> Self {
+        Self {
+            key: Key::default(),
+            current_note: PianoKey::from_str("C4").unwrap(),
+            current_sample: usize::default(),
+            sample_rate: SAMPLE_RATE,
+            volume: 2.0,
+        }
+    }
+}
+
+impl MusicMaker {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    fn get_frequency(&mut self) -> Sample {
+        let pitch = Pitch::from(self.current_note);
+        pitch.into()
+    }
+}
+```
+
+To perform the wave sampling, we can actually pretty much copy-paste the `impl Iterator for SineWave` code, just using our struct's values:
+
+```rust
+type Sample = f32;
+
+impl Iterator for MusicMaker {
+    type Item = Sample; // Sampled amplitude
+    fn next(&mut self) -> Option<Self::Item> {
+        self.current_sample = self.current_sample.wrapping_add(1); // will cycle
+
+        let value = self.volume
+            * PI
+            * Sample::from(Pitch::from(self.current_note))
+            * self.current_sample as Sample
+            / f64::from(self.sample_rate) as Sample;
+        Some(value.sin())
+    }
+}
+```
+
+In order to use as a sound source we can pass to a `rodio::Sink`, we implement the `rodio::Source` trait, which can be implemented for any type that implements `Iterator`, so long as the `Item` associated type is valid as a sample:
+
+```rust
+impl Source for MusicMaker {
+    #[inline]
+    fn current_frame_len(&self) -> Option<usize> {
+        None
+    }
+
+    #[inline]
+    fn channels(&self) -> u16 {
+        1
+    }
+
+    #[inline]
+    fn sample_rate(&self) -> u32 {
+        f64::from(self.sample_rate) as u32
+    }
+
+    #[inline]
+    fn total_duration(&self) -> Option<Duration> {
+        None
+    }
+}
+```
+
+The `current_frame_len()` and `total_duration()` bodies indicate that this source is infinite - there's no finite duration to return.  You'll need to kill the process some other way.  The `channels` method returns the number of frequencies in the signal, and we're just working with a single wave, so a single channel is all we need.
+
+Now we're finally ready to call that `choose()` method on something.  First, though, the full signature is TODO - we need to select a random seed from the `rand` crate.  We don't are about cryptographic soundness here, we just need random numbers, but speed is useful.  The [`rand::rngs::SmallRng`](https://docs.rs/rand/0.7.2/rand/rngs/struct.SmallRng.html) random number generator is ideal for that.  We can initialize it using `from_entropy()` to ultimately source it from the operating system - so, sorta in a roundabout way it's `dev/*random`, at least?  Maybe?
+
+```diff
+  pub struct MusicMaker {
+      key: Key,
++     seed: SmallRng,
+      current_note: PianoKey,
+      current_sample: usize,
+      sample_rate: Hertz,
+      volume: f32, // TODO is that correct?
+}
+
+  impl Default for MusicMaker {
+      fn default() -> Self {
+          Self {
+              key: Key::default(),
++             seed: SmallRng::from_entropy(),
+              current_note: PianoKey::from_str("C4").unwrap(),
+              current_sample: usize::default(),
+              sample_rate: SAMPLE_RATE,
+              volume: 2.0,
+          }
+      }
+  }
+
+  impl MusicMaker {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    fn get_frequency(&mut self) -> Sample {
+        let pitch = Pitch::from(self.current_note);
+        println!("{:?}", pitch);
+        pitch.into()
+    }
++   fn new_note(&mut self) {
++       let keys = self.key.all_keys();
++       self.current_note = *keys.iter().choose(&mut self.seed).unwrap();
++   }
+}
+
+```
+
+Now our `MusicMaker` can plug right into an audio output track.  Replace your entrypoint `main()` function in `src/bin/mod.rs` with this:
+
+```rust
+fn main() {
+    println!("{}", GREETING);
+
+    let device = default_output_device().unwrap();
+    let sink = Sink::new(&device);
+    let music = MusicMaker::new();
+    sink.append(music);
+    sink.sleep_until_end();
+}
+```
+
+Running this with `cargo run` will (approximately, over 1,000 lines later) match the output from the original `bash` one-liner.
+
+![sad party](https://thepracticaldev.s3.amazonaws.com/i/82lipncvy6806zyjpg2r.gif)
 
 ##### User Parameters
 
 *[top](#table-of-contents)*
 
-There are several elements of this that are tweakable - the program that runs is a little lackluster given all the capability we've defined.
+There are several elements of this that are tweakable - the program that runs is a little lackluster given all the capability we've defined internally.  Let's expose as much as we can to the user at runtime.
 
 // TODO StructOpt
+
+![human music](https://thepracticaldev.s3.amazonaws.com/i/92xyu0xcenfmpvrf6kbq.gif)
 
 ## Challenges
 
@@ -1486,12 +1628,12 @@ There are several elements of this that are tweakable - the program that runs is
 This code is written in an extensible, modifiable manner, and there are a number of way you could extend the project from here.  I'll be working on some of this list myself, but this post got a little long:
 
 - Generate key signatures from strings like `"Cmaj"` or `"Amin7`.
-- Support even more types of key signatures like the [harmonic minor](https://en.wikipedia.org/wiki/Minor_scale#Harmonic_minor_scale), which is the Aeolean mode with the seventh note one semitone higher.
+- Support even more types of key signatures like the [harmonic minor](https://en.wikipedia.org/wiki/Minor_scale#Harmonic_minor_scale), which is the Aeolian mode with the seventh note one semitone higher.
 - Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation).
-- Instead of picking notes at random, provde different kinds of seeds.  For instance, every file on your computer is a stream of bytes.
+- Instead of picking notes at random, provide different kinds of seeds.  For instance, every file on your computer is a stream of bytes.
 - Support other types of wave forms than sines, such as square waves or sawtooth waves.
 - We can already read piano keys from strings like `"D#4"`.  Parse and play back predefined sequences of notes from text files.  This will involve some work: stacked accidentals, naturals, represent durations, etc.
-- A [`WAV`](https://en.wikipedia.org/wiki/WAV) file is an uncompressed audio stream, like the one we'eve build.  Write audo files containing your music with with [`hound`](https://github.com/ruuda/hound).
+- A [`WAV`](https://en.wikipedia.org/wiki/WAV) file is an uncompressed audio stream, like the one we've built.  Write audio files containing your music with with [`hound`](https://github.com/ruuda/hound).
 - Implement and play a `Chord`.
 - Port this program to another language.
 

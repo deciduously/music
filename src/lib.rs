@@ -676,7 +676,7 @@ impl fmt::Display for Key {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let notes = self.get_notes();
         let mut ret = String::from("[ ");
-        notes.iter().for_each(|n| ret.push_str(&format!("{} ", n)));
+        notes.iter().for_each(|n| ret.push_str(&n.to_string()));
         ret.push_str("]");
         write!(f, "{}", ret)
     }

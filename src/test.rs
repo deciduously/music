@@ -145,6 +145,15 @@ fn test_reject_piano_key_invalid_letter() {
 }
 
 #[test]
+fn test_chromatic_intervals() {
+    use Interval::Min2;
+    assert_eq!(
+        Scale::Chromatic.get_intervals(),
+        vec![Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2,]
+    );
+}
+
+#[test]
 fn test_note_letter_to_interval() {
     use Interval::*;
     use NoteLetter::*;
@@ -218,20 +227,11 @@ fn test_add_interval_to_note() {
 }
 
 #[test]
-fn test_get_c_major() {
+fn test_c_major() {
     assert_eq!(
-        Key::new(Scale::default(), "C").get_notes(),
-        &[
-            Note::from_str("C").unwrap(),
-            Note::from_str("D").unwrap(),
-            Note::from_str("E").unwrap(),
-            Note::from_str("F").unwrap(),
-            Note::from_str("G").unwrap(),
-            Note::from_str("A").unwrap(),
-            Note::from_str("B").unwrap(),
-            Note::from_str("C").unwrap()
-        ]
-    );
+        &format!("{}", Key::new(Scale::default(), "C")),
+        "[ C D E F G A B C ]"
+    )
 }
 
 #[test]
