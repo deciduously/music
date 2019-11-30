@@ -1812,12 +1812,12 @@ Playing from the Ionian scale from C4 over 1 octave(s)
 ```
 
 ```txt
-$ cargo run -- -s tetratonic
+$ cargo run -- -s chromatic
     Finished dev [unoptimized + debuginfo] target(s) in 0.07s
-     Running `target\debug\mod.exe -s tetratonic`
+     Running `target\debug\mod.exe -s chromatic`
 Cool Tunes (tm)
-Playing from the Tetratonic scale from C4 over 1 octave(s)
-[ C C# D# G ]
+Playing from the Chromatic scale from C4 over 1 octave(s)
+[ C C# D D# E F F# G G# A A# B C ]
 ```
 
 ```txt
