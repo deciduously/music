@@ -597,6 +597,7 @@ pub struct DiatonicScale {
 pub enum Scale {
     Chromatic,
     Diatonic(Mode),
+    Tetratonic,
 }
 
 impl Default for Scale {
@@ -634,7 +635,39 @@ impl Scale {
                 .take(ScaleLength::Heptatonic as usize)
                 .copied()
                 .collect::<Vec<Interval>>(),
+            Tetratonic => vec![Min2, Maj2, Maj3],
         }
+    }
+}
+
+impl FromStr for Scale {
+    type Err = io::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use Mode::*;
+        use Scale::*;
+        match s.to_uppercase().as_str() {
+            "IONIAN" => Ok(Diatonic(Ionian)),
+            "DORIAN" => Ok(Diatonic(Dorian)),
+            "PHRYGIAN" => Ok(Diatonic(Phrygian)),
+            "LYDIAN" => Ok(Diatonic(Lydian)),
+            "MIXOLYDIAN" => Ok(Diatonic(Mixolydian)),
+            "AEOLIAN" => Ok(Diatonic(Aeolian)),
+            "LOCRIAN" => Ok(Diatonic(Locrian)),
+            "CHROMATIC" => Ok(Chromatic),
+            "TETRATONIC" => Ok(Tetratonic),
+            _ => Err(io::Error::new(io::ErrorKind::InvalidInput, "Unknown scale")),
+        }
+    }
+}
+
+impl fmt::Display for Scale {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Scale::*;
+        let s = match self {
+            Chromatic | Tetratonic => format!("{:?}", self),
+            Diatonic(mode) => format!("{:?}", mode),
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -676,7 +709,7 @@ impl fmt::Display for Key {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let notes = self.get_notes();
         let mut ret = String::from("[ ");
-        notes.iter().for_each(|n| ret.push_str(&n.to_string()));
+        notes.iter().for_each(|n| ret.push_str(&format!("{} ", *n)));
         ret.push_str("]");
         write!(f, "{}", ret)
     }
@@ -707,17 +740,24 @@ impl Default for MusicMaker {
 type Sample = f32;
 
 impl MusicMaker {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(base_note: Note, scale: Scale) -> Self {
+        Self::default().set_base_note(base_note).set_scale(scale)
     }
     fn get_frequency(&mut self) -> Sample {
         let pitch = Pitch::from(self.current_note);
-        println!("{:?}", pitch);
         pitch.into()
     }
     fn new_note(&mut self) {
         let keys = self.key.all_keys();
         self.current_note = *keys.iter().choose(&mut self.seed).unwrap();
+    }
+    fn set_base_note(mut self, base_note: Note) -> Self {
+        self.key = Key::new(self.key.scale, &base_note.to_string());
+        self
+    }
+    fn set_scale(mut self, scale: Scale) -> Self {
+        self.key = Key::new(scale, &self.key.base_note.to_string());
+        self
     }
 }
 
@@ -759,5 +799,15 @@ impl Source for MusicMaker {
     #[inline]
     fn total_duration(&self) -> Option<Duration> {
         None
+    }
+}
+
+impl fmt::Display for MusicMaker {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Playing the {} scale from {}\n{}",
+            self.key.scale, self.key.base_note, self.key
+        )
     }
 }

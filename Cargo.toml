@@ -8,7 +8,6 @@ edition = "2018"
 
 [dependencies]
 
-lazy_static = "1.4"
 rodio = "0.10"
 structopt = "0.3"
 

@@ -65,7 +65,9 @@ The completed code can be found on [GitHub](https://github.com/deciduously/music
 
 *[top](#table-of-contents)*
 
-This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and up) who are comfortable solving problems with at least one [imperative](https://en.wikipedia.org/wiki/Imperative_programming) [language](https://en.wikipedia.org/wiki/Programming_language).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).  You do not need any prior knowledge of physics or music theory, but there will be a tiny smattering of [elementary algebra](https://en.wikipedia.org/wiki/Elementary_algebra).  I promise it's quick.
+This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and up) who are comfortable solving problems with at least one [imperative](https://en.wikipedia.org/wiki/Imperative_programming) [language](https://en.wikipedia.org/wiki/Programming_language).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).  However, if you are not already familiar with Rust, you should expect to spend a little longer with the code samples to extract the relevant bits.
+
+You do not need any prior knowledge of physics or music theory, but there will be a tiny smattering of [elementary algebra](https://en.wikipedia.org/wiki/Elementary_algebra).  I promise it's quick.
 
 I have two disclaimers before getting started:
 
@@ -124,20 +126,29 @@ Open your new `music` project directory in the environment of your choice.  If y
 
 *[top](#table-of-contents)*
 
-We'll use two crates - the Rust term for external libraries - to replace the functionality not found in the Rust standard library:
+We'll use a few crates, which is the Rust term for external libraries.  Two of them give us functionality not found in the Rust standard library:
 
 * [`rand`](https://docs.rs/rand/0.7.2/rand/) - [Random number generation](https://en.wikipedia.org/wiki/Random_number_generation)
 * [`rodio`](https://docs.rs/rodio/0.10.0/rodio/) - [Audio signal playback](https://en.wikipedia.org/wiki/Audio_signal)
 
-`rand` is in place of [`/dev/urandom`](https://en.wikipedia.org/wiki//dev/random), and `rodio` will cover  and [`aplay`](https://linux.die.net/man/1/aplay).  We can replace [`hexdump`](https://en.wikipedia.org/wiki/Hex_dump), [`xxd`](https://www.systutorials.com/docs/linux/man/1-xxd/), and the `awk` logic using functionality found in the Rust standard library.
+`rand` is in place of [`/dev/urandom`](https://en.wikipedia.org/wiki//dev/random), and `rodio` will cover  and [`aplay`](https://linux.die.net/man/1/aplay).  We can replace [`hexdump`](https://en.wikipedia.org/wiki/Hex_dump), [`xxd`](https://www.systutorials.com/docs/linux/man/1-xxd/), and the `awk` logic built-in stuff.  The `rand` crate provides several different random number generators (RNGs), and the one perfect for this application isn't included by default.  We have to specifically add it to the configuration, so its declaration is split out to deifne multiple keys.
 
-I also use [`pretty_assertions`](https://docs.rs/pretty_assertions/0.6.1/pretty_assertions/) to make the [test runner](https://en.wikipedia.org/wiki/Unit_testing) output a little prettier.  In `Cargo.toml`:
+The other two are just for programmer comfort.  I also use [`pretty_assertions`](https://docs.rs/pretty_assertions/0.6.1/pretty_assertions/) to make the [test runner](https://en.wikipedia.org/wiki/Unit_testing) output a little prettier and [`structopt`](https://github.com/TeXitoi/structopt) to get a minimal-effort CLI.
+
+In `Cargo.toml`:
 
 ```toml
 [dependencies]
 
-rand = "0.7"
 rodio = "0.10"
+structopt = "0.3"
+
+# below is equivalent to:
+# rand = { features = [ "small_rng" ], version = "0.7" } - it's a style preference
+[dependencies.rand]
+
+features = [ "small_rng" ]
+version = "0.7"
 
 [dev-dependencies]
 
@@ -163,7 +174,7 @@ fn test_add_interval() {
 }
 ```
 
-Each test is just a plain Rust function.  In it we use a feature of our library and assert that the result matches the expected result that we hardcode.  In this test, we're specifiying the expected behavior when adding musical intervals together with the `+` operator.  This way, we can tell immediately if the code we write actually matches the specification.  As our code evolves we'll immediately notice if we break functionality that worked previously.
+Each test is just a plain Rust function.  In it we use a feature of our library and assert that the result matches the expected result that we hardcode.  In this test, we're specifying the expected behavior when adding musical intervals together with the `+` operator.  This way, we can tell immediately if the code we write actually matches the specification.  As our code evolves we'll immediately notice if we break functionality that worked previously.
 
 The Rust toolchain has a test runner built-in, so this all works out of the box.  Every function marked `#[test]` will be executed during an invocation of `cargo test`, so we can see anywhere our expectations are not met in the whole program.
 
@@ -964,6 +975,8 @@ impl Scale {
 
 That's twelve scales for free:
 
+// TODO should be a test
+
 ```txt
 [ C D E F G A B C ]
 [ G A B C D E F# G ]
@@ -985,7 +998,7 @@ This implementation isn't smart enough to switch to flats halfway through to rep
 
 *[top](#table-of-contents)*
 
-Now we can produce the 12 transpositions of major scale from C - just pick any note of the keyboard and count up the same intervals.  However, this pattern of white and black repeats all the way up and down the whole length of the keyboard - what if we didn't start at C?
+Now we can produce the 12 transpositions of major scale from C - just pick any note of the keyboard and count up the same intervals.  However, this pattern of white and black repeats all the way up and down the whole length of the keyboard - what if we didn't start at C to set the base of the black-key/white-key pattern?  Why not use `A B C D E F G A`?
 
 If you start on any other white key and count up one octave skipping all the black keys, you will get a *different* diatonic scale than a major scale.  These scale variations are called [Modes](https://en.wikipedia.org/wiki/Mode_(music)#Modern_modes), and while high-school me was terrified of and terrible at whipping out arbitrary ones on a brass instrument from memory (mental math is *not* one of my talents), they're easy to work with programmatically (and much less stressful).
 
@@ -1587,13 +1600,12 @@ Now we're finally ready to call that `choose()` method on something.  First, tho
     }
 +   fn new_note(&mut self) {
 +       let keys = self.key.all_keys();
-+       self.current_note = *keys.iter().choose(&mut self.seed).unwrap();
++       self.current_note = *keys.iter().choose(&mut self.seed).unwrap();  // There it is!  This whole time
 +   }
 }
-
 ```
 
-Now our `MusicMaker` can plug right into an audio output track.  Replace your entrypoint `main()` function in `src/bin/mod.rs` with this:
+Now our `MusicMaker` can plug right into an audio output track.  Replace your entry point `main()` function in `src/bin/mod.rs` with this:
 
 ```rust
 fn main() {
@@ -1607,7 +1619,7 @@ fn main() {
 }
 ```
 
-Running this with `cargo run` will (approximately, over 1,000 lines later) match the output from the original `bash` one-liner.
+Running this with `cargo run` will (over 1,000 lines later) essentially match the output from the original `bash` one-liner.
 
 ![sad party](https://thepracticaldev.s3.amazonaws.com/i/82lipncvy6806zyjpg2r.gif)
 
@@ -1617,15 +1629,177 @@ Running this with `cargo run` will (approximately, over 1,000 lines later) match
 
 There are several elements of this that are tweakable - the program that runs is a little lackluster given all the capability we've defined internally.  Let's expose as much as we can to the user at runtime.
 
-// TODO StructOpt
+For starters, let's give a `base note` and a `scale` option to deifne the key:
+
+```rust
+// src/bin/mod.rs
+/// music is a procedural single-tone melody generator
+#[derive(StructOpt, Debug)]
+#[structopt(name = "music")]
+struct Opt {
+    /// The note to calculate the key from
+    #[structopt(short, long, default_value = "A4")]
+    base_note: Note,
+    // The series of intervals representing the scale
+    #[structopt(short, long, default_value = "Ionian")]
+    scale: Scale,
+}
+```
+
+```diff
+// src/lib.rs
+  impl MusicMaker {
+-     pub fn new() -> Self
+-         Self::default()
++     pub fn new(base_note: Note, scale: Scale) -> Self {
++         Self::default().set_base_note(base_note).set_scale(scale)
+      }
+      fn get_frequency(&mut self) -> Sample {
+          let pitch = Pitch::from(self.current_note);
+          pitch.into()
+      }
+      fn new_note(&mut self) {
+          let keys = self.key.all_keys();
+          self.current_note = *keys.iter().choose(&mut self.seed).unwrap();
+      }
++     fn set_base_note(mut self, base_note: Note) -> Self {
++         self.key = Key::new(self.key.scale, &base_note.to_string());
++         self
++     }
++     fn set_scale(mut self, scale: Scale) -> Self {
++         self.key = Key::new(scale, &self.key.base_note.to_string());
++         self
++     }
+  }
+```
+
+```diff
+// src/bin/mod.rs
+fn main() {
++     let opt = Opt::from_args();
+      println!("{}", GREETING);
+
+      let device = default_output_device().unwrap();
+      let sink = Sink::new(&device);
+-     let music = MusicMaker::new();
++     let music = MusicMaker::new(opt.base_note, opt.scale);
+      sink.append(music);
+      sink.sleep_until_end();
+  }
+```
+
+We also now need some logic to get from `&str` to `Scale`:
+
+```rust
+impl FromStr for Scale {
+    type Err = io::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use Mode::*;
+        use Scale::*;
+        match s.to_uppercase().as_str() {
+            "IONIAN" => Ok(Diatonic(Ionian)),
+            "DORIAN" => Ok(Diatonic(Dorian)),
+            "PHRYGIAN" => Ok(Diatonic(Phrygian)),
+            "LYDIAN" => Ok(Diatonic(Lydian)),
+            "MIXOLYDIAN" => Ok(Diatonic(Mixolydian)),
+            "AEOLIAN" => Ok(Diatonic(Aeolian)),
+            "LOCRIAN" => Ok(Diatonic(Locrian)),
+            "CHROMATIC" => Ok(Chromatic),
+            "TETRATONIC" => Ok(Tetratonic),
+            _ => Err(io::Error::new(io::ErrorKind::InvalidInput, "Unknown scale")),
+        }
+    }
+}
+```
+
+// TODO maybe actually builder?  keep constructor empty
+
+Now we just need to instantiate the structopt object, and we can pass in whatever the user specifies, if anything is present.  Make sure the code generation worked as expected with `cargo run -- -h` - you use `--` to pas command line arguments through `cargo run`, but you'd pass them directly to a binary: `./music -h`:
+
+```txt
+$ cargo run -- -h  
+   Compiling music v0.1.0 (C:\Users\you\code\music)
+    Finished dev [unoptimized + debuginfo] target(s) in 1.31s
+     Running `target\debug\mod.exe -h`
+music 0.1.0
+music is a procedural single-tone melody generator
+
+USAGE:
+    mod.exe [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -n, --note <note>      The base note to calculate the scale from [default: C]
+    -s, --scale <scale>    The series of intervals from the base note to use per octave [default: Ionian]
+```
+
+Structopt is great.  We should add an output line to the header to let the user know what's playing:
+
+```rust
+impl fmt::Display for Scale {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Scale::*;
+        let s = match self {
+            Chromatic | Tetratonic => format!("{:?}", self),
+            Diatonic(mode) => format!("{:?}", mode),
+        };
+        write!(f, "{}", s)
+    }
+}
+
+impl fmt::Display for MusicMaker {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Playing the {} scale from {}\n{}",
+            self.key.scale, self.key.base_note, self.key
+        )
+    }
+}
+```
+
+```diff
+  fn main() {
+      let opt = Opt::from_args();
+      println!("{}", GREETING);
+
+      let device = default_output_device().unwrap();
+      let sink = Sink::new(&device);
+      let music = MusicMaker::new(opt.note, opt.scale);
++     println!("{}", music);
+      sink.append(music);
+      sink.sleep_until_end();
+  }
+```
+
+Now we should see the current key at the top - both options are optional:
+
+```txt
+$ cargo run -- -s tetratonic
+    Finished dev [unoptimized + debuginfo] target(s) in 0.07s
+     Running `target\debug\mod.exe -s tetratonic`
+Cool Tunes (tm)
+Playing the Tetratonic scale from C
+[ C C# D# G ]
+```
+
+```txt
+$ cargo run -- -s locrian -n Eb
+    Finished dev [unoptimized + debuginfo] target(s) in 0.07s
+     Running `target\debug\mod.exe -s locrian -n Eb`
+Cool Tunes (tm)
+Playing the Locrian scale from E♭
+[ E♭ E F# G# A B C# E♭ ]
+```
 
 ![human music](https://thepracticaldev.s3.amazonaws.com/i/92xyu0xcenfmpvrf6kbq.gif)
 
 ## Challenges
 
 *[top](#table-of-contents)*
-
-This code is written in an extensible, modifiable manner, and there are a number of way you could extend the project from here.  I'll be working on some of this list myself, but this post got a little long:
 
 - Generate key signatures from strings like `"Cmaj"` or `"Amin7`.
 - Support even more types of key signatures like the [harmonic minor](https://en.wikipedia.org/wiki/Minor_scale#Harmonic_minor_scale), which is the Aeolian mode with the seventh note one semitone higher.
