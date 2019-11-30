@@ -1084,7 +1084,6 @@ The diatonic scales we've been working with are a subset of the [heptatonic scal
 #[derive(Debug, Clone, Copy)]
 enum ScaleLength {
     Tetratonic = 4,
-    Pentatonic = 5,
     Heptatonic = 7,
     Dodecatonic = 12,
 }
@@ -1098,23 +1097,40 @@ Interestingly, the scale shown is [tetratonic](https://en.wikipedia.org/wiki/Tet
 [4, 5, 7, 11]
 ```
 
-// TODO TETRATONIC RUST
+```diff
+  #[derive(Debug, Clone, Copy, PartialEq)]
+  pub enum Scale {
+      Chromatic,
+      Diatonic(Mode),
++     Tetratonic,
+  }
 
-which is primarily associated with pre-historic music.  Maybe they spoke `AWK`?I also don't understand how that snippet works, because it's still indexed with `a[$1 % 8]`, but I'm too lazy to find out why.
-
-A more common variant is the [pentatonic scale](https://en.wikipedia.org/wiki/Pentatonic_scale), with 5 tones per octave.   There are a number of ways to construct a pentatonic scale, see the link for more, I'll just define one here:
-
-```txt
-[E♭, G♭, A♭, B♭, D♭]
-[Min3, Min2, Min2, Min3]
-[6, 9, 11, 13, 16]
+  impl Scale {
+    // ..
+    fn get_intervals(self) -> Vec<Interval> {
+        use Interval::*;
+        use Scale::*;
+        match self {
+            Chromatic => [Min2]
+                .iter()
+                .cycle()
+                .take(ScaleLength::Dodecatonic as usize)
+                .copied()
+                .collect::<Vec<Interval>>(),
+            Diatonic(mode) => Mode::base_intervals()
+                .iter()
+                .cycle()
+                .skip(mode as usize)
+                .take(ScaleLength::Heptatonic as usize)
+                .copied()
+                .collect::<Vec<Interval>>(),
++           Tetratonic => vec![Min2, Maj2, Maj3],
+          }
+      }
+  }
 ```
 
-This one is fun because it's what you get when you start at `E♭` and only play the *black* keys.  Like the major scales, this type of scale also has modes, one for each black key:
-
-```rust
-// TODO PENTATONIC MODES - if no time, skip it, less important
-```
+Oddly, this scale is primarily associated with pre-historic music and not often found since.  Was `AWK` passed down from the before-times? I also don't understand how that snippet works, because it's still indexed with `a[$1 % 8]`, but I'm too lazy to find out why.
 
 The only dodecatonic scale is the [chromatic scale](https://en.wikipedia.org/wiki/Chromatic_scale) is just all the notes:
 
@@ -1175,9 +1191,7 @@ impl Scale {
 
 This could be a potential natural application of [dependent types](https://en.wikipedia.org/wiki/Dependent_type), a programming language feature that Rust does not support.  Few languages do.  One example is [Idris](https://en.wikipedia.org/wiki/Idris_(programming_language)#Dependent_types), which is like [Haskell](https://en.wikipedia.org/wiki/Haskell_(programming_language))++.  A dependent type codifies a type restraint that's dependent on a *value* of that type.  The linked example describes a function that appends a list of `m` elements to a list `n` which specifies as part of the return type that the returned list has length `n + m`.  A caller can then trust this fact implicitly, because the compiler won't build a binary if it's not true.  I think this could be applied here to verify that a scale's intervals method returns an octave, regardless of length.  That can be tested for in code with Rust, of course, but not encoded into the type signature directly.
 
-// TODO show off all the scales, maybe?
-
-
+Those are just two examples, I bet you could find some other interesting patterns on the keyboard diagram.  For instance, what happens if you ignore the white keys and *only* use the black keys?
 
 #### Generating Music
 
@@ -1519,7 +1533,7 @@ impl MusicMaker {
 To perform the wave sampling, we can actually pretty much copy-paste the `impl Iterator for SineWave` code, just using our struct's values:
 
 ```rust
-type Sample = f32;
+pub type Sample = f32;
 
 impl Iterator for MusicMaker {
     type Item = Sample; // Sampled amplitude
@@ -1629,7 +1643,7 @@ Running this with `cargo run` will (over 1,000 lines later) essentially match th
 
 There are several elements of this that are tweakable - the program that runs is a little lackluster given all the capability we've defined internally.  Let's expose as much as we can to the user at runtime.
 
-For starters, let's give a `base note` and a `scale` option to deifne the key:
+Let's give a `base note`, a `scale` option, and a number of octaves to span upwards to define the valid notes, as well as a boolean to choose to instead just play a single tone:
 
 ```rust
 // src/bin/mod.rs
@@ -1637,13 +1651,20 @@ For starters, let's give a `base note` and a `scale` option to deifne the key:
 #[derive(StructOpt, Debug)]
 #[structopt(name = "music")]
 struct Opt {
-    /// The note to calculate the key from
-    #[structopt(short, long, default_value = "A4")]
-    base_note: Note,
-    // The series of intervals representing the scale
+    /// Single-pitch mode
+    #[structopt(short, long)]
+    pitch_mode: bool,
+    /// The base note to calculate the scale from
+    #[structopt(short, long, default_value = "C4")]
+    base_note: PianoKey,
+    /// The series of intervals from the base note to use per octave
     #[structopt(short, long, default_value = "Ionian")]
     scale: Scale,
+    /// Number of octaves over which to range, anything over 8 gets parsed as 8
+    #[structopt(short, long, default_value = "1")]
+    octaves: u8
 }
+
 ```
 
 ```diff
@@ -1673,19 +1694,36 @@ struct Opt {
   }
 ```
 
-```diff
-// src/bin/mod.rs
-fn main() {
-+     let opt = Opt::from_args();
-      println!("{}", GREETING);
+We have to dispatch a few different paths now - replace `main()` with the following:
 
-      let device = default_output_device().unwrap();
-      let sink = Sink::new(&device);
--     let music = MusicMaker::new();
-+     let music = MusicMaker::new(opt.base_note, opt.scale);
-      sink.append(music);
-      sink.sleep_until_end();
-  }
+```rust
+fn main() {
+    // Read arguments, greet user
+    let opt = Opt::from_args();
+    println!("{}", GREETING);
+
+    // Set up audio playback
+    let device = default_output_device().unwrap();
+    let sink = Sink::new(&device);
+
+    // Define music source from Opt
+    if opt.pitch_mode {
+        let wave = SineWave::from(Pitch::from(opt.base_note));
+        println!("Playing single tone {}", opt.base_note);
+        // Play sine wave
+        sink.append(wave);
+    } else {
+        // Init procedural generator
+        let music = MusicMaker::new()
+            .set_scale(opt.scale)
+            .set_base_note(opt.base_note);
+        println!("{}", music);
+        // Play random melody
+        sink.append(music);
+    };
+    // Sleep thread to allow music to play infinitely
+    sink.sleep_until_end();
+}
 ```
 
 We also now need some logic to get from `&str` to `Scale`:
@@ -1719,24 +1757,26 @@ Now we just need to instantiate the structopt object, and we can pass in whateve
 ```txt
 $ cargo run -- -h  
    Compiling music v0.1.0 (C:\Users\you\code\music)
-    Finished dev [unoptimized + debuginfo] target(s) in 1.31s
+    Finished dev [unoptimized + debuginfo] target(s) in 2.10s
      Running `target\debug\mod.exe -h`
 music 0.1.0
 music is a procedural single-tone melody generator
 
 USAGE:
-    mod.exe [OPTIONS]
+    mod.exe [FLAGS] [OPTIONS]
 
 FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
+    -h, --help          Prints help information
+    -p, --pitch-mode    Single-pitch mode
+    -V, --version       Prints version information
 
 OPTIONS:
-    -n, --note <note>      The base note to calculate the scale from [default: C]
-    -s, --scale <scale>    The series of intervals from the base note to use per octave [default: Ionian]
+    -b, --base-note <base-note>    The base note to calculate the scale from [default: C4]
+    -o, --octaves <octaves>        Number of octaves over which to range, anything over 8 gets parsed as 8 [default: 1]
+    -s, --scale <scale>            The series of intervals from the base note to use per octave [default: Ionian]
 ```
 
-Structopt is great.  We should add an output line to the header to let the user know what's playing:
+Structopt is great for quick prototyping.  We should add an output line to the header to let the user know what's playing:
 
 ```rust
 impl fmt::Display for Scale {
@@ -1761,21 +1801,7 @@ impl fmt::Display for MusicMaker {
 }
 ```
 
-```diff
-  fn main() {
-      let opt = Opt::from_args();
-      println!("{}", GREETING);
-
-      let device = default_output_device().unwrap();
-      let sink = Sink::new(&device);
-      let music = MusicMaker::new(opt.note, opt.scale);
-+     println!("{}", music);
-      sink.append(music);
-      sink.sleep_until_end();
-  }
-```
-
-Now we should see the current key at the top - both options are optional:
+Now we should see the current key at the top - both options are optional, and the default value will be used if not found:
 
 ```txt
 $ cargo run -- -s tetratonic
@@ -1788,12 +1814,22 @@ Playing the Tetratonic scale from C
 
 ```txt
 $ cargo run -- -s locrian -n Eb
-    Finished dev [unoptimized + debuginfo] target(s) in 0.07s
-     Running `target\debug\mod.exe -s locrian -n Eb`
+    Finished dev [unoptimized + debuginfo] target(s) in 2.16s
+     Running `target\debug\mod.exe -s locrian -b Eb3`
 Cool Tunes (tm)
-Playing the Locrian scale from E♭
+Playing the Locrian scale from E♭ over TODO octaves
 [ E♭ E F# G# A B C# E♭ ]
 ```
+
+```txt
+$ cargo run -- -p -b C5
+    Finished dev [unoptimized + debuginfo] target(s) in 0.07s
+     Running `target\debug\mod.exe -p -b C5`
+Cool Tunes (tm)
+Playing single tone C5
+```
+
+Check out C0 and A0, and be careful with 8.
 
 ![human music](https://thepracticaldev.s3.amazonaws.com/i/92xyu0xcenfmpvrf6kbq.gif)
 
@@ -1801,8 +1837,9 @@ Playing the Locrian scale from E♭
 
 *[top](#table-of-contents)*
 
-- Generate key signatures from strings like `"Cmaj"` or `"Amin7`.
-- Support even more types of key signatures like the [harmonic minor](https://en.wikipedia.org/wiki/Minor_scale#Harmonic_minor_scale), which is the Aeolian mode with the seventh note one semitone higher.
+- Support even more types of key signatures like the [harmonic minor](https://en.wikipedia.org/wiki/Minor_scale#Harmonic_minor_scale), which is the Aeolian mode with the seventh note one semitone higher, or [pentatonic scales](https://en.wikipedia.org/wiki/Pentatonic_scale), which were hinted at above as using solely the black keys.  Those have modes too...
+- Generate those extended key signatures from strings like `"Cmaj"` or `"Amin7`.
+- Let the use decide how long each note should sound.  Which part of `MusicMaker` is responsible for that?
 - Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation).
 - Instead of picking notes at random, provide different kinds of seeds.  For instance, every file on your computer is a stream of bytes.
 - Support other types of wave forms than sines, such as square waves or sawtooth waves.
