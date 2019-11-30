@@ -290,6 +290,12 @@ impl Add<Interval> for Note {
     }
 }
 
+impl AddAssign<Interval> for Note {
+    fn add_assign(&mut self, rhs: Interval) {
+        *self = *self + rhs;
+    }
+}
+
 fn char_strs<'a>(s: &'a str) -> Vec<&'a str> {
     s.split("")
         .skip(1)
@@ -601,12 +607,14 @@ impl Default for Scale {
 
 impl Scale {
     pub fn circle_of_fifths() -> Vec<Key> {
-        // TODO actually go up by fifths, not just use chromatic scale
         let mut ret = Vec::new();
-        let all_notes = Key::new(Scale::Chromatic, "A").get_notes();
-        all_notes
-            .iter()
-            .for_each(|n| ret.push(Key::new(Scale::default(), &format!("{}", *n))));
+        // Start with C
+        let mut current_base = Note::default();
+        // Increment by fifths and push to vector
+        for _ in 0..ScaleLength::Dodecatonic as usize {
+            ret.push(Key::new(Scale::default(), &current_base.to_string()));
+            current_base += Interval::Perfect5;
+        }
         ret
     }
     fn get_intervals(self) -> Vec<Interval> {

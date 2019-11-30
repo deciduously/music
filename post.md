@@ -37,24 +37,27 @@ The completed code can be found on [GitHub](https://github.com/deciduously/music
 - [Preamble](#preamble)
 - [The Meme](#the-meme)
 - [The Program](#the-program)
-  * [Project Structure](#project-structure)
-  * [Random Bytes](#random-bytes)
-  * [Mapping Bytes To Notes](#mapping-bytes-to-notes)
+  - [Project Structure](#project-structure)
+    - [Dependencies](#dependencies)
+    - [Test-Driven Development](#test-driven-development)
+  - [Random Numbers](#random-numbers)
+  - [Mapping Numbers To Notes](#mapping-numbers-to-notes)
     - [A Little Physics](#a-little-physics)
-      * [Sine Waves](#sine-waves)
-      * [Pitch](#pitch)
-      * [Singing](#singing)
+      - [Sine Waves](#sine-waves)
+      - [Pitch](#pitch)
+      - [Singing](#singing)
     - [A Little Music Theory](#a-little-music-theory)
-      * [Scientific Pitch Notation](#scientific-pitch-notation)
-      * [Intervals](#intervals)
-      * [Scales](#scales)
-      * [Key](#key)
-      * [Diatonic Modes](#diatonic-modes)
-      * [Circle of Fifths](#circle-of-fifths)
-      * [Non Heptatonic Scales](#non-heptatonic-scales)
+      - [Scientific Pitch Notation](#scientific-pitch-notation)
+      - [Intervals](#intervals)
+      - [Scales](#scales)
+      - [Key](#key)
+      - [Diatonic Modes](#diatonic-modes)
+      - [Circle of Fifths](#circle-of-fifths)
+      - [Non Heptatonic Scales](#non-heptatonic-scales)
     - [Generating Music](#generating-music)
-      * [Cents](#cents)
-      * [User Parameters](#user-parameters)
+      - [Cents](#cents)
+      - [Random Notes](#random-notes)
+      - [User Parameters](#user-parameters)
 - [Challenges](#challenges)
 
 ## Preamble
@@ -104,7 +107,9 @@ If you'd like the challenge of implementing this yourself from scratch in your o
 
 ### Project Structure
 
-Ensure you have at least the default stable Rust toolchain [installed](https://www.rust-lang.org/tools/install).  If you've previously installed `rustup` at any point, just issue `rustup update`.  This code was written with `rustc` [version 1.39](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html) for [Rust 2018](https://doc.rust-lang.org/nightly/edition-guide/rust-2018/edition-changes.html).  
+*[top](#table-of-contents)*
+
+Before getting started, \ensure you have at least the default stable Rust toolchain [installed](https://www.rust-lang.org/tools/install).  If you've previously installed `rustup` at any point, just issue `rustup update`.  This code was written with `rustc` [version 1.39](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html) for [Rust 2018](https://doc.rust-lang.org/nightly/edition-guide/rust-2018/edition-changes.html).  
 
 Then, spin up a new library project:
 
@@ -113,6 +118,10 @@ $ cargo new music --lib
 ```
 
 Open your new `music` project directory in the environment of your choice.  If you're not already sure what to use with Rust, I recommend [Visual Studio Code](https://code.visualstudio.com/) with the [Rust Language Server](https://github.com/rust-lang/rls) installed for in-editor development support.  If you have `rustup` present, the [VS Code RLS extension](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust) has a one-click set up that's worked for me without a hitch on both Linux and Windows 10.
+
+#### Dependencies
+
+*[top](#table-of-contents)*
 
 We'll use two crates - the Rust term for external libraries - to replace the functionality not found in the Rust standard library:
 
@@ -133,6 +142,10 @@ rodio = "0.10"
 
 pretty_assertions = "0.6"
 ```
+
+#### Test Driven Development
+
+*[top](#table-of-contents)*
 
 Cargo has auto-created a file at `src/lib.rs` to define your library, but hold on - we're going to write this program using Test-Driven Development, or TDD.  This means we're going to define the expected behavior of new functionality *before* attempting the implementation.  Here's an example of a test we'll write later:
 
@@ -252,7 +265,7 @@ $ git commit -m "Initial Commit"
 
 You can run a faster compilation pass with `cargo check` if you just want the compiler to verify your code's integrity, not produce a binary.
 
-### Random Bytes
+### Random Numbers
 
 *[top](#table-of-contents)*
 
@@ -293,7 +306,7 @@ We get to use the [`rand::seq::IteratorRandom`](https://docs.rs/rand/0.7.2/rand/
 
 So, there's no need for a  `RandomBytes` iterator.  Instead, we need to define a list of notes and call `choose()` on it to get a specific note to play.
 
-### Mapping Bytes To Notes
+### Mapping Numbers To Notes
 
 *[top](#table-of-contents)*
 
@@ -972,7 +985,7 @@ The C major scale has all white keys.  To find the version of the major scale th
 
 One perfect fifth up from `C` is `G`, so the next scale around the circle is [G major](https://en.wikipedia.org/wiki/G_major).  It has one sharp: A.  Go [back up](#a-little-music-theory) to the piano diagram and count up the major scale sequence from G, for example one note below the yellow A4.  You'll need the `F#` black key at the last step right before G5, but all the other hops white stick to the white keys.  [D major](https://en.wikipedia.org/wiki/D_major) will need two black keys, `F#` and `C#`.  If you continue incrementing a fifth (remember, octave is irrelevant here), you'll hit all 12 possible patterns before getting back to C.  To get through all the key signatures incrementally, one accidental at a time, you keep going up by perfect fifths.  Once you come all the way back to C, you'll have hit all 12 keys, encompassing all possible key signatures.
 
-This diagram also shows the [relative natural minor](https://en.wikipedia.org/wiki/Relative_key) for each.  We saw how to get [A minor](https://en.wikipedia.org/wiki/A_minor) from C major, so by definition of equal temperament that interval holds all the way around.
+This diagram also shows the [relative natural minor](https://en.wikipedia.org/wiki/Relative_key) for each.  That's a sneak preview of the Aeolian mode in the next section!
 
 It's true that, e.g. `D#` and `E♭` represent the same pitch - what's different is why we got there.  After the midway point, it's easier to denote 5 flats than 7 sharps, even though they mean the same tones - there's only 5 black keys to choose from, after all.
 
@@ -984,10 +997,13 @@ We can generate all of them by just passing each note into `Key::new()`:
 impl Scale {
     pub fn circle_of_fifths() -> Vec<Key> {
         let mut ret = Vec::new();
-        let all_notes = Scale::Chromatic.get_notes(Note::from_str("A").unwrap());
-        all_notes
-            .iter()
-            .for_each(|n| ret.push(Key::new(Scale::default(), &format!("{}", *n))));
+        // Start with C
+        let mut current_base = Note::default();
+        // Increment by fifths and push to vector
+        for _ in 0..ScaleLength::Dodecatonic as usize {
+            ret.push(Key::new(Scale::default(), &current_base.to_string()));
+            current_base += Interval::Perfect5;
+        }
         ret
     }
 }
@@ -996,20 +1012,21 @@ impl Scale {
 That's twelve scales for free:
 
 ```txt
-[ A B C# D E F# G# A ]
-[ A# C D D# F G A A# ]
-[ B C# D# E F# G# A# B ]
 [ C D E F G A B C ]
-[ C# D# F F# G# A# C C# ]
-[ D E F# G A B C# D ]
-[ D# F G G# A# C D D# ]
-[ E F# G# A B C# D# E ]
-[ F G A A# C D E F ]
-[ F# G# A# B C# D# F F# ]
 [ G A B C D E F# G ]
-[ G# A# C C# D# F G G# ]
+[ D E F# G A B C# D ]
 [ A B C# D E F# G# A ]
+[ E F# G# A B C# D# E ]
+[ B C# D# E F# G# A# B ]
+[ F# G# A# B C# D# F F# ]
+[ C# D# F F# G# A# C C# ]
+[ G# A# C C# D# F G G# ]
+[ D# F G G# A# C D D# ]
+[ A# C D D# F G A A# ]
+[ F G A A# C D E F ]
 ```
+
+This implementation isn't smart enough to switch to flats halfway through to represent the black keys used - could be a fun challenge!
 
 ##### Diatonic Modes
 
@@ -1029,9 +1046,9 @@ whole, half, whole, whole, half, whole, whole
 
 TODO embed sound
 
-It's the same pattern, just starting at a different offset.  You can play a corresponding minor scale using only the white keys by simply starting at the sixth note of the C major scale (or incremnting a ), which is A.  Try counting it out yourself up from A4.
+It's the same pattern, just starting at a different offset.  You can play a corresponding minor scale using only the white keys by simply starting at the sixth note of the C major scale (or incrementing a major sixth), which is A.  Try counting it out yourself up from A4.
 
-There's an absurdly fancy name for each offset.  This means we get our first seven `Scale` variants for free:
+There's an absurdly fancy name for each offset:
 
 // TODO introduce Scale code with Scales section, edit it here with Modes
 
@@ -1047,10 +1064,9 @@ enum Mode {
     Locrian,
 }
 
-#[derive(Debug)]
-enum Scale {
-    Diatonic(Mode),
-}
+
+```diff
+TODO remove Scale::Major in favor of Scale::Diatonic(Mode)
 ```
 
 We'll hardcode the C major sequence as the base:
@@ -1419,6 +1435,9 @@ fn test_piano_key_to_pitch() {
 }
 ```
 
+##### Random Notes
+
+*[top](#table-of-contents)*
 
 The only missing thing is picking what notes to play we just need to pick the notes to play.
 
@@ -1453,6 +1472,8 @@ We can actually use the linked source code as a template to provide our own `rod
 ![human music](https://thepracticaldev.s3.amazonaws.com/i/92xyu0xcenfmpvrf6kbq.gif)
 
 ##### User Parameters
+
+*[top](#table-of-contents)*
 
 There are several elements of this that are tweakable - the program that runs is a little lackluster given all the capability we've defined.
 
