@@ -149,7 +149,7 @@ fn test_chromatic_intervals() {
     use Interval::Min2;
     assert_eq!(
         Scale::Chromatic.get_intervals(),
-        vec![Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2,]
+        vec![Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2]
     );
 }
 
@@ -229,93 +229,41 @@ fn test_add_interval_to_note() {
 #[test]
 fn test_c_major() {
     assert_eq!(
-        &format!("{}", Key::new(Scale::default(), "C")),
+        &Key::new(Scale::default(), PianoKey::default(), 1).to_string(),
         "[ C D E F G A B C ]"
     )
 }
 
 #[test]
-fn test_get_a_major() {
+fn test_a_major() {
     assert_eq!(
-        Key::new(Scale::default(), "A").get_notes(),
-        &[
-            Note::from_str("A").unwrap(),
-            Note::from_str("B").unwrap(),
-            Note::from_str("C#").unwrap(),
-            Note::from_str("D").unwrap(),
-            Note::from_str("E").unwrap(),
-            Note::from_str("F#").unwrap(),
-            Note::from_str("G#").unwrap(),
-            Note::from_str("A").unwrap()
-        ]
-    );
+        &Key::new(Scale::default(), PianoKey::from_str("A4").unwrap(), 1).to_string(),
+        "[ A B C# D E F# G# A ]"
+    )
 }
 
 #[test]
-fn test_get_g_major() {
+fn test_g_major() {
     assert_eq!(
-        Key::new(Scale::default(), "G").get_notes(),
-        &[
-            Note::from_str("G").unwrap(),
-            Note::from_str("A").unwrap(),
-            Note::from_str("B").unwrap(),
-            Note::from_str("C").unwrap(),
-            Note::from_str("D").unwrap(),
-            Note::from_str("E").unwrap(),
-            Note::from_str("F#").unwrap(),
-            Note::from_str("G").unwrap()
-        ]
-    );
+        &Key::new(Scale::default(), PianoKey::from_str("G4").unwrap(), 1).to_string(),
+        "[ G A B C D E F# G ]"
+    )
 }
 
 #[test]
-fn test_get_chromatic() {
+fn test_chromatic() {
     assert_eq!(
-        Key::new(Scale::Chromatic, "A").get_notes(),
-        &[
-            Note::from_str("A").unwrap(),
-            Note::from_str("A#").unwrap(),
-            Note::from_str("B").unwrap(),
-            Note::from_str("C").unwrap(),
-            Note::from_str("C#").unwrap(),
-            Note::from_str("D").unwrap(),
-            Note::from_str("D#").unwrap(),
-            Note::from_str("E").unwrap(),
-            Note::from_str("F").unwrap(),
-            Note::from_str("F#").unwrap(),
-            Note::from_str("G").unwrap(),
-            Note::from_str("G#").unwrap(),
-            Note::from_str("A").unwrap()
-        ]
+        &Key::new(Scale::Chromatic, PianoKey::default(), 1).to_string(),
+        "[ C C# D D# E F F# G G# A A# B C ]"
     )
 }
 
 #[test]
 fn test_a_minor() {
+    use Mode::*;
+    use Scale::*;
     assert_eq!(
-        Key::new(Scale::Diatonic(Mode::Aeolian), "A").get_notes(),
-        &[
-            Note::from_str("A").unwrap(),
-            Note::from_str("B").unwrap(),
-            Note::from_str("C").unwrap(),
-            Note::from_str("D").unwrap(),
-            Note::from_str("E").unwrap(),
-            Note::from_str("F").unwrap(),
-            Note::from_str("G").unwrap(),
-            Note::from_str("A").unwrap()
-        ]
-    );
-}
-
-#[test]
-fn test_display_chromatic() {
-    assert_eq!(
-        &format!("{}", Key::new(Scale::Chromatic, "A")),
-        "[ A A# B C C# D D# E F F# G G# A ]"
+        &Key::new(Diatonic(Aeolian), PianoKey::from_str("A4").unwrap(), 1).to_string(),
+        "[ A B C D E F G A ]"
     )
-}
-
-#[test]
-fn test_all_keys() {
-    //
 }

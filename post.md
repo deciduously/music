@@ -22,7 +22,7 @@ The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover im
 
 By the end of this post our program will:
 
-1. Support 146 different key signatures.
+1. Support 86 different key signatures.
 1. Support a full 108-key extended [piano](https://en.wikipedia.org/wiki/Piano) [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard), allowing the user to pick a range.
 1. Produce any arbitrary tone we ask for.
 1. Compile and run on Windows, MacOS, or Linux with no extra effort or code changes (I tried all three).
@@ -1672,8 +1672,8 @@ struct Opt {
   impl MusicMaker {
 -     pub fn new() -> Self
 -         Self::default()
-+     pub fn new(base_note: Note, scale: Scale) -> Self {
-+         Self::default().set_base_note(base_note).set_scale(scale)
++     pub fn new(opt: Opt) -> Self {
++         Self::default().set_base_note(opt.base_note).set_scale(opt.scale).set_octaves(opt.octaves)
       }
       fn get_frequency(&mut self) -> Sample {
           let pitch = Pitch::from(self.current_note);
@@ -1714,9 +1714,7 @@ fn main() {
         sink.append(wave);
     } else {
         // Init procedural generator
-        let music = MusicMaker::new()
-            .set_scale(opt.scale)
-            .set_base_note(opt.base_note);
+        let music = MusicMaker::new(opt.base_note, opt.scale, opt.octaves);
         println!("{}", music);
         // Play random melody
         sink.append(music);
@@ -1724,6 +1722,7 @@ fn main() {
     // Sleep thread to allow music to play infinitely
     sink.sleep_until_end();
 }
+
 ```
 
 We also now need some logic to get from `&str` to `Scale`:
@@ -1794,7 +1793,7 @@ impl fmt::Display for MusicMaker {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Playing the {} scale from {}\n{}",
+            "Playing from the {} scale from {}\n{}",
             self.key.scale, self.key.base_note, self.key
         )
     }
@@ -1804,32 +1803,42 @@ impl fmt::Display for MusicMaker {
 Now we should see the current key at the top - both options are optional, and the default value will be used if not found:
 
 ```txt
+$ cargo run
+    Finished dev [unoptimized + debuginfo] target(s) in 0.07s
+     Running `target\debug\mod.exe`
+Cool Tunes (tm)
+Playing from the Ionian scale from C4 over 1 octave(s)
+[ C D E F G A B C ]
+```
+
+```txt
 $ cargo run -- -s tetratonic
     Finished dev [unoptimized + debuginfo] target(s) in 0.07s
      Running `target\debug\mod.exe -s tetratonic`
 Cool Tunes (tm)
-Playing the Tetratonic scale from C
+Playing from the Tetratonic scale from C4 over 1 octave(s)
 [ C C# D# G ]
 ```
 
 ```txt
-$ cargo run -- -s locrian -n Eb
+$ cargo run -- -s locrian -n Eb3
     Finished dev [unoptimized + debuginfo] target(s) in 2.16s
      Running `target\debug\mod.exe -s locrian -b Eb3`
 Cool Tunes (tm)
-Playing the Locrian scale from E♭ over TODO octaves
+Cool Tunes (tm)
+Playing from the Locrian scale from E♭3 over 1 octave(s)
 [ E♭ E F# G# A B C# E♭ ]
 ```
 
 ```txt
-$ cargo run -- -p -b C5
+$ cargo run -- -p -b C3
     Finished dev [unoptimized + debuginfo] target(s) in 0.07s
-     Running `target\debug\mod.exe -p -b C5`
+     Running `target\debug\mod.exe -p -b C3`
 Cool Tunes (tm)
-Playing single tone C5
+Playing single tone C3
 ```
 
-Check out C0 and A0, and be careful with 8.
+Check out C0 and A0, and be careful when getting to the upper octaves.
 
 ![human music](https://thepracticaldev.s3.amazonaws.com/i/92xyu0xcenfmpvrf6kbq.gif)
 

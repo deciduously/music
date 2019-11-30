@@ -342,7 +342,9 @@ impl PianoKey {
     fn new(s: &str) -> Result<Self, io::Error> {
         Self::from_str(s)
     }
-    //fn get_offset()
+    fn max_octave() -> u8 {
+        8
+    }
     fn all_pitches() -> Vec<PianoKey> {
         NoteLetter::all()
             .iter()
@@ -580,18 +582,9 @@ impl Mode {
         use Interval::*;
         vec![Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
     }
-    //fn get_intervals(&self) -> impl Iterator {
-    //    let intervals = Mode::base_intervals();
-    //    Mode::base_intervals().skip(self as u8 as usize).cycle()
-    //}
 }
 
 // TODO - REMOVE - FOR DEMO
-
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
-pub struct DiatonicScale {
-    offset: Semitones,
-}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Scale {
@@ -613,7 +606,11 @@ impl Scale {
         let mut current_base = Note::default();
         // Increment by fifths and push to vector
         for _ in 0..ScaleLength::Dodecatonic as usize {
-            ret.push(Key::new(Scale::default(), &current_base.to_string()));
+            ret.push(Key::new(
+                Scale::default(),
+                PianoKey::from_str(&format!("{}4", current_base)).unwrap(),
+                1,
+            ));
             current_base += Interval::Perfect5;
         }
         ret
@@ -673,33 +670,39 @@ impl fmt::Display for Scale {
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Key {
-    base_note: Note,
+    base_note: PianoKey,
+    octaves: u8,
     scale: Scale,
 }
 
 impl Key {
-    pub fn new(scale: Scale, base_note_str: &str) -> Self {
+    pub fn new(scale: Scale, base_note: PianoKey, octaves: u8) -> Self {
         Self {
-            base_note: Note::from_str(base_note_str).unwrap(),
+            base_note,
+            octaves,
             scale,
         }
     }
     fn all_keys(self) -> Vec<PianoKey> {
         let notes = self.get_notes();
         let mut ret = Vec::new();
-        for i in 3..6 {
-            notes
-                .iter()
-                .for_each(|n| ret.push(PianoKey::from_str(&format!("{}{}", *n, i)).unwrap()));
+        for i in 0..self.octaves {
+            notes.iter().for_each(|n| {
+                ret.push(
+                    PianoKey::from_str(&format!("{}{}", *n, i + self.base_note.octave)).unwrap_or(
+                        PianoKey::from_str(&format!("{}{}", *n, PianoKey::max_octave())).unwrap(),
+                    ),
+                )
+            });
         }
         ret
     }
     pub fn get_notes(self) -> Vec<Note> {
-        let mut ret = vec![self.base_note];
+        let mut ret = vec![self.base_note.note];
         let mut offset = Interval::Unison;
         self.scale.get_intervals().iter().for_each(|i| {
             offset += *i;
-            ret.push(self.base_note + offset)
+            ret.push(self.base_note.note + offset)
         });
         ret
     }
@@ -737,11 +740,11 @@ impl Default for MusicMaker {
     }
 }
 
-type Sample = f32;
+pub type Sample = f32;
 
 impl MusicMaker {
-    pub fn new(base_note: Note, scale: Scale) -> Self {
-        Self::default().set_base_note(base_note).set_scale(scale)
+    pub fn new(base_note: PianoKey, scale: Scale, octaves: u8) -> Self {
+        Self::default().set_key(base_note, scale, octaves)
     }
     fn get_frequency(&mut self) -> Sample {
         let pitch = Pitch::from(self.current_note);
@@ -751,12 +754,8 @@ impl MusicMaker {
         let keys = self.key.all_keys();
         self.current_note = *keys.iter().choose(&mut self.seed).unwrap();
     }
-    fn set_base_note(mut self, base_note: Note) -> Self {
-        self.key = Key::new(self.key.scale, &base_note.to_string());
-        self
-    }
-    fn set_scale(mut self, scale: Scale) -> Self {
-        self.key = Key::new(scale, &self.key.base_note.to_string());
+    pub fn set_key(mut self, base_note: PianoKey, scale: Scale, octaves: u8) -> Self {
+        self.key = Key::new(scale, base_note, octaves);
         self
     }
 }
@@ -804,10 +803,11 @@ impl Source for MusicMaker {
 
 impl fmt::Display for MusicMaker {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let key = self.key;
         write!(
             f,
-            "Playing the {} scale from {}\n{}",
-            self.key.scale, self.key.base_note, self.key
+            "Playing from the {} scale from {} over {} octave(s)\n{}",
+            key.scale, key.base_note, key.octaves, key
         )
     }
 }
