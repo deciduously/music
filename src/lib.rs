@@ -11,7 +11,7 @@ use std::{
 #[cfg(test)]
 mod test;
 
-pub const GREETING: &str = "Cool Tunes (tm)";
+pub const GREETING: &str = ".: Cool Tunes :.";
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Hertz(f64);
@@ -251,6 +251,9 @@ impl Note {
                 self.accidental = Some(Sharp);
             }
         }
+    }
+    fn get_relative_natural_minor(self) -> Note {
+        unimplemented!()
     }
 }
 
@@ -584,8 +587,6 @@ impl Mode {
     }
 }
 
-// TODO - REMOVE - FOR DEMO
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Scale {
     Chromatic,
@@ -643,12 +644,12 @@ impl FromStr for Scale {
         use Mode::*;
         use Scale::*;
         match s.to_uppercase().as_str() {
-            "IONIAN" => Ok(Diatonic(Ionian)),
+            "IONIAN" | "MAJOR" => Ok(Diatonic(Ionian)),
             "DORIAN" => Ok(Diatonic(Dorian)),
             "PHRYGIAN" => Ok(Diatonic(Phrygian)),
             "LYDIAN" => Ok(Diatonic(Lydian)),
             "MIXOLYDIAN" => Ok(Diatonic(Mixolydian)),
-            "AEOLIAN" => Ok(Diatonic(Aeolian)),
+            "AEOLIAN" | "MINOR" => Ok(Diatonic(Aeolian)),
             "LOCRIAN" => Ok(Diatonic(Locrian)),
             "CHROMATIC" => Ok(Chromatic),
             "TETRATONIC" => Ok(Tetratonic),
@@ -661,8 +662,15 @@ impl fmt::Display for Scale {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use Scale::*;
         let s = match self {
-            Chromatic | Tetratonic => format!("{:?}", self),
-            Diatonic(mode) => format!("{:?}", mode),
+            Chromatic | Tetratonic => format!("{:?} scale", self).to_lowercase(),
+            Diatonic(mode) => {
+                use Mode::*;
+                match mode {
+                    Aeolian => "minor scale".into(),
+                    Ionian => "major scale".into(),
+                    _ => format!("{:?} mode", mode),
+                }
+            }
         };
         write!(f, "{}", s)
     }
@@ -811,8 +819,12 @@ impl fmt::Display for MusicMaker {
         let key = self.key;
         write!(
             f,
-            "Playing from the {} scale from {} over {} octave(s)\n{}",
-            key.scale, key.base_note, key.octaves, key
+            "Generating music from the {} {}\nOctaves: {} - {}\n{}",
+            key.base_note.note,
+            key.scale,
+            key.base_note.octave,
+            key.base_note.octave + key.octaves,
+            key
         )
     }
 }

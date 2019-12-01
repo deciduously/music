@@ -22,11 +22,21 @@ The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover im
 
 By the end of this post our program will:
 
-1. Support 86 different key signatures.
-1. Support a full 108-key extended [piano](https://en.wikipedia.org/wiki/Piano) [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard), allowing the user to pick a range.
-1. Produce any arbitrary tone we ask for.
-1. Compile and run on Windows, MacOS, or Linux with no extra effort or code changes (I tried all three).
-1. Encourage further extension with lots of Rust-y goodness.
+1. Support [86](https://en.wikipedia.org/wiki/86_(number)) different [key signatures](https://en.wikipedia.org/wiki/Key_signature).
+1. Support a full [108](https://en.wikipedia.org/wiki/108_(number))-key extended [piano](https://en.wikipedia.org/wiki/Piano) [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard), allowing the user to pick a range.
+1. Produce any arbitrary [tone](https://en.wikipedia.org/wiki/Musical_tone) we ask for.
+1. Compile and run on [Windows](https://en.wikipedia.org/wiki/Microsoft_Windows), [MacOS](https://en.wikipedia.org/wiki/MacOS), or [Linux](https://en.wikipedia.org/wiki/Linux) with no extra effort or code changes ([I tried](https://en.wikipedia.org/wiki/Nerd) all three).
+1. Encourage further [extension](https://en.wikipedia.org/wiki/Scalability) with lots of Rust-y goodness.
+
+[C# minor](https://en.wikipedia.org/wiki/C-sharp_minor) has a funky dark kinda vibe - [Lullaby](https://en.wikipedia.org/wiki/Lullaby_(The_Cure_song)) by [The Cure](https://en.wikipedia.org/wiki/The_Cure), [Message in a Bottle](https://en.wikipedia.org/wiki/Message_in_a_Bottle_(song)) by [The Police](https://en.wikipedia.org/wiki/The_Police), [Feel It Still](https://en.wikipedia.org/wiki/Feel_It_Still) by [Portugal, The Man](https://en.wikipedia.org/wiki/Portugal._The_Man),  a bunch of [others](https://en.wikipedia.org/wiki/C-sharp_minor#Notable_songs).  Your computer could be the next [Dolly Parton](https://en.wikipedia.org/wiki/Dolly_Parton) ([Jolene](https://en.wikipedia.org/wiki/Jolene_(song))):
+
+```txt
+$ ./music -b C#2 -o 4 -s minor
+.: Cool Tunes :.
+Generating music from the C# minor scale
+Octaves: 2 - 6
+[ C# D# E F# G# A B C# ]
+```
 
 However, at the end of the day, it's just the thing in the cover image.
 
@@ -41,6 +51,7 @@ The completed code can be found on [GitHub](https://github.com/deciduously/music
         - [Dependencies](#dependencies)
         - [Test-Driven Development](#test-driven-development)
         - [Entry Point](#entry-point)
+        - [Traits](#traits)
   - [Random Numbers](#random-numbers)
   - [Mapping Numbers To Notes](#mapping-numbers-to-notes)
         - [A Little Physics](#a-little-physics)
@@ -65,9 +76,7 @@ The completed code can be found on [GitHub](https://github.com/deciduously/music
 
 *[top](#table-of-contents)*
 
-This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and up) who are comfortable solving problems with at least one [imperative](https://en.wikipedia.org/wiki/Imperative_programming) [language](https://en.wikipedia.org/wiki/Programming_language).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).  However, if you are not already familiar with Rust, you should expect to spend a little longer with the code samples to extract the relevant bits.
-
-You do not need any prior knowledge of physics or music theory, but there will be a tiny smattering of [elementary algebra](https://en.wikipedia.org/wiki/Elementary_algebra).  I promise it's quick.
+This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and up) who are comfortable solving problems with at least one [imperative](https://en.wikipedia.org/wiki/Imperative_programming), [object-oriented](https://en.wikipedia.org/wiki/Object-oriented_programming) [language](https://en.wikipedia.org/wiki/Programming_language).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).  You do not need any prior knowledge of physics or music theory, but there will be a tiny smattering of [elementary algebra](https://en.wikipedia.org/wiki/Elementary_algebra).  I promise it's quick.
 
 I have two disclaimers before getting started:
 
@@ -143,8 +152,9 @@ In `Cargo.toml`:
 rodio = "0.10"
 structopt = "0.3"
 
-# below is equivalent to:
-# rand = { features = [ "small_rng" ], version = "0.7" } - it's a style preference
+# the section below is equivalent TOML to:
+# rand = { features = [ "small_rng" ], version = "0.7" }
+# it's a style preference
 [dependencies.rand]
 
 features = [ "small_rng" ]
@@ -186,11 +196,11 @@ use pretty_assertions::assert_eq;
 
 #[test]
 fn test_cool_greeting() {
-    assert_eq!(GREETING, "Cool Tunes (tm)");
+    assert_eq!(GREETING, ".: Cool Tunes :.");
 }
 ```
 
-If the two arguments to `assert_eq!()` are not equal, this test will fail and you'll get pretty-pritned output showing you the difference between the two.  I generally put the test code in the first argument and the hardcoded expected value in the second.  Any code you see throughout this post marked with the `#[test]` directive should go in this file.
+If the two arguments to `assert_eq!()` are not equal, this test will fail and you'll get pretty-printed output showing you the difference between the two.  I generally put the test code in the first argument and the hardcoded expected value in the second.
 
 This test is importing a constant, `GREETING`, from our library, and expecting it to be the string `Cool Tunes (tm)`.  This code will fail to compile, though - there's no such `super::GREETING` constant available to test!  The `super` part means "one module higher" - `test` is a child module of the `music` library we're writing, so the crate root in `lib.rs` corresponds to `super` here.  You could also say `crate::*` or `music::*`.  Now open up `src/lib.rs` and replace the contents with this:
 
@@ -198,12 +208,52 @@ This test is importing a constant, `GREETING`, from our library, and expecting i
 #[cfg(test)]
 mod test;
 
-pub const GREETING: &str = "Cool Tunes (tm)";
+pub const GREETING: &str = ".: Cool Tunes (tm) :.\n";
 ```
 
 The `#[cfg(test)]` tag tells the compiler to only build the `test` module when we're using the test runner.  The compiler won't even look at it when using `cargo run`.
 
 Now we can give `cargo test` a go - the first build will take the longest as it gathers and builds dependencies for the first time:
+
+```txt
+    Finished dev [unoptimized + debuginfo] target(s) in 0.70s
+     Running target\debug\deps\music-38545763d063c1a8.exe
+
+running 1 test
+test test::test_cool_greeting ... FAILED
+
+failures:
+
+---- test::test_cool_greeting stdout ----
+thread 'test::test_cool_greeting' panicked at 'assertion failed: `(left == right)`
+
+Diff < left / right > :
+<".: Cool Tunes :.\n"
+>".: Cool Tunes :."
+
+', src\test.rs:6:5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace.
+
+
+failures:
+    test::test_cool_greeting
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out
+
+error: test failed, to rerun pass '--lib'
+```
+
+Whoops - no need to include a newline with the greeting string, we'll pass it to [`println!()`](https://doc.rust-lang.org/std/macro.println.html) in the program which includes one:
+
+```diff
+  #[cfg(test)]
+  mod test;
+
+- pub const GREETING: &str = ".: Cool Tunes :.\n";
++ pub const GREETING: &str = ".: Cool Tunes :.";
+```
+
+Let's try this again:
 
 ```txt
 $ cargo test
@@ -229,9 +279,7 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 ```
 
-// TODO show a failing test? mis-type the greeting or something
-
-Great!  Near the top, we can see our `cool_greeting` test function passing.
+Good to go!  Throughout this post new sections of code will be preceded by a test with he `#[test]` tag that defines the behavior we're aiming for.  These tests should all go in `src/test.rs`.
 
 #### Entry Point
 
@@ -254,7 +302,7 @@ $ cargo run
    Compiling music v0.1.0 (C:\Users\you\code\music)
     Finished dev [unoptimized + debuginfo] target(s) in 0.57s
      Running `target\debug\music.exe`
-Cool Tunes (tm)
+.: Cool Tunes :.
 ```
 
 The *coolest* tunes.  You can see right above the output the actual name of the executable file being run - you can find it right in your project's `target` directory:
@@ -285,15 +333,64 @@ $ git commit -m "Initial Commit"
 
 You can run a faster compilation pass with `cargo check` if you just want the compiler to verify your code's integrity, not produce a binary.
 
+#### Traits
+
+If you're already familiar with developing in Rust, you can probably skip right to [Random Numbers](#random-nb\umbers).
+
+If you are brand new to the language, you should expect to spend a little longer with the code in this post to extract the relevant bits.  This post is primarily about the problem and not how to use Rust, but out of all of Rust's interesting properties this is the big one you'll need to know about to follow along.
+
+Most of this code is compartmentalized using [Rust traits](https://doc.rust-lang.org/book/ch10-02-traits.html), which collect bits of composable functionality (my type "has-a" `ScreenWidget` trait that implements those methods).  In this post, you can think of them like interfaces in more traditional [class-based OOP](https://en.wikipedia.org/wiki/Class-based_programming) languages.  They're a little more powerful, but that analogy fits and gets you up and running.
+
+One big difference from "regular" object-oriented programming is that this is all we get.  There's no such thing as inheritance (my type "is-a" more specific `ScreenWidget` type and inherits or overrides those methods).  As a result, composition of functionality features heavily in Rust code in the form of `impl SomeTrait for MyType {}` blocks, with collections of method definitions inside.
+
+The compiler can infer types in many situations, and can auto-fill these trait implementations for us in many cases with a `#[derive(..)]` tag.  In this case, the default `value` is also the `Default` value for the primitive type `i32`, which for all the numeric types is `0` (or `0.0`).  When that's what we want in this context too, we can ask the compiler to auto-generate the above code with this syntax:
+
+```rust
+#[derive(Default)]
+struct MyType {
+    value: i32,
+}
+```
+
+Writing this code is nearly equivalent to the former in terms of the output machine code.  This syntax is a [macro](https://en.wikipedia.org/wiki/Macro_(computer_science)) that will expand to the full Rust code for any `impl Trait` block being derived blocks before your program is compiled as if it had been fully written out.  In general, a struct can derive a trait as long as all of its members implement that trait, either derived or hand-implemented, because the compiler will just call that method for whatever type it needs.  The auto-derived `Default` implementation looks like this when your code reaches the compiler:
+
+```rust
+impl Default for MyType {
+    fn default() -> Self {
+        Self { value: i32::default() }
+    }
+}
+```
+
+Now we can use `MyType::default()` to construct an object of this type - the following two statements store the same object to `obj`:
+
+```rust
+let obj = MyType::default();
+// or
+let obj: MyType = MyType { value: 0 }
+```
+
+It's up to the specific type to decide what happens, as long as the input and output types match.  Whenever you get lost just remember - it's [traits all the way down](https://en.wikipedia.org/wiki/Turtles_all_the_way_down).
+
+We can also define methods that aren't associated with any trait with, e.g.:
+
+```rust
+impl MyType {
+    fn some_specific_thing(&self) {
+        // ..
+    }
+}
+```
+
 ### Random Numbers
 
 *[top](#table-of-contents)*
 
 The first part of the one-liner is  `cat /dev/urandom | hexdump -v -e '/1 "%u\n"'`, which gets a source of random bytes (8-bit binary values) and shows them to the user formatted as base-10 integers.
 
-When I sat down to write this program, I decided to knock out this functionality first mostly because I immediately knew how.  The `rand` crate can give us random 8-bit integers out of the box by ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html)ing a type: `random::<u8>()` will produce a random [unsigned](https://en.wikipedia.org/wiki/Signedness) [8 bit](https://en.wikipedia.org/wiki/8-bit) integer ([`u8`](https://doc.rust-lang.org/nightly/std/primitive.u8.html)) with the default generator settings.
+When I sat down to write this program, I decided to knock out this functionality first mostly because I immediately knew how.  The `rand` crate can give us random 8-bit integers out of the box by using the so-called ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html) syntax to specify a type: `random::<u8>()` will produce a random [unsigned](https://en.wikipedia.org/wiki/Signedness) [8 bit](https://en.wikipedia.org/wiki/8-bit) integer ([`u8`](https://doc.rust-lang.org/nightly/std/primitive.u8.html)) with the default generator settings.
 
-To match the one-liner exactly, we could write an `Iterator` with a `next()` method like this:
+To match the one-liner exactly, we could write an [`Iterator`](https://doc.rust-lang.org/std/iter/index.html) implementation with a `next()` method like this:
 
 ```rust
 impl Iterator for RandomBytes {
@@ -848,7 +945,7 @@ impl NoteLetter {
 }
 ```
 
-We can work with scales using the Rust iterator methods!  This function takes the first n intervals of a scale, and then uses the special `impl Add for Interval` logic we defined to total everything up.  For instance, to calculate `F`, this function grabs the first 3 intervals, `[Maj2, Maj2, Min2]`, and then sums them up, using `Unison`, or 0, as the base.  This calculates the sum of `[2,2,1]`, which is `5` semitones, or `Interval::Perfect4`.
+We can work with scales using the Rust [iterator methods](https://doc.rust-lang.org/std/iter/trait.Iterator.html)!  This function takes the first n intervals of a scale, and then uses the special `impl Add for Interval` logic we defined to total everything up.  For instance, to calculate `F`, this function grabs the first 3 intervals, `[Maj2, Maj2, Min2]`, and then sums them up, using `Unison`, or 0, as the base.  This calculates the sum of `[2,2,1]`, which is `5` semitones, or `Interval::Perfect4`.
 
 Doing the same exercise with the same intervals starting on a different while key will also produce a major scale but you will start using the black keys to do so.  C is the note that allows you to stick to only white keys with this interval pattern, or has no sharps or flats in the key signature.  Before we start generating sequences of notes, though, we need a way to represent a note.
 
@@ -1645,7 +1742,7 @@ Running this with `cargo run` will (over 1,000 lines later) essentially match th
 
 *[top](#table-of-contents)*
 
-There are several elements of this that are tweakable - the program that runs is a little lackluster given all the capability we've defined internally.  Let's expose as much as we can to the user at runtime.
+There are several elements of this that are tweakable - the program that runs is a little lackluster given all the capability we've defined internally.  Let's expose some options to the user at runtime.
 
 Let's give a `base note`, a `scale` option, and a number of octaves to span upwards to define the valid notes, as well as a boolean to choose to instead just play a single tone:
 
@@ -1738,12 +1835,12 @@ impl FromStr for Scale {
         use Mode::*;
         use Scale::*;
         match s.to_uppercase().as_str() {
-            "IONIAN" => Ok(Diatonic(Ionian)),
+            "IONIAN" | "MAJOR" => Ok(Diatonic(Ionian)),
             "DORIAN" => Ok(Diatonic(Dorian)),
             "PHRYGIAN" => Ok(Diatonic(Phrygian)),
             "LYDIAN" => Ok(Diatonic(Lydian)),
             "MIXOLYDIAN" => Ok(Diatonic(Mixolydian)),
-            "AEOLIAN" => Ok(Diatonic(Aeolian)),
+            "AEOLIAN" | "MINOR" => Ok(Diatonic(Aeolian)),
             "LOCRIAN" => Ok(Diatonic(Locrian)),
             "CHROMATIC" => Ok(Chromatic),
             "TETRATONIC" => Ok(Tetratonic),

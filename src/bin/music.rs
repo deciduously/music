@@ -24,7 +24,6 @@ fn main() {
     // Read arguments, greet user
     let opt = Opt::from_args();
     println!("{}", GREETING);
-
     // Set up audio playback
     let device = default_output_device().unwrap();
     let sink = Sink::new(&device);
