@@ -7,6 +7,11 @@ fn test_cool_greeting() {
 }
 
 #[test]
+fn test_subtract_hertz() {
+    assert_eq!(Hertz(440.0) - Hertz(1.0), Hertz(439.0))
+}
+
+#[test]
 fn test_new_pitch() {
     assert_eq!(Pitch::default(), Pitch(Hertz(440.0)));
     assert_eq!(Pitch::new(MIDDLE_C), Pitch(Hertz(261.621)));

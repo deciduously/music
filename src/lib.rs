@@ -1,5 +1,5 @@
 use core::time::Duration;
-use rand::{rngs::SmallRng, seq::IteratorRandom, SeedableRng};
+use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
 use rodio::source::{SineWave, Source};
 use std::{
     f32::consts::PI,
@@ -42,7 +42,7 @@ impl From<f64> for Hertz {
 impl Sub for Hertz {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self::Output {
-        Self(self.0 - rhs.0)
+        Self(f64::from(self) - f64::from(rhs))
     }
 }
 
@@ -765,7 +765,7 @@ impl MusicMaker {
     }
     fn new_note(&mut self) {
         let keys = self.key.all_keys();
-        self.current_note = *keys.iter().choose(&mut self.seed).unwrap();
+        self.current_note = *keys.choose(&mut self.seed).unwrap();
     }
     pub fn set_key(mut self, base_note: PianoKey, scale: Scale, octaves: u8) -> Self {
         self.key = Key::new(scale, base_note, octaves);

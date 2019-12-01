@@ -253,9 +253,9 @@ Give it a go with `cargo run`:
 
 ```txt
 $ cargo run
-   Compiling music v0.1.0 (C:\Users\you\code\music)
+   Compiling music-rebuild v0.1.0 (/home/you/code/music)
     Finished dev [unoptimized + debuginfo] target(s) in 0.16s
-     Running `target\debug\music.exe`
+     Running `target/debug/music`
 .: Cool Tunes :.
 ```
 
@@ -342,7 +342,7 @@ The first part of the one-liner is  `cat /dev/urandom | hexdump -v -e '/1 "%u\n"
 
 When I sat down to write this program, I decided to knock out this functionality first mostly because I immediately knew how.  The `rand` crate can give us random 8-bit integers out of the box by using the so-called ["turbofish"](https://docs.serde.rs/syn/struct.Turbofish.html) syntax to specify a type: `random::<u8>()` will produce a random [unsigned](https://en.wikipedia.org/wiki/Signedness) [8 bit](https://en.wikipedia.org/wiki/8-bit) integer ([`u8`](https://doc.rust-lang.org/nightly/std/primitive.u8.html)) with the default generator settings.
 
-To match the one-liner exactly, we could write an [`Iterator`](https://doc.rust-lang.org/std/iter/index.html) implementation with a `next()` method like this:
+To match the one-liner exactly, we could write an [`Iterator`](https://doc.rust-lang.org/std/iter/index.html) implementation with a `next()` method like this - no need to copy this code to your project, we don't use it again:
 
 ```rust
 impl Iterator for RandomBytes {
@@ -365,15 +365,14 @@ fn main() {
 }
 ```
 
-I'm not bothering to show you the full snippet - this program doesn't use any of this code.   You don't need to type any of this in.  In a `bash` one-liner you've got to take your randomness where you can get it, but the `rand` crate provides a richer set of tools.  Before streaming in something random, we need to think about what exactly it is we're randomizing.
+I'm not bothering to show you the full runnable snippet - try to build the `RandomBytes` struct yourself if you'd like.  In a `bash` one-liner you've got to take your randomness where you can get it, but the `rand` crate provides a richer set of tools.  Before streaming in something random, we need to think about what exactly it is we're randomizing.
 
 In this application, we want to pick a musical note from a set of valid choices at random.  The `awk` code does this with the modulo operator:  `list[n % listLength]`.  That will take a random index that's ensured to be a valid list member.  See if you can spot the corresponding section of the cover image code.
 
-// TODO you just need SliceRandom, not IteratorRandom
 
-We get to use the [`rand::seq::IteratorRandom`](https://docs.rs/rand/0.7.2/rand/seq/trait.IteratorRandom.html) trait here.  This gives us a `choose()` method that we can call on any iterator to pull a random member.
+We get to use the [`rand::seq::SliceRandom`](https://docs.rs/rand/0.7.2/rand/seq/trait.SliceRandom.html) trait here.  This gives us a `choose()` method that we can call on any [slice](https://doc.rust-lang.org/std/slice/index.html) to pull a random member.
 
-So, there's no need for a  `RandomBytes` iterator.  Instead, we need to define a list of notes and call `choose()` on it to get a specific note to play.
+So, there's no need for a `RandomBytes` iterator.  Instead, we need to define a list of notes and call `[notes].choose(&mut RNG)` on it to get a specific note to play.
 
 ### Mapping Numbers To Notes
 
@@ -461,11 +460,20 @@ We can keep track of Hertz with a double-precision floating-point value:
 pub struct Hertz(f64);
 ```
 
-This is just a floating point value, but I didn't just assign an alias like `type Hertz = f64`.   Instead, I made my very own fully-fledged new type.  A lot of this program will involve type conversions and unit conversions, but they will all be explicit and defined in places we expect.  When manipulating our increasing set of abstractions we don't want to have to think about things like floating point accuracy - it should just work as we expect.  The [tuple struct](https://doc.rust-lang.org/1.37.0/book/ch05-01-defining-structs.html#using-tuple-structs-without-named-fields-to-create-different-types) syntax is perfect for this, when the underlying value is just a single value but there may be complex relationships with other types.  This does add to our boilerplate, but reduces the element of surprise - my LEAST favorite element in programming.
+This is just a floating point value, but I didn't just assign an alias like `type Hertz = f64`.   Instead, I made my very own fully-fledged new type.  A lot of this program will involve type conversions and unit conversions, but they will all be explicit and defined in places we expect.  When manipulating our increasing set of abstractions we don't want to have to think about things like floating point accuracy - it should just work as we expect.  The [tuple struct](https://doc.rust-lang.org/1.37.0/book/ch05-01-defining-structs.html#using-tuple-structs-without-named-fields-to-create-different-types) syntax is perfect for this, when the underlying value is just a single value but there may be complex relationships with other types.
 
 Luckily, the compiler can actually derive a number of things for us straight from the inner value.  For the rest, we'll provide our own implementations that destructure the tuple:
 
 ```rust
+#[test]
+fn test_subtract_hertz() {
+    assert_eq!(Hertz(440.0) - Hertz(1.0), Hertz(439.0))
+}
+```
+
+```rust
+use std::ops::Sub;
+
 impl Sub for Hertz {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self::Output {
@@ -490,7 +498,7 @@ impl From<f64> for Hertz {
 }
 ```
 
-Next, we need a way to represent a pitch:
+There are a lot of unit conversions throughout this program but *all* of them are explicit and defined where we expect them.  This does add to our boilerplate, but reduces the element of surprise - my LEAST favorite element in programming.  Next, we need a way to represent a pitch:
 
 ```rust
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -503,9 +511,8 @@ I didn't take `Default` this time - the default pitch is not 0Hz.  We want our n
 #[test]
 fn test_new_pitch() {
     assert_eq!(Pitch::default(), Pitch(Hertz(440.0)));
-    assert_eq!(Pitch::new(MIDDLE_C), Pitch(Hertz(261.621)));
+    assert_eq!(Pitch::new(MIDDLE_C), Pitch(Hertz(261.626)));
 }
-
 ```
 
 The following code gets us there:
@@ -532,7 +539,18 @@ impl Default for Pitch {
 }
 ```
 
-Verify it with `cargo test`!
+Verify it all with `cargo test`:
+
+```txt
+running 3 tests
+test test::test_cool_greeting ... ok
+test test::test_subtract_hertz ... ok
+test test::test_new_pitch ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
+
+I won't keep prompting you to do so, but the prevailing wisdom is to run it after adding every test and watch it fail even before adding the implementation.  Then you can watch it fail in incrementally different ways as you get closer to the correct code
 
 ##### Singing
 
@@ -553,6 +571,13 @@ The `rodio` crate actually has a built-in [`rodio::source::SineWave`](https://do
 ```rust
 // lib.rs
 use rodio::source::SineWave;
+
+impl From<Pitch> for f64 {
+    fn from(p: Pitch) -> Self {
+        p.0.into()
+    }
+}
+
 impl From<Pitch> for SineWave {
     fn from(p: Pitch) -> Self {
         SineWave::new(f64::from(p) as u32)
@@ -1383,7 +1408,7 @@ impl Div for Cents {
 }
 ```
 
-This is just performing floating point division on the inner value, but keeps it wrapped up in the `Cents` context for us so we can directly use `Cents(x) / Cents(y)`.  There are a lot of unit conversions throughout this program but *all* of them are explicit and defined where we expect them.  We now know enough to manipulate a `Pitch` directly.
+This is just performing floating point division on the inner value, but keeps it wrapped up in the `Cents` context for us so we can directly use `Cents(x) / Cents(y)`.  We now know enough to manipulate a `Pitch` directly.
 
 The [`AddAssign`](https://doc.rust-lang.org/std/ops/trait.AddAssign.html) trait gets us the `+=` operator, and can define it for any type we want on the right hand side:
 
@@ -1900,7 +1925,7 @@ Check out C0 and A0, and be careful when getting to the upper octaves.
 
 I wasnted to keep this post to under 60 minutes, but there are a number of ways this code could be extended:
 
-- I can't even hear `C0` - can you?  Restrict the 108-key keyboard to the standard 88-key from the diagram, which starts partway through Octave 0 and only includes the first note of Octave 8.
+- I can't even hear `C0` - can you?  Restrict the 108-key keyboard to the standard 88-key from the diagram, that only includes the top three notes of Octave 0 and the top note of Octave 8 (12 x 7 + 3 + 1).
 - Support even more types of key signatures like the [harmonic minor](https://en.wikipedia.org/wiki/Minor_scale#Harmonic_minor_scale), which is the Aeolian mode with the seventh note one semitone higher, or [pentatonic scales](https://en.wikipedia.org/wiki/Pentatonic_scale), which were hinted at above as using solely the black keys.  Those have modes too...
 - Generate those extended key signatures from strings like `"Cmaj"` or `"Amin7"`.
 - Let the user decide how long each note should sound.  Which part of `MusicMaker` do you think is responsible for that?
