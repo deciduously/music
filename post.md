@@ -1,7 +1,7 @@
 ---
-title: Teach Numbers How To Sing Using Test-Driven Development
+title: Teaching Numbers How To Sing
 published: false
-description: Procedurally generate melodies by synthesizing your own sound waves in Rust.
+description: Procedurally generate melodies by synthesizing your own sound waves in Rust using test-driven development.
 cover_image: https://thepracticaldev.s3.amazonaws.com/i/iuakwwcexql5u0th7gtm.jpg
 tags: beginners, rust, tutorial, music
 ---
@@ -16,19 +16,19 @@ In this [post]((https://en.wikipedia.org/wiki/Blog)), we'll [throw](https://en.w
 
 In other words, we're going to teach our [computers](https://en.wikipedia.org/wiki/Personal_computer) to ["sing"](https://en.wikipedia.org/wiki/Singing) using [idiomatic](https://en.wikipedia.org/wiki/Programming_idiom) [Rust](https://en.wikipedia.org/wiki/Rust_(programming_language)), backed by a little light [physics](https://en.wikipedia.org/wiki/Physics) and [music theory](https://en.wikipedia.org/wiki/Music_theory).
 
-The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover image [procedurally generates](https://en.wikipedia.org/wiki/Procedural_generation) a [melody](https://en.wikipedia.org/wiki/Melody) using [tools assumed to be present](https://en.wikipedia.org/wiki/Unix_philosophy) on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux](https://en.wikipedia.org/wiki/Linux) [distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu).  The melody produced will be composed of notes along a single [octave](https://en.wikipedia.org/wiki/Octave) in a hardcoded [key](https://en.wikipedia.org/wiki/Key_(music)):
+The [one-liner](https://en.wikipedia.org/wiki/One-liner_program) in the cover image [procedurally generates](https://en.wikipedia.org/wiki/Procedural_generation) a [melody](https://en.wikipedia.org/wiki/Melody) using [tools assumed to be present](https://en.wikipedia.org/wiki/Unix_philosophy) on a standard [desktop](https://en.wikipedia.org/wiki/Desktop_computer) [Linux distribution](https://en.wikipedia.org/wiki/Linux_distribution) like [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu).  The melody produced will be composed of notes along a single [octave](https://en.wikipedia.org/wiki/Octave) in a hardcoded [key](https://en.wikipedia.org/wiki/Key_(music)) ([A major](https://en.wikipedia.org/wiki/A_major)):
 
 {% youtube uLhQQSKhTok %}
 
 By the end of this post our program will:
 
-1. Support [86](https://en.wikipedia.org/wiki/86_(number)) different [key signatures](https://en.wikipedia.org/wiki/Key_signature).
+1. Support [86](https://en.wikipedia.org/wiki/86_(number)) different [key signatures](https://en.wikipedia.org/wiki/Key_signature) with [minimal effort](https://en.wikipedia.org/wiki/Music_and_mathematics).
 1. Support a full [108](https://en.wikipedia.org/wiki/108_(number))-key extended [piano](https://en.wikipedia.org/wiki/Piano) [keyboard](https://en.wikipedia.org/wiki/Musical_keyboard), allowing the user to pick a range.
 1. Produce any arbitrary [tone](https://en.wikipedia.org/wiki/Musical_tone) we ask for.
-1. Compile and run on [Windows](https://en.wikipedia.org/wiki/Microsoft_Windows), [MacOS](https://en.wikipedia.org/wiki/MacOS), or [Linux](https://en.wikipedia.org/wiki/Linux) with no extra effort or code changes ([I tried](https://en.wikipedia.org/wiki/Nerd) all three).
+1. Compile and run on [Windows](https://en.wikipedia.org/wiki/Microsoft_Windows), [MacOS](https://en.wikipedia.org/wiki/MacOS), or [Linux](https://en.wikipedia.org/wiki/Linux) with no extra code ([I tried](https://en.wikipedia.org/wiki/Nerd) all three).
 1. Encourage further [extension](https://en.wikipedia.org/wiki/Scalability) with lots of Rust-y goodness.
 
-[C# minor](https://en.wikipedia.org/wiki/C-sharp_minor) has a funky dark kinda vibe - [Lullaby](https://en.wikipedia.org/wiki/Lullaby_(The_Cure_song)) by [The Cure](https://en.wikipedia.org/wiki/The_Cure), [Message in a Bottle](https://en.wikipedia.org/wiki/Message_in_a_Bottle_(song)) by [The Police](https://en.wikipedia.org/wiki/The_Police), [Feel It Still](https://en.wikipedia.org/wiki/Feel_It_Still) by [Portugal, The Man](https://en.wikipedia.org/wiki/Portugal._The_Man),  a bunch of [others](https://en.wikipedia.org/wiki/C-sharp_minor#Notable_songs).  Your computer could be the next [Dolly Parton](https://en.wikipedia.org/wiki/Dolly_Parton) ([Jolene](https://en.wikipedia.org/wiki/Jolene_(song))):
+[C# minor](https://en.wikipedia.org/wiki/C-sharp_minor) has a funky, dark kind of vibe - [Lullaby](https://en.wikipedia.org/wiki/Lullaby_(The_Cure_song)) by [The Cure](https://en.wikipedia.org/wiki/The_Cure), [Message in a Bottle](https://en.wikipedia.org/wiki/Message_in_a_Bottle_(song)) by [The Police](https://en.wikipedia.org/wiki/The_Police), [Feel It Still](https://en.wikipedia.org/wiki/Feel_It_Still) by [Portugal, The Man](https://en.wikipedia.org/wiki/Portugal._The_Man),  a bunch of [others](https://en.wikipedia.org/wiki/C-sharp_minor#Notable_songs).  Your computer could be the next [Dolly Parton](https://en.wikipedia.org/wiki/Dolly_Parton) ([Jolene](https://en.wikipedia.org/wiki/Jolene_(song))):
 
 ```txt
 $ ./music -b C#2 -o 4 -s minor
@@ -76,7 +76,9 @@ The completed code can be found on [GitHub](https://github.com/deciduously/music
 
 *[top](#table-of-contents)*
 
-This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and up) who are comfortable solving problems with at least one [imperative](https://en.wikipedia.org/wiki/Imperative_programming), [object-oriented](https://en.wikipedia.org/wiki/Object-oriented_programming) [language](https://en.wikipedia.org/wiki/Programming_language).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming).  You do not need any prior knowledge of physics or music theory, but there will be a tiny smattering of [elementary algebra](https://en.wikipedia.org/wiki/Elementary_algebra).  I promise it's quick.
+This tutorial is aimed at [beginners](https://en.wikipedia.org/wiki/Novice) (and up) who are comfortable solving problems with at least one [imperative](https://en.wikipedia.org/wiki/Imperative_programming), [object-oriented](https://en.wikipedia.org/wiki/Object-oriented_programming) [language](https://en.wikipedia.org/wiki/Programming_language).  It does not matter if that's [JavaScript](https://en.wikipedia.org/wiki/JavaScript) or [Python](https://en.wikipedia.org/wiki/Python_(programming_language)) or [Object Pascal](https://en.wikipedia.org/wiki/Object_Pascal), I just assume you know the [basic](https://en.wikipedia.org/wiki/Syntax_(programming_languages)) [building](https://en.wikipedia.org/wiki/Semantics_(computer_science)) [blocks](https://en.wikipedia.org/wiki/Standard_library) of [creating a program](https://en.wikipedia.org/wiki/Computer_programming) in an object-oriented style.  If you already know Rust some of this will be skimmable, but this is primarily a post about the problem space and not "how to use Rust".
+
+You do not need any prior knowledge of physics or music theory, but there will be a tiny smattering of [elementary algebra](https://en.wikipedia.org/wiki/Elementary_algebra).  I promise it's quick.
 
 I have two disclaimers before getting started:
 
@@ -87,7 +89,7 @@ I have two disclaimers before getting started:
 
 *[top](#table-of-contents)*
 
-This post was inspired by [this](https://www.reddit.com/r/linuxmasterrace/comments/dyqri7/like_god_would_have_wanted/) [meme](https://en.wikipedia.org/wiki/Internet_meme) I saw when I was *attempting* to casually browse [Reddit](https://en.wikipedia.org/wiki/Reddit):
+This post was inspired by this [meme](https://en.wikipedia.org/wiki/Internet_meme) I saw when I was *attempting* to casually browse [Reddit](https://en.wikipedia.org/wiki/Reddit):
 
 ![the meme](https://i.redd.it/uirqnamnjpz31.jpg)
 
@@ -121,7 +123,7 @@ If you'd like the challenge of implementing this yourself from scratch in your o
 
 *[top](#table-of-contents)*
 
-Before getting started, \ensure you have at least the default stable Rust toolchain [installed](https://www.rust-lang.org/tools/install).  If you've previously installed `rustup` at any point, just issue `rustup update`.  This code was written with `rustc` [version 1.39](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html) for [Rust 2018](https://doc.rust-lang.org/nightly/edition-guide/rust-2018/edition-changes.html).  
+Before getting started, ensure you have at least the default stable Rust toolchain [installed](https://www.rust-lang.org/tools/install).  If you've previously installed `rustup` at any point, just issue `rustup update` to grab the latest stable build.  This code was written with `rustc` [version 1.39.0](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html) (released [November 4](https://en.wikipedia.org/wiki/November_4), [2019](https://en.wikipedia.org/wiki/2019)), but should compile on any version compatible with [Rust 2018](https://doc.rust-lang.org/edition-guide/rust-2018/index.html).  
 
 Then, spin up a new library project:
 
@@ -169,7 +171,7 @@ pretty_assertions = "0.6"
 
 *[top](#table-of-contents)*
 
-Cargo has auto-created a file at `src/lib.rs` to define your library, but hold on - we're going to write this program using Test-Driven Development, or TDD.  This means we're going to define the expected behavior of new functionality *before* attempting the implementation.  Here's an example of a test we'll write later:
+Cargo has auto-created a file at `src/lib.rs` to define your library, but hold on - we're going to write this program using [Test-Driven Development](https://en.wikipedia.org/wiki/Test-driven_development), or TDD.  This means we're going to define the expected behavior of new functionality *before* attempting the implementation.  Here's an example of a test we'll write later:
 
 ```rust
 #[test]
@@ -208,40 +210,14 @@ This test is importing a constant, `GREETING`, from our library, and expecting i
 #[cfg(test)]
 mod test;
 
-pub const GREETING: &str = ".: Cool Tunes (tm) :.\n";
+pub const GREETING: &str = ".: Cool Tunes :.\n";
 ```
 
 The `#[cfg(test)]` tag tells the compiler to only build the `test` module when we're using the test runner.  The compiler won't even look at it when using `cargo run`.
 
 Now we can give `cargo test` a go - the first build will take the longest as it gathers and builds dependencies for the first time:
 
-```txt
-    Finished dev [unoptimized + debuginfo] target(s) in 0.70s
-     Running target\debug\deps\music-38545763d063c1a8.exe
-
-running 1 test
-test test::test_cool_greeting ... FAILED
-
-failures:
-
----- test::test_cool_greeting stdout ----
-thread 'test::test_cool_greeting' panicked at 'assertion failed: `(left == right)`
-
-Diff < left / right > :
-<".: Cool Tunes :.\n"
->".: Cool Tunes :."
-
-', src\test.rs:6:5
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace.
-
-
-failures:
-    test::test_cool_greeting
-
-test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out
-
-error: test failed, to rerun pass '--lib'
-```
+![test fail](https://thepracticaldev.s3.amazonaws.com/i/4wgtozis0bfoxnmedvrp.png)
 
 Whoops - no need to include a newline with the greeting string, we'll pass it to [`println!()`](https://doc.rust-lang.org/std/macro.println.html) in the program which includes one:
 
@@ -255,29 +231,7 @@ Whoops - no need to include a newline with the greeting string, we'll pass it to
 
 Let's try this again:
 
-```txt
-$ cargo test
-   Compiling music v0.1.0 (C:\Users\you\code\music)
-    Finished dev [unoptimized + debuginfo] target(s) in 0.53s
-     Running target\debug\deps\music-b4c9ecce4c26cf65.exe
-
-running 1 tests
-test test::test_cool_greeting ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
-
-     Running target\debug\deps\mod-d894091c6e952d62.exe
-
-running 0 tests
-
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
-
-   Doc-tests music
-
-running 0 tests
-
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
-```
+![test pass](https://thepracticaldev.s3.amazonaws.com/i/ajubi9o41dsfvkfwcnqa.png)
 
 Good to go!  Throughout this post new sections of code will be preceded by a test with he `#[test]` tag that defines the behavior we're aiming for.  These tests should all go in `src/test.rs`.
 
@@ -300,28 +254,26 @@ Give it a go with `cargo run`:
 ```txt
 $ cargo run
    Compiling music v0.1.0 (C:\Users\you\code\music)
-    Finished dev [unoptimized + debuginfo] target(s) in 0.57s
+    Finished dev [unoptimized + debuginfo] target(s) in 0.16s
      Running `target\debug\music.exe`
 .: Cool Tunes :.
 ```
 
 The *coolest* tunes.  You can see right above the output the actual name of the executable file being run - you can find it right in your project's `target` directory:
 
-![executable screenshot](https://thepracticaldev.s3.amazonaws.com/i/33xen72m4tqi69ofino2.png)
+![executable screenshot](https://thepracticaldev.s3.amazonaws.com/i/15gwbnp3j15lb2a8fhps.png)
 
-Your `music` directory should look something like the following:
+Your `music/src` directory should look like the following:
 
 ```txt
-│   .gitignore
-│   Cargo.lock
-│   Cargo.toml
-│
-└───src
-    │   lib.rs
-    │   test.rs
-    │
-    └───bin
-            music.rs
+~/code/music $ tree src
+src
+├── bin
+│   └── music.rs
+├── lib.rs
+└── test.rs
+
+1 directory, 3 files
 ```
 
 This is a good time for an initial commit:
@@ -337,9 +289,9 @@ You can run a faster compilation pass with `cargo check` if you just want the co
 
 If you're already familiar with developing in Rust, you can probably skip right to [Random Numbers](#random-nb\umbers).
 
-If you are brand new to the language, you should expect to spend a little longer with the code in this post to extract the relevant bits.  This post is primarily about the problem and not how to use Rust, but out of all of Rust's interesting properties this is the big one you'll need to know about to follow along.
+If you are brand new to the language, you should expect to spend a little longer with the code in this post to extract the relevant bits.  I'm not going to devote much time in general to Rust-specific topics, as there is a vast amount of great material already available devoted to that, but out of all of Rust's interesting properties this is the big one you'll need to know about to follow along with this program.
 
-Most of this code is compartmentalized using [Rust traits](https://doc.rust-lang.org/book/ch10-02-traits.html), which collect bits of composable functionality (my type "has-a" `ScreenWidget` trait that implements those methods).  In this post, you can think of them like interfaces in more traditional [class-based OOP](https://en.wikipedia.org/wiki/Class-based_programming) languages.  They're a little more powerful, but that analogy fits and gets you up and running.
+Most of this code is compartmentalized using [Rust traits](https://doc.rust-lang.org/book/ch10-02-traits.html), which collect bits of composable functionality (my type "has-a" `ScreenWidget` trait that implements those methods).  It's OOP, Jim, [but not as we know it](https://en.wikipedia.org/wiki/Star_Trekkin%27).  In this post, you can think of them like interfaces in more traditional [class-based OOP](https://en.wikipedia.org/wiki/Class-based_programming) languages.  They're a little more powerful, but that analogy does fit and is enough to get you up and running.
 
 One big difference from "regular" object-oriented programming is that this is all we get.  There's no such thing as inheritance (my type "is-a" more specific `ScreenWidget` type and inherits or overrides those methods).  As a result, composition of functionality features heavily in Rust code in the form of `impl SomeTrait for MyType {}` blocks, with collections of method definitions inside.
 
@@ -1946,11 +1898,14 @@ Check out C0 and A0, and be careful when getting to the upper octaves.
 
 *[top](#table-of-contents)*
 
+I wasnted to keep this post to under 60 minutes, but there are a number of ways this code could be extended:
+
+- I can't even hear `C0` - can you?  Restrict the 108-key keyboard to the standard 88-key from the diagram, which starts partway through Octave 0 and only includes the first note of Octave 8.
 - Support even more types of key signatures like the [harmonic minor](https://en.wikipedia.org/wiki/Minor_scale#Harmonic_minor_scale), which is the Aeolian mode with the seventh note one semitone higher, or [pentatonic scales](https://en.wikipedia.org/wiki/Pentatonic_scale), which were hinted at above as using solely the black keys.  Those have modes too...
-- Generate those extended key signatures from strings like `"Cmaj"` or `"Amin7`.
-- Let the use decide how long each note should sound.  Which part of `MusicMaker` is responsible for that?
+- Generate those extended key signatures from strings like `"Cmaj"` or `"Amin7"`.
+- Let the user decide how long each note should sound.  Which part of `MusicMaker` do you think is responsible for that?
 - Support [Helmholtz pitch notation](https://en.wikipedia.org/wiki/Helmholtz_pitch_notation).
-- Instead of picking notes at random, provide different kinds of seeds.  For instance, every file on your computer is a stream of bytes.
+- Instead of picking notes at random, support different kinds of seeds.  For instance, every file on your computer is a stream of bytes.  Maybe you could accept an `impl Iterator<Item = u8>`?
 - Support other types of wave forms than sines, such as square waves or sawtooth waves.
 - We can already read piano keys from strings like `"D#4"`.  Parse and play back predefined sequences of notes from text files.  This will involve some work: stacked accidentals, naturals, represent durations, etc.
 - A [`WAV`](https://en.wikipedia.org/wiki/WAV) file is an uncompressed audio stream, like the one we've built.  Write audio files containing your music with with [`hound`](https://github.com/ruuda/hound).

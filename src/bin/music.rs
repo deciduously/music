@@ -24,6 +24,7 @@ fn main() {
     // Read arguments, greet user
     let opt = Opt::from_args();
     println!("{}", GREETING);
+
     // Set up audio playback
     let device = default_output_device().unwrap();
     let sink = Sink::new(&device);
@@ -41,6 +42,7 @@ fn main() {
         // Play random melody
         sink.append(music);
     };
+
     // Sleep thread to allow music to play infinitely
     sink.sleep_until_end();
 }
