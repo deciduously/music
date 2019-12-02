@@ -550,7 +550,7 @@ test test::test_new_pitch ... ok
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 ```
 
-I won't keep prompting you to do so, but the prevailing wisdom is to run it after adding every test and watch it fail even before adding the implementation.  Then you can watch it fail in incrementally different ways as you get closer to the correct code
+I won't keep prompting you to do so, but the prevailing wisdom is to run it after adding every test and watch it fail even before adding the implementation.  Then you can watch it fail in incrementally different ways as you get closer to the correct code.
 
 ##### Singing
 
@@ -1093,6 +1093,86 @@ impl AddAssign for Interval {
 }
 ```
 
+We can also relate Notes to Intervals pretty well:
+
+```rust
+impl From<Interval> for Note {
+    // Take an interval from C
+    fn from(i: Interval) -> Self {
+        use Interval::*;
+        let mut offset = Unison;
+        // That's a series of Min2
+        let scale = Scale::Chromatic.get_intervals();
+        scale.iter().take(i as usize).for_each(|i| offset += *i);
+        Note::default() + offset
+    }
+}
+
+impl Add<Interval> for Note {
+    type Output = Self;
+
+    fn add(self, rhs: Interval) -> Self {
+        let semitones = Semitones::from(rhs);
+        let mut ret = self;
+        for _ in 0..i8::from(semitones) {
+            ret.inc();
+        }
+        ret
+    }
+}
+
+impl AddAssign<Interval> for Note {
+    fn add_assign(&mut self, rhs: Interval) {
+        *self = *self + rhs;
+    }
+}
+```
+
+For `Add<Interval> for Note` to work, we need to increment a `Note` with `inc()`:
+
+```rust
+impl NoteLetter {
+    // ..
+    fn inc(self) -> Self {
+        use NoteLetter::*;
+        match self {
+            C => D,
+            D => E,
+            E => F,
+            F => G,
+            G => A,
+            A => B,
+            B => C,
+        }
+    }
+}
+
+impl Note {
+    fn inc(&mut self) {
+        use Accidental::*;
+        use NoteLetter::*;
+        if let Some(acc) = self.accidental {
+            self.accidental = None;
+            match acc {
+                Sharp => {
+                    self.letter = self.letter.inc();
+                }
+                Flat => {}
+            }
+        } else {
+            // check for special cases
+            if self.letter == B || self.letter == E {
+                self.letter = self.letter.inc();
+            } else {
+                self.accidental = Some(Sharp);
+            }
+        }
+    }
+}
+```
+
+Hold on, though - this won't compile yet.  The `impl From<Interval> for Note` block depends on the intervals for `Scale::Chromatic`, and we haven't talked about scales yet.
+
 ##### Scales
 
 *[top](#table-of-contents)*
@@ -1112,7 +1192,7 @@ impl Default for Scale {
 }
 ```
 
-Clearly, there isn't a black key between every white key - there must be a method to the madness.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  That's why our `NoteLetter` indices needed some extra logic - while each pair of adjacent keys is one semitone, that doesn't always mean a white key to a black key or vice versa - the note pairs B/C and E/F are both only separated by one semintone.
+Clearly, there isn't a black key between every white key - there must be a method to the madness.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  That's why our `NoteLetter` indices needed some extra logic - while each pair of adjacent keys is one semitone, that doesn't always mean a white key to a black key or vice versa - the note pairs B/C and E/F are both only separated by one semitone.
 
 We can see this visually on the keyboard - it has the same 8-length whole/half step pattern all the way through.  The distribution pattern begins on C, but the keyboard itself starts at A0 and ends at C8.  A piano is thus designed because it can play music across the full range of diatonic scales.  This is where we get those base 8 sequences - just start on a different note.
 
@@ -1208,44 +1288,69 @@ We way, way overshot this in the process of modelling the domain.  We can now au
 
 We don't necessarily want to stick within a single octave, though. We want to make available the full 108 keys from C0 to B8 (even larger than the standard piano from the diagram), letting the user decide how many octaves to pick from, but only use notes in the key.
 
-TODO Explain:
-
-```rust
-#[test]
-fn test_chromatic() {
-    assert_eq!(
-        &Key::new(Scale::Chromatic, "A").to_string()),
-        "[ A A# B C C# D D# E F F# G G# A ]"
-    )
-}
-```
-
-TODO See:
-
 ```rust
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Key {
-    base_note: Note,
+    base_note: PianoKey,
+    octaves: u8,
     scale: Scale,
 }
 
 impl Key {
-    pub fn new(scale: Scale, base_note_str: &str) -> Self {
+    pub fn new(scale: Scale, base_note: PianoKey, octaves: u8) -> Self {
+        let octaves = if base_note.octave + octaves > 8 {
+            PianoKey::max_octave() - base_note.octave
+        } else {
+            octaves
+        };
         Self {
-            base_note: Note::from_str(base_note_str).unwrap(),
+            base_note,
+            octaves,
             scale,
         }
     }
     fn all_keys(self) -> Vec<PianoKey> {
-        let notes = self.scale.get_notes(self.base_note);
+        let notes = self.get_notes();
         let mut ret = Vec::new();
-        for i in 3..6 {
-            notes
-                .iter()
-                .for_each(|n| ret.push(PianoKey::from_str(&format!("{}{}", *n, i)).unwrap()));
+        for i in 0..self.octaves {
+            notes.iter().for_each(|n| {
+                ret.push(
+                    PianoKey::from_str(&format!("{}{}", *n, i + self.base_note.octave)).unwrap_or(
+                        PianoKey::from_str(&format!("{}{}", *n, PianoKey::max_octave())).unwrap(),
+                    ),
+                )
+            });
         }
         ret
     }
+}
+```
+
+These will be displayed as simply the octave-less notes in the scale:
+
+```rust
+#[test]
+fn test_c_major() {
+    assert_eq!(
+        &Key::new(Scale::default(), PianoKey::default(), 1).to_string(),
+        "[ C D E F G A B C ]"
+    )
+}
+
+#[test]
+fn test_a_major() {
+    assert_eq!(
+        &Key::new(Scale::default(), PianoKey::from_str("A4").unwrap(), 1).to_string(),
+        "[ A B C# D E F# G# A ]"
+    )
+}
+
+#[test]
+fn test_g_major() {
+    assert_eq!(
+        &Key::new(Scale::default(), PianoKey::from_str("G4").unwrap(), 1).to_string(),
+        "[ G A B C D E F# G ]"
+    )
 }
 ```
 
@@ -1253,14 +1358,27 @@ To produce all the notes in a given key, we need to calculate them from the scal
 
 ```rust
 impl Key {
-    pub fn get_notes(self, base_note: Note) -> Vec<Note> {
-        let mut ret = vec![base_note];
+    // ..
+    pub fn get_notes(self) -> Vec<Note> {
+        let mut ret = vec![self.base_note.note];
         let mut offset = Interval::Unison;
-        self.get_intervals().iter().for_each(|i| {
+        self.scale.get_intervals().iter().for_each(|i| {
             offset += *i;
-            ret.push(base_note + offset)
+            ret.push(self.base_note.note + offset)
         });
         ret
+    }
+}
+```
+
+```rust
+impl fmt::Display for Key {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let notes = self.get_notes();
+        let mut ret = String::from("[ ");
+        notes.iter().for_each(|n| ret.push_str(&format!("{} ", *n)));
+        ret.push_str("]");
+        write!(f, "{}", ret)
     }
 }
 ```
@@ -1299,7 +1417,7 @@ It's true that, e.g. `D#` and `E♭` represent the same pitch - what's different
 
 To go counter-clockwise, go up by a perfect fourth every time, which is 5 semitones.  This is known as "circle of fourths", and is more commonly associated with [jazz](https://en.wikipedia.org/wiki/Jazz) music whereas fifths are seen in more [classical](https://en.wikipedia.org/wiki/Classical_music) contexts.
 
-We can generate all of them by just passing each note into `Key::new()`:
+This program doens't use it, but we can generate all of them by just passing each note into `Key::new()`:
 
 ```rust
 impl Scale {
@@ -1319,8 +1437,6 @@ impl Scale {
 
 That's twelve scales for free:
 
-// TODO should be a test
-
 ```txt
 [ C D E F G A B C ]
 [ G A B C D E F# G ]
@@ -1336,7 +1452,7 @@ That's twelve scales for free:
 [ F G A A# C D E F ]
 ```
 
-This implementation isn't smart enough to switch to flats halfway through to represent the black keys used - could be a fun mini-challenge!
+This implementation isn't smart enough to switch to flats halfway through to represent the black keys used - could be a fun mini-challenge!  Maybe you could extend this to hop to different scales around the circle periodically.
 
 ##### Diatonic Modes
 
@@ -1354,17 +1470,13 @@ The natural minor scale, is obtained by starting at A4 and counted up white keys
 whole, half, whole, whole, half, whole, whole
 ```
 
-TODO embed sound
-
 It's the same pattern, just starting at a different offset.  You can play a corresponding minor scale using only the white keys by simply starting at the sixth note of the C major scale (or incrementing a major sixth), which is A.  Try counting it out yourself up from A4.
 
 There's an absurdly fancy name for each offset:
 
-// TODO introduce Scale code with Scales section, edit it here with Modes
-
 ```rust
-#[derive(Debug, Clone, Copy)]
-enum Mode {
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub enum Mode {
     Ionian = 0,
     Dorian,
     Phrygian,
@@ -1375,10 +1487,6 @@ enum Mode {
 }
 ```
 
-```diff
-TODO remove Scale::Major in favor of Scale::Diatonic(Mode)
-```
-
 We'll hardcode the C major sequence as the base:
 
 ```txt
@@ -1386,26 +1494,95 @@ whole, whole, half, whole, whole, whole, half
   2  +  2   +  1  +   2   +  2  +   2  +  1
 ```
 
+```rust
+impl Mode {
+    fn base_intervals() -> Vec<Interval> {
+        use Interval::*;
+        vec![Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
+    }
+}
+```
+
+Let's also hardcode the ScaleLenth:
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ScaleLength {
+    Heptatonic = 7,
+}
+```
+
+Now we can make our scales a little smarter:
+
 ```diff
-  fn get_intervals(self) -> Vec<Interval> {
-          use Interval::*;
-          use Scale::*;
-          match self {
-              Chromatic => [Min2]
-                  .iter()
-                  .cycle()
-                  .take(ScaleLength::Dodecatonic as usize)
-                  .copied()
-                  .collect::<Vec<Interval>>(),
-+             Diatonic(mode) => Mode::base_intervals()
-+                 .iter()
-+                 .cycle()
-+                 .skip(mode as usize)
-+                 .take(ScaleLength::Heptatonic as usize)
-+                 .copied()
-+                 .collect::<Vec<Interval>>(),
-+         }
+  #[derive(Debug, Clone, Copy, PartialEq)]
+  pub enum Scale {
+-     Major,
+      Diatonic(Mode),
+  }
+  
+  impl Default for Scale {
+      fn default() -> Self {
+-         Scale::Major
++         Scale::Diatonic(Mode)
       }
+  }
+
+  impl Scale {
+    fn get_intervals(self) -> Vec<Interval> {
+            use Interval::*;
+            use Scale::*;
+            match self {
+-               Major => vec![Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2],
++               Diatonic(mode) => Mode::base_intervals()
++                   .iter()
++                   .cycle()
++                   .skip(mode as usize)
++                   .take(ScaleLength::Heptatonic as usize)
++                   .copied()
++                   .collect::<Vec<Interval>>(),
++           }
+        }
+  }
+```
+
+Now we've got seven modes for each of twelve keys on the keyboard - that's 84 distinct key signatures.  The `Ionian` and `Aeolian` modes have nicknames, the rest we'll just work with as the mode names:
+
+```rust
+impl FromStr for Scale {
+    type Err = io::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use Mode::*;
+        use Scale::*;
+        match s.to_uppercase().as_str() {
+            "IONIAN" | "MAJOR" => Ok(Diatonic(Ionian)),
+            "DORIAN" => Ok(Diatonic(Dorian)),
+            "PHRYGIAN" => Ok(Diatonic(Phrygian)),
+            "LYDIAN" => Ok(Diatonic(Lydian)),
+            "MIXOLYDIAN" => Ok(Diatonic(Mixolydian)),
+            "AEOLIAN" | "MINOR" => Ok(Diatonic(Aeolian)),
+            "LOCRIAN" => Ok(Diatonic(Locrian)),
+            _ => Err(io::Error::new(io::ErrorKind::InvalidInput, "Unknown scale")),
+        }
+    }
+}
+
+impl fmt::Display for Scale {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Scale::*;
+        let s = match self {
+            Diatonic(mode) => {
+                use Mode::*;
+                match mode {
+                    Aeolian => "minor scale".into(),
+                    Ionian => "major scale".into(),
+                    _ => format!("{:?} mode", mode),
+                }
+            }
+        };
+        write!(f, "{}", s)
+    }
+}
 ```
 
 The fact that Ionian Mode/C Major is Offset 0 is actually somewhat arbitrary - though definitely not completely.  There's a reason C major is so commonly found in music - it sounds good.
@@ -1416,7 +1593,7 @@ I did a [bare-minimum](https://lmgtfy.com/?q=why+does+it+start+from+C+not+A) amo
 
 *[top](#table-of-contents)*
 
-Okay, Ben.  Ben, okay.  Okay, Ben.  We've arrived at the version from the blog post, great.  This whole time, though, the line from the meme image has had something different:
+Okay, Ben.  Ben, okay.  Okay, Ben.  We've arrived at the version from the blog post, great.  You also promised 86 in the introduction, not 84.  This whole time, though, the line from the meme image has had something different:
 
 ```bash
 split("4,5,7,11",a,",");
@@ -1424,13 +1601,13 @@ split("4,5,7,11",a,",");
 
 The diatonic scales we've been working with are a subset of the [heptatonic scales](https://en.wikipedia.org/wiki/Heptatonic_scale), with seven notes each.  These tones are naturally further apart than we've been using.  Let's add a couple others scale lengths to play with:
 
-```rust
-#[derive(Debug, Clone, Copy)]
-enum ScaleLength {
-    Tetratonic = 4,
-    Heptatonic = 7,
-    Dodecatonic = 12,
-}
+```diff
+  #[derive(Debug, Clone, Copy, PartialEq)]
+  pub enum ScaleLength {
++     Tetratonic = 4,
+      Heptatonic = 7,
++     Dodecatonic = 12,
+  }
 ```
 
 Interestingly, the scale shown is [tetratonic](https://en.wikipedia.org/wiki/Tetratonic_scale), given as octave-less notes, intervals from base, and offsets from A440:
@@ -1439,39 +1616,6 @@ Interestingly, the scale shown is [tetratonic](https://en.wikipedia.org/wiki/Tet
 [C#, D, E, G#]
 [Min2, Maj2, Maj3]
 [4, 5, 7, 11]
-```
-
-```diff
-  #[derive(Debug, Clone, Copy, PartialEq)]
-  pub enum Scale {
-      Chromatic,
-      Diatonic(Mode),
-+     Tetratonic,
-  }
-
-  impl Scale {
-    // ..
-    fn get_intervals(self) -> Vec<Interval> {
-        use Interval::*;
-        use Scale::*;
-        match self {
-            Chromatic => [Min2]
-                .iter()
-                .cycle()
-                .take(ScaleLength::Dodecatonic as usize)
-                .copied()
-                .collect::<Vec<Interval>>(),
-            Diatonic(mode) => Mode::base_intervals()
-                .iter()
-                .cycle()
-                .skip(mode as usize)
-                .take(ScaleLength::Heptatonic as usize)
-                .copied()
-                .collect::<Vec<Interval>>(),
-+           Tetratonic => vec![Min2, Maj2, Maj3],
-          }
-      }
-  }
 ```
 
 Oddly, this scale is primarily associated with pre-historic music and not often found since.  Was `AWK` passed down from the before-times? I also don't understand how that snippet works, because it's still indexed with `a[$1 % 8]`, but I'm too lazy to find out why.
@@ -1514,21 +1658,75 @@ fn test_chromatic_intervals() {
 }
 ```
 
-For this definition, we can cycle an iterator of just this element and take the number we need:
 
-```rust
-impl Scale {
+```diff
+  #[derive(Debug, Clone, Copy, PartialEq)]
+  pub enum Scale {
++     Chromatic,
+      Diatonic(Mode),
++     Tetratonic,
+  }
+
+  impl Scale {
+    // ..
     fn get_intervals(self) -> Vec<Interval> {
         use Interval::*;
         use Scale::*;
         match self {
-            Chromatic => [Min2]
++           Chromatic => [Min2]
++               .iter()
++               .cycle()
++               .take(ScaleLength::Dodecatonic as usize)
++               .copied()
++               .collect::<Vec<Interval>>(),
+            Diatonic(mode) => Mode::base_intervals()
                 .iter()
                 .cycle()
-                .take(ScaleLength::Dodecatonic as usize)
+                .skip(mode as usize)
+                .take(ScaleLength::Heptatonic as usize)
                 .copied()
                 .collect::<Vec<Interval>>(),
-        }
++           Tetratonic => vec![Min2, Maj2, Maj3],
+          }
+      }
+  }
+
+  impl FromStr for Scale {
+      type Err = io::Error;
+      fn from_str(s: &str) -> Result<Self, Self::Err> {
+          use Mode::*;
+          use Scale::*;
+          match s.to_uppercase().as_str() {
+              "IONIAN" | "MAJOR" => Ok(Diatonic(Ionian)),
+              "DORIAN" => Ok(Diatonic(Dorian)),
+              "PHRYGIAN" => Ok(Diatonic(Phrygian)),
+              "LYDIAN" => Ok(Diatonic(Lydian)),
+              "MIXOLYDIAN" => Ok(Diatonic(Mixolydian)),
+              "AEOLIAN" | "MINOR" => Ok(Diatonic(Aeolian)),
+              "LOCRIAN" => Ok(Diatonic(Locrian)),
++             "CHROMATIC" => Ok(Chromatic),
++             "TETRATONIC" => Ok(Tetratonic),
+              _ => Err(io::Error::new(io::ErrorKind::InvalidInput, "Unknown scale")),
+          }
+      }
+  }
+
+
+  impl fmt::Display for Scale {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Scale::*;
+        let s = match self {
++           Chromatic | Tetratonic => format!("{:?} scale", self).to_lowercase(),
+            Diatonic(mode) => {
+                use Mode::*;
+                match mode {
+                    Aeolian => "minor scale".into(),
+                    Ionian => "major scale".into(),
+                    _ => format!("{:?} mode", mode),
+                }
+            }
+        };
+        write!(f, "{}", s)
     }
 }
 ```

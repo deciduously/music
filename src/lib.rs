@@ -132,7 +132,6 @@ impl NoteLetter {
     }
     fn inc(self) -> Self {
         use NoteLetter::*;
-        // TODO MAKE THIS COOLER
         match self {
             C => D,
             D => E,
@@ -555,7 +554,6 @@ impl AddAssign for Interval {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ScaleLength {
     Tetratonic = 4,
-    Pentatonic = 5,
     Heptatonic = 7,
     Dodecatonic = 12,
 }
