@@ -348,15 +348,6 @@ impl PianoKey {
     fn max_octave() -> u8 {
         8
     }
-    fn all_pitches() -> Vec<PianoKey> {
-        NoteLetter::all()
-            .iter()
-            .zip([0..8].iter())
-            .map(|(letter, octave)| {
-                PianoKey::from_str(&format!("{:?}{:?}", letter, octave)).unwrap()
-            })
-            .collect::<Vec<PianoKey>>()
-    }
 }
 
 impl fmt::Display for PianoKey {
@@ -601,14 +592,14 @@ impl Default for Scale {
 }
 
 impl Scale {
-    pub fn circle_of_fifths() -> Vec<Key> {
+    pub fn circle_of_fifths(mode: Mode) -> Vec<Key> {
         let mut ret = Vec::new();
         // Start with C
         let mut current_base = Note::default();
         // Increment by fifths and push to vector
         for _ in 0..ScaleLength::Dodecatonic as usize {
             ret.push(Key::new(
-                Scale::default(),
+                Scale::Diatonic(mode),
                 PianoKey::from_str(&format!("{}4", current_base)).unwrap(),
                 1,
             ));

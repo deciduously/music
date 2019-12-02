@@ -150,6 +150,18 @@ fn test_reject_piano_key_invalid_letter() {
 }
 
 #[test]
+fn test_piano_key_to_str() {
+    assert_eq!(PianoKey::default().to_string(), "C0".to_string());
+    assert_eq!(PianoKey::new("A#4").unwrap().to_string(), "A#4".to_string());
+    assert_eq!(PianoKey::new("Bb5").unwrap().to_string(), "B♭5".to_string())
+}
+
+#[test]
+fn test_char_strs() {
+        assert_eq!(char_strs("Hello"), ["H", "e", "l", "l", "o"])
+}
+
+#[test]
 fn test_chromatic_intervals() {
     use Interval::Min2;
     assert_eq!(
@@ -271,4 +283,9 @@ fn test_a_minor() {
         &Key::new(Diatonic(Aeolian), PianoKey::from_str("A4").unwrap(), 1).to_string(),
         "[ A B C D E F G A ]"
     )
+}
+
+#[test]
+fn test_all_scales() {
+    // TODO assert_eq(all_scales == 86 or sommaught)
 }

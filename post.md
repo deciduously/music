@@ -40,7 +40,7 @@ Octaves: 2 - 6
 
 However, at the end of the day, it's just the thing in the cover image.
 
-The completed code can be found on [GitHub](https://github.com/deciduously/music), along with the Markdown for this post.  Feel free to make a PR!  I'll keep it in sync here.
+While the complete runnable source code is embedded within this post, the full project can also be found on [GitHub](https://github.com/deciduously/music) along with this Markdown.  Feel free to make a PR!  I'll keep it in sync here.
 
 ## Table of Contents
 
@@ -287,7 +287,7 @@ You can run a faster compilation pass with `cargo check` if you just want the co
 
 #### Traits
 
-If you're already familiar with developing in Rust, you can probably skip right to [Random Numbers](#random-nb\umbers).
+If you're already familiar with developing in Rust, you can probably skip right to [Random Numbers](#random-numbers).
 
 If you are brand new to the language, you should expect to spend a little longer with the code in this post to extract the relevant bits.  I'm not going to devote much time in general to Rust-specific topics, as there is a vast amount of great material already available devoted to that, but out of all of Rust's interesting properties this is the big one you'll need to know about to follow along with this program.
 
@@ -618,102 +618,7 @@ While it's great to have a voice we can sing with with, I'm sure we'd all prefer
 
 *[top](#table-of-contents)*
 
-Instead of frequencies in Hertz, it's much easier to manipulate pitches in terms of [Scientific Pitch Notation](https://en.wikipedia.org/wiki/Scientific_pitch_notation), another fancy name for a simple concept.  The piano keyboard above was labelled according to this standard.  The A440 pitch is deonted `"A4"` in this system.
-
-A standard pitch is composed of two components: a note from A-G with an optional accidental and a 0-indexed octave:
-
-```rust
-#[derive(Default, Debug, Clone, Copy)]
-struct PianoKey {
-    note: Note,
-    octave: u8,
-}
-```
-
-To show them, we just want to print them out next to each other - the first three should be `C0 C#0 D0`:
-
-```rust
-TODO TEST
-```
-
-```rust
-impl fmt::Display for PianoKey {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", self.note, self.octave)
-    }
-}
-```
-
-The octave just starts at 0 and won't ever realistically rise above 255, so a `u8` is fine.  A note consists of a letter and optionally an accidental:
-
-```rust
-#[derive(Default, Debug, Clone, Copy)]
-struct Note {
-    accidental: Option<Accidental>,
-    letter: NoteLetter,
-}
-```
-
-For this one, we only want to display a character for an accidental if there's anything there:
-
-```rust
-impl fmt::Display for Note {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let acc_str = if let Some(a) = self.accidental {
-            format!("{}", a)
-        } else {
-            "".to_string()
-        };
-        write!(f, "{:?}{}", self.letter, acc_str)
-    }
-}
-```
-
-The [accidentals](https://en.wikipedia.org/wiki/Accidental_(music)) are represented in strings as `♭` for flat or `#` for sharp, which lower or raise the note by one semitone (or `Interval::Min2`) respectively.  This does produce 14 possible values for 12 possible semitones - the exceptions are wherever there's no black key in between two white keys.  `F♭` should parse as `E` and `B#` should parse as `C`.
-
-```rust
-#[derive(Debug, Clone, Copy)]
-enum Accidental {
-    Flat,
-    Sharp,
-}
-
-impl fmt::Display for Accidental {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use Accidental::*;
-        let acc_str = match self {
-            Flat => "♭",
-            Sharp => "#",
-        };
-        write!(f, "{}", acc_str)
-    }
-}
-```
-
-There is third accidental called "natural", `♮`, which cancels these out.  To represent a pitch in data we don't need it - that's a string-parsing concern and I'm skipping it for now.  Sorry, you can't pass a natural sign into this program as it stands.  The natural symbol is generally used for overriding a [key signature](https://en.wikipedia.org/wiki/Key_signature), which defines the default accidental for all the notes within a scale on [sheet music](https://en.wikipedia.org/wiki/Staff_(music)).  There are a series of accidentals on the margin of the staff that apply to all notes, which is how we ensure we play notes within a single given scale, or [key](https://en.wikipedia.org/wiki/Key_(music)).  However, you may choose to compose a melody that contains a note outside this key.  If encounter the note `F#♮` on your sheet, you play an F.
-
-With `NoteLetter`, we also want to assign a numeric index but it's not as simple as with the intervals - these don't all have the same value.  We will store an index:
-
-```rust
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum NoteLetter {
-    C = 0,
-    D,
-    E,
-    F,
-    G,
-    A,
-    B,
-}
-
-impl Default for NoteLetter {
-    fn default() -> Self {
-        NoteLetter::C
-    }
-}
-```
-
-We have some more complicated requirements for getting them from strings:
+Instead of frequencies in Hertz, it's much easier to manipulate pitches in terms of [Scientific Pitch Notation](https://en.wikipedia.org/wiki/Scientific_pitch_notation), another fancy name for a simple concept.  The piano keyboard above was labelled according to this standard.  The A440 pitch is denoted `"A4"` in this system.  We're going to want to parse them from strings:
 
 ```rust
 #[test]
@@ -751,6 +656,16 @@ fn test_new_piano_key() {
         }
     );
     assert_eq!(
+        PianoKey::new("Gb2").unwrap(),
+        PianoKey {
+            note: Note {
+                letter: G,
+                accidental: Some(Flat)
+            },
+            octave: 2
+        }
+    );
+    assert_eq!(
         PianoKey::new("F#8").unwrap(),
         PianoKey {
             note: Note {
@@ -779,9 +694,42 @@ fn test_reject_piano_key_invalid_letter() {
 }
 ```
 
-A more robust system would also accept multiple accidentals and coerce, e.g. `E#` -> `F`, but this gets us going.  To implement this, it's easiest to start at the bottom:
+Additionally, we want to go the other way.  We need a `to_string()` or some such:
 
 ```rust
+#[test]
+fn test_piano_key_to_str() {
+    assert_eq!(PianoKey::default().to_string(), "C0".to_string());
+    assert_eq!(PianoKey::new("A#4").unwrap().to_string(), "A#4".to_string());
+    assert_eq!(PianoKey::new("Bb5").unwrap().to_string(), "B♭5".to_string())
+}
+```
+
+A more robust system would also accept multiple accidentals and coerce, e.g. `E#` -> `F`, but this gets us going.
+
+To implement this, it's easiest to start at the bottom.  With `NoteLetter`, we also want to assign a numeric index but it's not as simple as with the intervals - these don't all have the same value.  We will store an index:
+
+```rust
+use std::io;
+use std::str::FromStr;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum NoteLetter {
+    C = 0,
+    D,
+    E,
+    F,
+    G,
+    A,
+    B,
+}
+
+impl Default for NoteLetter {
+    fn default() -> Self {
+        NoteLetter::C
+    }
+}
+
 impl FromStr for NoteLetter {
     type Err = io::Error;
 
@@ -803,11 +751,193 @@ impl FromStr for NoteLetter {
 }
 ```
 
-This could be fancy, too, but this works in a pinch.
+The notes are C-indexed, for better or for worse, so `NoteLetter::default()` should return that variant.  We'll talk more about why it's C and not A after learning about Modes below.   Don't worry, it's suitably disappointing.
 
-The notes are C-indexed, for better or for worse, so `Note::default()` should return that variant.  We'll talk more about why it's C and not A after learning about Modes below.   Don't worry, it's suitably disappointing.
+Next up we have a `Note` which consists of a letter and optionally an accidental:
 
-Thanks to all the nested `Default` blocks, the `Default` implementation that the compiler derives for `PianoKey` corresponds to the official base pitch of this system, `C0`.
+```rust
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
+pub struct Note {
+    accidental: Option<Accidental>,
+    letter: NoteLetter,
+}
+```
+
+For this one, we only want to display a character for an accidental if there's anything there:
+
+```rust
+impl fmt::Display for Note {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let acc_str = if let Some(a) = self.accidental {
+            format!("{}", a)
+        } else {
+            "".to_string()
+        };
+        write!(f, "{:?}{}", self.letter, acc_str)
+    }
+}
+```
+
+There's a little more logic to pull them out of strings:
+
+```rust
+impl FromStr for Note {
+    type Err = io::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let char_strs = char_strs(s);
+        let mut char_strs = char_strs.iter();
+        // note will be first
+        if let Some(letter) = char_strs.next() {
+            let letter = NoteLetter::from_str(letter)?;
+            if let Some(accidental) = char_strs.next() {
+                // check if it's valid
+                let accidental = Accidental::from_str(accidental)?;
+                return Ok(Self {
+                    letter,
+                    accidental: Some(accidental),
+                });
+            } else {
+                return Ok(Self {
+                    letter,
+                    accidental: None,
+                });
+            }
+        }
+        Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("{} is not a valid note", s),
+        ))
+    }
+}
+```
+
+This uses one helper function I defined:
+
+```rust
+#[test]
+fn test_char_strs() {
+        assert_eq!(char_strs("Hello"), ["H", "e", "l", "l", "o"])
+}
+```
+
+If anyone has a cleaner solution I'm all ears:
+
+```rust
+fn char_strs<'a>(s: &'a str) -> Vec<&'a str> {
+    s.split("")
+        .skip(1)
+        .take_while(|c| *c != "")
+        .collect::<Vec<&str>>()
+}
+```
+
+The missing piece is the `Accidental`.  [Accidentals](https://en.wikipedia.org/wiki/Accidental_(music)) are represented in strings as `♭` for flat or `#` for sharp, which lower or raise the note by one semitone (or `Interval::Min2`) respectively.  This does produce 14 possible values for 12 possible semitones - the exceptions are wherever there's no black key in between two white keys.
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Accidental {
+    Flat,
+    Sharp,
+}
+
+impl fmt::Display for Accidental {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Accidental::*;
+        let acc_str = match self {
+            Flat => "♭",
+            Sharp => "#",
+        };
+        write!(f, "{}", acc_str)
+    }
+}
+
+impl FromStr for Accidental {
+    type Err = io::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "b" | "♭" => Ok(Accidental::Flat),
+            "#" => Ok(Accidental::Sharp),
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("{} is not a valid accidental", s),
+            )),
+        }
+    }
+}
+```
+
+There is third accidental called "natural", `♮`, which cancels these out.  To represent a pitch in data we don't need it - we can get each of the piano keys with just `Accidental::Sharp`.  We really just include `Accidental::Flat` for a smooth user experience - people expect those to be valid notes, even though they represent the same pitch.  The natural symbol is generally used for overriding a [key signature](https://en.wikipedia.org/wiki/Key_signature), which defines the default accidental for all the notes within a scale on [sheet music](https://en.wikipedia.org/wiki/Staff_(music)).  There are a series of accidentals on the margin of the staff that apply to all notes, which is how we ensure we play notes within a single given scale, or [key](https://en.wikipedia.org/wiki/Key_(music)).  However, you may choose to compose a melody that contains a note outside this key.  If encounter the note `F#♮` on your sheet, you play an F.  This program isn't (yet) smart enough to work with these.
+
+Now we can finally define a specific tone on a full piano.  A standard pitch, in our program a `PianoKey`, is composed of two components: a `Note` and a 0-indexed octave:
+
+```rust
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
+pub struct PianoKey {
+    note: Note,
+    octave: u8,
+}
+```
+
+To show them, we just want to print them out next to each other:
+
+```rust
+impl fmt::Display for PianoKey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}{}", self.note, self.octave)
+    }
+}
+```
+
+This one also has a little more logic to pull out of a string, building from the constituent components:
+
+```rust
+impl FromStr for PianoKey {
+    type Err = io::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // It makes sense to get the letter to Intervals
+        if let Some(octave) = char_strs(s).last() {
+            if let Ok(octave) = octave.parse::<u8>() {
+                let note = Note::from_str(&s[0..s.len() - 1])?;
+                if octave <= Self::max_octave() {
+                    Ok(Self { note, octave })
+                } else {
+                    Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("{} is too high!", octave),
+                    ))
+                }
+            } else {
+                Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!("{} is too high for this keyboard", octave),
+                ))
+            }
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("{} is not a valid note", s),
+            ))
+        }
+    }
+}
+```
+
+The octave just starts at 0 and won't ever realistically rise above 255, so a `u8` is fine.  We can give ourselves a few convenience methods:
+
+```rust
+impl PianoKey {
+    pub fn new(s: &str) -> Result<Self, io::Error> {
+        Self::from_str(s)
+    }
+    fn max_octave() -> u8 {
+        8
+    }
+}
+```
+
+Thanks to all the nested `Default` blocks, the `Default` implementation that the compiler derives for `PianoKey` corresponds to the official base pitch of this system, `C0`, specified in the first assertion of the test.  Speaking of which, `test_new_pitch()` should now pass.  
 
 ##### Intervals
 
@@ -818,14 +948,27 @@ Note how each octave starts at C, not A, so A4 is actually higher in pitch than 
 The smallest of interval between notes on a piano (and most of Western music) is called a [semitone](https://en.wikipedia.org/wiki/Semitone), also called a minor second or half step.  We'll need to keep track of these as the basic unit of a keyboard interval:
 
 ```rust
-struct Semitones(i8);
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct Semitones(i8);
+
+impl From<i8> for Semitones {
+    fn from(i: i8) -> Self {
+        Self(i)
+    }
+}
+
+impl From<Semitones> for i8 {
+    fn from(s: Semitones) -> Self {
+        s.0
+    }
+}
 ```
 
 Take a look back at that piano diagram above - one semitone is the distance between two adjacent keys.  A *whole* step, or a [major second](https://en.wikipedia.org/wiki/Major_second), is equal to two semitones, or two adjacent white keys that pass over a black key.  To play from C4 to C5, you'll use 12 keys (count all the white and black keys in a bracket), so octaves are divided into 12 equal semitones.  There's a name for [each interval](https://en.wikipedia.org/wiki/Interval_(music)#Main_intervals):
 
 ```rust
-#[derive(Debug, Clone, Copy)]
-enum Interval {
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub enum Interval {
     Unison = 0,
     Min2,
     Maj2,
@@ -848,15 +991,126 @@ Two identical notes are called a [unison](https://en.wikipedia.org/wiki/Unison),
 
 If interested, I recommend [harmony](https://en.wikipedia.org/wiki/Harmony) for your next rabbit hole.  The tritone takes a leading role in [dissonance](https://en.wikipedia.org/wiki/Consonance_and_dissonance), and to hear it in action you should check out what the [Locrian mode](https://en.wikipedia.org/wiki/Locrian_mode) we defined sounds like with this program.  The C major scale has a perfect fifth, 5 semitones at the [dominant](https://en.wikipedia.org/wiki/Dominant_(music)) scale [degree](https://en.wikipedia.org/wiki/Degree_(music)) - and the Locrian mode has a tritone which is one extra semitone.
 
-// TODO Add/Sub/etc for Interval here
+These all map to numbers, but we don't want to have to think about the rules when adding and subtracting.  Let's do a little plumbing:
+
+```rust
+#[test]
+fn test_add_interval() {
+    use Interval::*;
+    assert_eq!(Unison + Unison, Unison);
+    assert_eq!(Unison + Maj3, Maj3);
+    assert_eq!(Maj2 + Min3, Perfect4);
+    assert_eq!(Octave + Octave, Unison);
+    assert_eq!(Tritone + Tritone, Unison);
+    assert_eq!(Maj7 + Min3, Maj2);
+}
+
+#[test]
+fn test_sub_interval() {
+    use Interval::*;
+    assert_eq!(Unison - Unison, Unison);
+    assert_eq!(Unison - Maj3, Min6);
+    assert_eq!(Maj2 - Min3, Maj7);
+    assert_eq!(Octave - Octave, Unison);
+    assert_eq!(Tritone - Tritone, Unison);
+    assert_eq!(Maj7 - Min3, Min6);
+}
+```
+
+First, a little plumbing:
+
+```rust
+impl From<Interval> for i8 {
+    fn from(i: Interval) -> Self {
+        Semitones::from(i).into()
+    }
+}
+
+impl From<Semitones> for Interval {
+    fn from(s: Semitones) -> Self {
+        use Interval::*;
+        let int_semitones = i8::from(s);
+        match int_semitones {
+            0 => Unison,
+            1 => Min2,
+            2 => Maj2,
+            3 => Min3,
+            4 => Maj3,
+            5 => Perfect4,
+            6 => Tritone,
+            7 => Perfect5,
+            8 => Min6,
+            9 => Maj6,
+            10 => Min7,
+            11 => Maj7,
+            12 | _ => Interval::from(Semitones(int_semitones % Octave as i8)),
+        }
+    }
+}
+
+impl From<Interval> for Semitones {
+    fn from(i: Interval) -> Self {
+        Semitones(i as i8)
+    }
+}
+```
+
+Now we can define `Add` and `Sub`:
+
+```rust
+use std::ops::{Add, Sub};
+
+impl Add for Interval {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Interval::from(Semitones(
+            i8::from(self) + i8::from(rhs) % Interval::Octave as i8,
+        ))
+    }
+}
+
+impl Sub for Interval {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        let mut delta = i8::from(self) - i8::from(rhs);
+        if delta < 0 {
+            delta += Interval::Octave as i8;
+        };
+        Interval::from(Semitones(delta))
+    }
+}
+```
+
+That gets us `+` and `-`, but we're going to want `+=` later too and that's really easy now:
+
+```rust
+use std::ops::AddAssign;
+
+impl AddAssign for Interval {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+```
 
 ##### Scales
 
 *[top](#table-of-contents)*
 
-A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  
+A [scale](https://en.wikipedia.org/wiki/Scale_(music)) is a series of notes (frequencies) defined in terms of successive intervals from a base note.  We'll start with the [major scale](https://en.wikipedia.org/wiki/Major_scale):
 
-// Todo Major Scale for demo - eventually becomes Diatonic(Mode) below
+```rust
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Scale {
+    Major,
+}
+
+impl Default for Scale {
+    fn default() -> Self {
+        Scale::Major
+    }
+}
+```
 
 Clearly, there isn't a black key between every white key - there must be a method to the madness.  The piano is designed to play notes from a category of scales called [diatonic scales](https://en.wikipedia.org/wiki/Diatonic_scale), where the full range of an octave consists of five whole steps and two half steps.  That's why our `NoteLetter` indices needed some extra logic - while each pair of adjacent keys is one semitone, that doesn't always mean a white key to a black key or vice versa - the note pairs B/C and E/F are both only separated by one semintone.
 
@@ -872,7 +1126,19 @@ C    D     E      F       G      A     B     C
 
 TODO embed sound
 
-// TODO major scale intervals here - you use it for circle of fifths before filling out diatonic modes
+We can hardcode this sequence in Rust as a `Vec<Interval>`:
+
+```rust
+impl Scale {
+    fn get_intervals(self) -> Vec<Interval> {
+        use Interval::*;
+        use Scale::*;
+        match self {
+            Major => vec![Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2],
+        }
+    }
+}
+```
 
 We need a method to map to exact intervals:
 
