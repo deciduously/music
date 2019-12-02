@@ -1186,7 +1186,7 @@ impl AddAssign<Interval> for Note {
 }
 ```
 
-For `Add<Interval> for Note` to work, we need to add some extra helper methods`:
+For `Add<Interval> for Note` to work, we need to add some extra helper methods:
 
 ```rust
 impl NoteLetter {
@@ -1388,19 +1388,19 @@ impl Key {
         }
     }
     fn all_keys(self) -> Vec<PianoKey> {
-        let notes = self.get_notes();
-        let mut ret = Vec::new();
-        for i in 0..self.octaves {
-            notes.iter().for_each(|n| {
-                ret.push(
-                    PianoKey::from_str(&format!("{}{}", *n, i + self.base_note.octave)).unwrap_or(
-                        PianoKey::from_str(&format!("{}{}", *n, PianoKey::max_octave())).unwrap(),
-                    ),
-                )
-            });
+            let notes = self.get_notes();
+            let mut ret = Vec::new();
+            for i in 0..self.octaves {
+                notes.iter().for_each(|n| {
+                    ret.push(
+                        PianoKey::from_str(&format!("{}{}", *n, i + self.base_note.octave)).unwrap_or_else(|_|
+                            PianoKey::from_str(&format!("{}{}", *n, PianoKey::max_octave())).unwrap(),
+                        ),
+                    )
+                });
+            }
+            ret
         }
-        ret
-    }
 }
 ```
 
@@ -1547,6 +1547,8 @@ The natural minor scale, is obtained by starting at A4 and counted up white keys
 ```txt
 whole, half, whole, whole, half, whole, whole
 ```
+
+This should look like the C major scale, no sharps or flats, but with `A` at the beginning:
 
 ```rust
 #[test]
@@ -2137,12 +2139,15 @@ We can actually use the linked source code as a template to provide our own `rod
 Set up a data structure to hold on to some of the hardcoded values found in the above library snipper:
 
 ```rust
+pub const SAMPLE_RATE: Hertz = Hertz(48_000.0);
+pub type Sample = f32;
+
 pub struct MusicMaker {
     key: Key,
     current_note: PianoKey,
     current_sample: usize,
     sample_rate: Hertz,
-    volume: f32, // TODO is that correct?
+    volume: f32,
 }
 
 impl Default for MusicMaker {
@@ -2171,7 +2176,7 @@ impl MusicMaker {
 To perform the wave sampling, we can actually pretty much copy-paste the `impl Iterator for SineWave` code, just using our struct's values:
 
 ```rust
-pub type Sample = f32;
+use std::f32::consts::PI;
 
 impl Iterator for MusicMaker {
     type Item = Sample; // Sampled amplitude
@@ -2180,9 +2185,14 @@ impl Iterator for MusicMaker {
 
         let value = self.volume
             * PI
-            * Sample::from(Pitch::from(self.current_note))
+            * self.get_frequency()
             * self.current_sample as Sample
             / f64::from(self.sample_rate) as Sample;
+
+        if self.current_sample as f64 >= f64::from(self.sample_rate) {
+            self.current_sample = 0;
+            self.new_note();  // Hmm...
+        }
         Some(value.sin())
     }
 }
@@ -2191,6 +2201,9 @@ impl Iterator for MusicMaker {
 In order to use as a sound source we can pass to a `rodio::Sink`, we implement the `rodio::Source` trait, which can be implemented for any type that implements `Iterator`, so long as the `Item` associated type is valid as a sample:
 
 ```rust
+use core::time::Duration;
+use rodio::Source;
+
 impl Source for MusicMaker {
     #[inline]
     fn current_frame_len(&self) -> Option<usize> {
@@ -2214,47 +2227,55 @@ impl Source for MusicMaker {
 }
 ```
 
+A little plumbing:
+
+```rust
+
+```
+
 The `current_frame_len()` and `total_duration()` bodies indicate that this source is infinite - there's no finite duration to return.  You'll need to kill the process some other way.  The `channels` method returns the number of frequencies in the signal, and we're just working with a single wave, so a single channel is all we need.
 
 Now we're finally ready to call that `choose()` method on something.  First, though, the full signature is TODO - we need to select a random seed from the `rand` crate.  We don't are about cryptographic soundness here, we just need random numbers, but speed is useful.  The [`rand::rngs::SmallRng`](https://docs.rs/rand/0.7.2/rand/rngs/struct.SmallRng.html) random number generator is ideal for that.  We can initialize it using `from_entropy()` to ultimately source it from the operating system - so, sorta in a roundabout way it's `dev/*random`, at least?  Maybe?
 
 ```diff
-  pub struct MusicMaker {
-      key: Key,
-+     seed: SmallRng,
-      current_note: PianoKey,
-      current_sample: usize,
-      sample_rate: Hertz,
-      volume: f32, // TODO is that correct?
++  use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
+
+   pub struct MusicMaker {
+       key: Key,
++      seed: SmallRng,
+       current_note: PianoKey,
+       current_sample: usize,
+       sample_rate: Hertz,
+       volume: f32,
 }
 
-  impl Default for MusicMaker {
-      fn default() -> Self {
-          Self {
-              key: Key::default(),
-+             seed: SmallRng::from_entropy(),
-              current_note: PianoKey::from_str("C4").unwrap(),
-              current_sample: usize::default(),
-              sample_rate: SAMPLE_RATE,
-              volume: 2.0,
-          }
-      }
+   impl Default for MusicMaker {
+       fn default() -> Self {
+           Self {
+               key: Key::default(),
++              seed: SmallRng::from_entropy(),
+               current_note: PianoKey::from_str("C4").unwrap(),
+               current_sample: usize::default(),
+               sample_rate: SAMPLE_RATE,
+               volume: 2.0,
+           }
+       }
+   }
+
+   impl MusicMaker {
+     pub fn new() -> Self {
+         Self::default()
+     }
+     fn get_frequency(&mut self) -> Sample {
+         let pitch = Pitch::from(self.current_note);
+         println!("{:?}", pitch);
+         pitch.into()
+     }
++    fn new_note(&mut self) {
++        let keys = self.key.all_keys();
++        self.current_note = *keys.iter().choose(&mut self.seed).unwrap();  // There it is!  This whole time
++    }
   }
-
-  impl MusicMaker {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    fn get_frequency(&mut self) -> Sample {
-        let pitch = Pitch::from(self.current_note);
-        println!("{:?}", pitch);
-        pitch.into()
-    }
-+   fn new_note(&mut self) {
-+       let keys = self.key.all_keys();
-+       self.current_note = *keys.iter().choose(&mut self.seed).unwrap();  // There it is!  This whole time
-+   }
-}
 ```
 
 Now our `MusicMaker` can plug right into an audio output track.  Replace your entry point `main()` function in `src/bin/music.rs` with this:
@@ -2265,13 +2286,13 @@ fn main() {
 
     let device = default_output_device().unwrap();
     let sink = Sink::new(&device);
-    let music = MusicMaker::new();
+    let music = MusicMaker::new(PianoKey::new("A4").unwrap(), Scale::default(), 1);
     sink.append(music);
     sink.sleep_until_end();
 }
 ```
 
-Running this with `cargo run` will (over 1,000 lines later) essentially match the output from the original `bash` one-liner.
+Running this with `cargo run` will essentially match the output from the original `bash` one-liner.
 
 ![sad party](https://thepracticaldev.s3.amazonaws.com/i/82lipncvy6806zyjpg2r.gif)
 
@@ -2285,6 +2306,8 @@ Let's give a `base note`, a `scale` option, and a number of octaves to span upwa
 
 ```rust
 // src/bin/music.rs
+use structopt::StructOpt;
+
 /// music is a procedural single-tone melody generator
 #[derive(StructOpt, Debug)]
 #[structopt(name = "music")]
@@ -2302,7 +2325,6 @@ struct Opt {
     #[structopt(short, long, default_value = "1")]
     octaves: u8
 }
-
 ```
 
 ```diff
@@ -2360,47 +2382,19 @@ fn main() {
     // Sleep thread to allow music to play infinitely
     sink.sleep_until_end();
 }
-
 ```
 
-We also now need some logic to get from `&str` to `Scale`:
-
-```rust
-impl FromStr for Scale {
-    type Err = io::Error;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use Mode::*;
-        use Scale::*;
-        match s.to_uppercase().as_str() {
-            "IONIAN" | "MAJOR" => Ok(Diatonic(Ionian)),
-            "DORIAN" => Ok(Diatonic(Dorian)),
-            "PHRYGIAN" => Ok(Diatonic(Phrygian)),
-            "LYDIAN" => Ok(Diatonic(Lydian)),
-            "MIXOLYDIAN" => Ok(Diatonic(Mixolydian)),
-            "AEOLIAN" | "MINOR" => Ok(Diatonic(Aeolian)),
-            "LOCRIAN" => Ok(Diatonic(Locrian)),
-            "CHROMATIC" => Ok(Chromatic),
-            "TETRATONIC" => Ok(Tetratonic),
-            _ => Err(io::Error::new(io::ErrorKind::InvalidInput, "Unknown scale")),
-        }
-    }
-}
-```
-
-// TODO maybe actually builder?  keep constructor empty
-
-Now we just need to instantiate the structopt object, and we can pass in whatever the user specifies, if anything is present.  Make sure the code generation worked as expected with `cargo run -- -h` - you use `--` to pas command line arguments through `cargo run`, but you'd pass them directly to a binary: `./music -h`:
+Make sure the code generation worked as expected with `cargo run -- -h` - you use `--` to pas command line arguments through `cargo run`, but you'd pass them directly to a binary: `./music -h`:
 
 ```txt
-$ cargo run -- -h  
-   Compiling music v0.1.0 (C:\Users\you\code\music)
-    Finished dev [unoptimized + debuginfo] target(s) in 2.10s
-     Running `target\debug\music.exe -h`
+$cargo run -- -h
+    Finished dev [unoptimized + debuginfo] target(s) in 0.05s
+     Running `target/debug/music -h`
 music 0.1.0
 music is a procedural single-tone melody generator
 
 USAGE:
-    mod.exe [FLAGS] [OPTIONS]
+    music [FLAGS] [OPTIONS]
 
 FLAGS:
     -h, --help          Prints help information
@@ -2411,28 +2405,23 @@ OPTIONS:
     -b, --base-note <base-note>    The base note to calculate the scale from [default: C4]
     -o, --octaves <octaves>        Number of octaves over which to range, anything over 8 gets parsed as 8 [default: 1]
     -s, --scale <scale>            The series of intervals from the base note to use per octave [default: Ionian]
+
 ```
 
 Structopt is great for quick prototyping.  We should add an output line to the header to let the user know what's playing:
 
 ```rust
-impl fmt::Display for Scale {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use Scale::*;
-        let s = match self {
-            Chromatic | Tetratonic => format!("{:?}", self),
-            Diatonic(mode) => format!("{:?}", mode),
-        };
-        write!(f, "{}", s)
-    }
-}
-
 impl fmt::Display for MusicMaker {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let key = self.key;
         write!(
             f,
-            "Playing from the {} scale from {}\n{}",
-            self.key.scale, self.key.base_note, self.key
+            "Generating music from the {} {}\nOctaves: {} - {}\n{}",
+            key.base_note.note,
+            key.scale,
+            key.base_note.octave,
+            key.base_note.octave + key.octaves,
+            key
         )
     }
 }
@@ -2444,8 +2433,9 @@ Now we should see the current key at the top - both options are optional, and th
 $ cargo run
     Finished dev [unoptimized + debuginfo] target(s) in 0.07s
      Running `target\debug\music.exe`
-Cool Tunes (tm)
-Playing from the Ionian scale from C4 over 1 octave(s)
+.: Cool Tunes :.
+Generating music from the C major scale
+Octaves: 4 - 5
 [ C D E F G A B C ]
 ```
 
@@ -2453,17 +2443,19 @@ Playing from the Ionian scale from C4 over 1 octave(s)
 $ cargo run -- -s chromatic
     Finished dev [unoptimized + debuginfo] target(s) in 0.07s
      Running `target\debug\music.exe -s chromatic`
-Cool Tunes (tm)
-Playing from the Chromatic scale from C4 over 1 octave(s)
+.: Cool Tunes :.
+Generating music from the C chromatic scale
+Octaves: 4 - 5
 [ C C# D D# E F F# G G# A A# B C ]
 ```
 
 ```txt
-$ cargo run -- -s locrian -n Eb3
+$ cargo run -- -s locrian -b Eb3 -o 3
     Finished dev [unoptimized + debuginfo] target(s) in 0.07s
      Running `target\debug\music.exe -s locrian -b Eb2 -o 3`
-Cool Tunes (tm)
-Playing from the Locrian scale from E♭2 over 3 octave(s)
+.: Cool Tunes :.
+Generating music from the E♭ Locrian mode
+Octaves: 3 - 6
 [ E♭ E F# G# A B C# E♭ ]
 ```
 
@@ -2472,10 +2464,11 @@ $ cargo run -- -p -b C3
     Finished dev [unoptimized + debuginfo] target(s) in 0.07s
      Running `target\debug\music.exe -p -b C3`
 Cool Tunes (tm)
+.: Cool Tunes :.
 Playing single tone C3
 ```
 
-Check out C0 and A0, and be careful when getting to the upper octaves.
+Check out C0 and A0, and be careful with headphones when getting to the upper octaves!
 
 ![human music](https://thepracticaldev.s3.amazonaws.com/i/92xyu0xcenfmpvrf6kbq.gif)
 

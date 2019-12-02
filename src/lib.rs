@@ -12,18 +12,19 @@ use std::{
 mod test;
 
 pub const GREETING: &str = ".: Cool Tunes :.";
+pub const STANDARD_PITCH: Hertz = Hertz(440.0);
+pub const MIDDLE_C: Hertz = Hertz(261.626);
+const SEMITONE_CENTS: Cents = Cents(100.0);
+pub const C_ZERO: Hertz = Hertz(16.352);
+pub const SAMPLE_RATE: Hertz = Hertz(48_000.0);
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Hertz(f64);
 
-pub const STANDARD_PITCH: Hertz = Hertz(440.0);
-pub const C_ZERO: Hertz = Hertz(16.352);
-pub const MIDDLE_C: Hertz = Hertz(261.626);
-pub const SAMPLE_RATE: Hertz = Hertz(44_100.0);
-
-impl Hertz {
-    fn abs(self) -> Self {
-        Self(self.0.abs())
+impl Sub for Hertz {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(f64::from(self) - f64::from(rhs))
     }
 }
 
@@ -39,70 +40,30 @@ impl From<f64> for Hertz {
     }
 }
 
-impl Sub for Hertz {
-    type Output = Self;
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self(f64::from(self) - f64::from(rhs))
+#[derive(Debug, Clone, Copy, PartialOrd)]
+pub struct Pitch(Hertz);
+
+impl Pitch {
+    pub fn new(frequency: Hertz) -> Self {
+        Self(frequency)
     }
 }
 
-impl MulAssign<f64> for Hertz {
-    fn mul_assign(&mut self, rhs: f64) {
-        self.0 *= rhs;
+impl Default for Pitch {
+    fn default() -> Self {
+        Self(STANDARD_PITCH)
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
-pub struct Cents(f64);
-
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
-pub struct Semitones(i8);
-
-const SEMITONE_CENTS: Cents = Cents(100.0);
-
-impl From<f64> for Cents {
-    fn from(f: f64) -> Self {
-        Cents(f)
+impl From<Pitch> for f64 {
+    fn from(p: Pitch) -> Self {
+        p.0.into()
     }
 }
 
-impl From<Cents> for f64 {
-    fn from(c: Cents) -> Self {
-        c.0
-    }
-}
-
-impl From<i8> for Semitones {
-    fn from(i: i8) -> Self {
-        Self(i)
-    }
-}
-
-impl From<Semitones> for i8 {
-    fn from(s: Semitones) -> Self {
-        s.0
-    }
-}
-
-impl From<Semitones> for Cents {
-    fn from(s: Semitones) -> Self {
-        Cents(i8::from(s) as f64 * f64::from(SEMITONE_CENTS))
-    }
-}
-
-impl Add for Semitones {
-    type Output = Self;
-
-    fn add(self, other: Self) -> Self {
-        Semitones(i8::from(self) + i8::from(other))
-    }
-}
-
-impl Div for Cents {
-    type Output = Self;
-
-    fn div(self, rhs: Self) -> Self {
-        Cents(f64::from(self) / f64::from(rhs))
+impl From<Pitch> for SineWave {
+    fn from(p: Pitch) -> Self {
+        SineWave::new(f64::from(p) as u32)
     }
 }
 
@@ -117,33 +78,6 @@ enum NoteLetter {
     B,
 }
 
-impl NoteLetter {
-    fn all() -> &'static [Self] {
-        use NoteLetter::*;
-        &[C, D, E, F, G, A, B]
-    }
-    fn interval_from_c(self) -> Interval {
-        use Interval::Unison;
-        Scale::default()
-            .get_intervals()
-            .iter()
-            .take(self as usize)
-            .fold(Unison, |acc, i| acc + *i)
-    }
-    fn inc(self) -> Self {
-        use NoteLetter::*;
-        match self {
-            C => D,
-            D => E,
-            E => F,
-            F => G,
-            G => A,
-            A => B,
-            B => C,
-        }
-    }
-}
-
 impl Default for NoteLetter {
     fn default() -> Self {
         NoteLetter::C
@@ -154,7 +88,6 @@ impl FromStr for NoteLetter {
     type Err = io::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // TODO this can probably get super concise and cool
         match s.to_uppercase().as_str() {
             "A" => Ok(NoteLetter::A),
             "B" => Ok(NoteLetter::B),
@@ -167,6 +100,21 @@ impl FromStr for NoteLetter {
                 io::ErrorKind::InvalidInput,
                 format!("{} is not a valid note", s),
             )),
+        }
+    }
+}
+
+impl NoteLetter {
+    fn inc(self) -> Self {
+        use NoteLetter::*;
+        match self {
+            C => D,
+            D => E,
+            E => F,
+            F => G,
+            G => A,
+            A => B,
+            B => C,
         }
     }
 }
@@ -209,49 +157,6 @@ pub struct Note {
     letter: NoteLetter,
 }
 
-impl Note {
-    fn interval_from_c(self) -> Interval {
-        use Accidental::*;
-        let ret = self.letter.interval_from_c();
-        if let Some(acc) = self.accidental {
-            match acc {
-                // TODO refactor
-                Flat => return Interval::from(Semitones::from(i8::from(Semitones::from(ret)) - 1)),
-                Sharp => return ret + Interval::Min2,
-            }
-        };
-        ret
-    }
-    fn get_offset(self, other: Self) -> Interval {
-        let self_interval_from_c = self.interval_from_c();
-        let other_interval_from_c = other.interval_from_c();
-        self_interval_from_c - other_interval_from_c
-    }
-    fn inc(&mut self) {
-        use Accidental::*;
-        use NoteLetter::*;
-        if let Some(acc) = self.accidental {
-            self.accidental = None;
-            match acc {
-                Sharp => {
-                    self.letter = self.letter.inc();
-                }
-                Flat => {}
-            }
-        } else {
-            // check for special cases
-            if self.letter == B || self.letter == E {
-                self.letter = self.letter.inc();
-            } else {
-                self.accidental = Some(Sharp);
-            }
-        }
-    }
-    fn get_relative_natural_minor(self) -> Note {
-        unimplemented!()
-    }
-}
-
 impl fmt::Display for Note {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let acc_str = if let Some(a) = self.accidental {
@@ -260,37 +165,6 @@ impl fmt::Display for Note {
             "".to_string()
         };
         write!(f, "{:?}{}", self.letter, acc_str)
-    }
-}
-
-impl From<Interval> for Note {
-    // Take an interval from C
-    fn from(i: Interval) -> Self {
-        use Interval::*;
-        let mut offset = Unison;
-        // That's a series of Min2
-        let scale = Scale::Chromatic.get_intervals();
-        scale.iter().take(i as usize).for_each(|i| offset += *i);
-        Note::default() + offset
-    }
-}
-
-impl Add<Interval> for Note {
-    type Output = Self;
-
-    fn add(self, rhs: Interval) -> Self {
-        let semitones = Semitones::from(rhs);
-        let mut ret = self;
-        for _ in 0..i8::from(semitones) {
-            ret.inc();
-        }
-        ret
-    }
-}
-
-impl AddAssign<Interval> for Note {
-    fn add_assign(&mut self, rhs: Interval) {
-        *self = *self + rhs;
     }
 }
 
@@ -330,19 +204,49 @@ impl FromStr for Note {
     }
 }
 
+impl Note {
+    fn interval_from_c(self) -> Interval {
+        use Accidental::*;
+        let ret = self.letter.interval_from_c();
+        if let Some(acc) = self.accidental {
+            match acc {
+                Flat => return Interval::from(Semitones::from(i8::from(Semitones::from(ret)) - 1)),
+                Sharp => return ret + Interval::Min2,
+            }
+        };
+        ret
+    }
+    fn get_offset(self, other: Self) -> Interval {
+        let self_interval_from_c = self.interval_from_c();
+        let other_interval_from_c = other.interval_from_c();
+        self_interval_from_c - other_interval_from_c
+    }
+    fn inc(&mut self) {
+        use Accidental::*;
+        use NoteLetter::*;
+        if let Some(acc) = self.accidental {
+            self.accidental = None;
+            match acc {
+                Sharp => {
+                    self.letter = self.letter.inc();
+                }
+                Flat => {}
+            }
+        } else {
+            // check for special cases
+            if self.letter == B || self.letter == E {
+                self.letter = self.letter.inc();
+            } else {
+                self.accidental = Some(Sharp);
+            }
+        }
+    }
+}
+
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct PianoKey {
     note: Note,
     octave: u8,
-}
-
-impl PianoKey {
-    fn new(s: &str) -> Result<Self, io::Error> {
-        Self::from_str(s)
-    }
-    fn max_octave() -> u8 {
-        8
-    }
 }
 
 impl fmt::Display for PianoKey {
@@ -382,85 +286,27 @@ impl FromStr for PianoKey {
     }
 }
 
-impl Add<Interval> for PianoKey {
-    type Output = Self;
-
-    fn add(self, rhs: Interval) -> Self {
-        unimplemented!()
+impl PianoKey {
+    pub fn new(s: &str) -> Result<Self, io::Error> {
+        Self::from_str(s)
+    }
+    fn max_octave() -> u8 {
+        8
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialOrd)]
-pub struct Pitch(Hertz);
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct Semitones(i8);
 
-impl Pitch {
-    pub fn new(frequency: Hertz) -> Self {
-        Self(frequency)
+impl From<i8> for Semitones {
+    fn from(i: i8) -> Self {
+        Self(i)
     }
 }
 
-impl Default for Pitch {
-    fn default() -> Self {
-        Self(STANDARD_PITCH)
-    }
-}
-
-impl PartialEq for Pitch {
-    fn eq(&self, other: &Pitch) -> bool {
-        let tolerance = Hertz(0.1);
-        let difference = (self.0 - other.0).abs();
-        difference < tolerance
-    }
-}
-
-impl AddAssign<Cents> for Pitch {
-    #[allow(clippy::suspicious_op_assign_impl)]
-    fn add_assign(&mut self, rhs: Cents) {
-        self.0 *= 2.0f64.powf((rhs / Cents::from(Interval::Octave)).into())
-    }
-}
-
-impl AddAssign<Semitones> for Pitch {
-    fn add_assign(&mut self, rhs: Semitones) {
-        *self += Cents::from(rhs)
-    }
-}
-
-impl AddAssign<Interval> for Pitch {
-    fn add_assign(&mut self, rhs: Interval) {
-        *self += Cents::from(rhs)
-    }
-}
-
-impl From<PianoKey> for Pitch {
-    fn from(sp: PianoKey) -> Self {
-        use Interval::*;
-        let mut ret = Pitch::new(C_ZERO);
-        // Add octaves
-        for _ in 0..sp.octave {
-            ret += Octave;
-        }
-        // Add note offset
-        ret += sp.note.letter.interval_from_c();
-        ret
-    }
-}
-
-impl From<Pitch> for f64 {
-    fn from(p: Pitch) -> Self {
-        p.0.into()
-    }
-}
-
-impl From<Pitch> for SineWave {
-    fn from(p: Pitch) -> Self {
-        SineWave::new(f64::from(p) as u32)
-    }
-}
-
-impl From<Pitch> for Sample {
-    fn from(p: Pitch) -> Self {
-        f64::from(p) as f32
+impl From<Semitones> for i8 {
+    fn from(s: Semitones) -> Self {
+        s.0
     }
 }
 
@@ -479,6 +325,17 @@ pub enum Interval {
     Min7,
     Maj7,
     Octave,
+}
+
+impl NoteLetter {
+    fn interval_from_c(self) -> Interval {
+        use Interval::Unison;
+        Scale::default()
+            .get_intervals()
+            .iter()
+            .take(self as usize)
+            .fold(Unison, |acc, i| acc + *i)
+    }
 }
 
 impl From<Interval> for i8 {
@@ -515,12 +372,6 @@ impl From<Interval> for Semitones {
     }
 }
 
-impl From<Interval> for Cents {
-    fn from(i: Interval) -> Self {
-        Semitones::from(i).into()
-    }
-}
-
 impl Add for Interval {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
@@ -547,11 +398,35 @@ impl AddAssign for Interval {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum ScaleLength {
-    Tetratonic = 4,
-    Heptatonic = 7,
-    Dodecatonic = 12,
+impl From<Interval> for Note {
+    // Take an interval from C
+    fn from(i: Interval) -> Self {
+        use Interval::*;
+        let mut offset = Unison;
+        // That's a series of Min2
+        let scale = Scale::Chromatic.get_intervals();
+        scale.iter().take(i as usize).for_each(|i| offset += *i);
+        Note::default() + offset
+    }
+}
+
+impl Add<Interval> for Note {
+    type Output = Self;
+
+    fn add(self, rhs: Interval) -> Self {
+        let semitones = Semitones::from(rhs);
+        let mut ret = self;
+        for _ in 0..i8::from(semitones) {
+            ret.inc();
+        }
+        ret
+    }
+}
+
+impl AddAssign<Interval> for Note {
+    fn add_assign(&mut self, rhs: Interval) {
+        *self = *self + rhs;
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -570,6 +445,13 @@ impl Mode {
         use Interval::*;
         vec![Maj2, Maj2, Min2, Maj2, Maj2, Maj2, Min2]
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ScaleLength {
+    Tetratonic = 4,
+    Heptatonic = 7,
+    Dodecatonic = 12,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -687,7 +569,7 @@ impl Key {
         for i in 0..self.octaves {
             notes.iter().for_each(|n| {
                 ret.push(
-                    PianoKey::from_str(&format!("{}{}", *n, i + self.base_note.octave)).unwrap_or(
+                    PianoKey::from_str(&format!("{}{}", *n, i + self.base_note.octave)).unwrap_or_else(|_|
                         PianoKey::from_str(&format!("{}{}", *n, PianoKey::max_octave())).unwrap(),
                     ),
                 )
@@ -713,6 +595,94 @@ impl fmt::Display for Key {
         notes.iter().for_each(|n| ret.push_str(&format!("{} ", *n)));
         ret.push_str("]");
         write!(f, "{}", ret)
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct Cents(f64);
+
+impl From<f64> for Cents {
+    fn from(f: f64) -> Self {
+        Cents(f)
+    }
+}
+
+impl From<Cents> for f64 {
+    fn from(c: Cents) -> Self {
+        c.0
+    }
+}
+
+impl From<Semitones> for Cents {
+    fn from(s: Semitones) -> Self {
+        Cents(i8::from(s) as f64 * f64::from(SEMITONE_CENTS))
+    }
+}
+
+impl From<Interval> for Cents {
+    fn from(i: Interval) -> Self {
+        Semitones::from(i).into()
+    }
+}
+
+impl Div for Cents {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self {
+        Cents(f64::from(self) / f64::from(rhs))
+    }
+}
+
+impl AddAssign<Cents> for Pitch {
+    #[allow(clippy::suspicious_op_assign_impl)] // needed to stop clippy from yelling
+    fn add_assign(&mut self, rhs: Cents) {
+        self.0 *= 2.0f64.powf((rhs / Cents::from(Interval::Octave)).into())
+    }
+}
+
+impl MulAssign<f64> for Hertz {
+    fn mul_assign(&mut self, rhs: f64) {
+        self.0 *= rhs;
+    }
+}
+
+impl Hertz {
+    fn abs(self) -> Self {
+        Self(self.0.abs())
+    }
+}
+
+impl PartialEq for Pitch {
+    fn eq(&self, other: &Pitch) -> bool {
+        let tolerance = Hertz(0.1);
+        let difference = (self.0 - other.0).abs();
+        difference < tolerance
+    }
+}
+
+impl AddAssign<Semitones> for Pitch {
+    fn add_assign(&mut self, rhs: Semitones) {
+        *self += Cents::from(rhs)
+    }
+}
+
+impl AddAssign<Interval> for Pitch {
+    fn add_assign(&mut self, rhs: Interval) {
+        *self += Cents::from(rhs)
+    }
+}
+
+impl From<PianoKey> for Pitch {
+    fn from(sp: PianoKey) -> Self {
+        use Interval::*;
+        let mut ret = Pitch::new(C_ZERO);
+        // Add octaves
+        for _ in 0..sp.octave {
+            ret += Octave;
+        }
+        // Add note offset
+        ret += sp.note.letter.interval_from_c();
+        ret
     }
 }
 
@@ -765,7 +735,7 @@ impl Iterator for MusicMaker {
 
         let value = self.volume
             * PI
-            * Sample::from(Pitch::from(self.current_note))
+            * self.get_frequency()
             * self.current_sample as Sample
             / f64::from(self.sample_rate) as Sample;
         // when to switch notes?
@@ -811,5 +781,11 @@ impl fmt::Display for MusicMaker {
             key.base_note.octave + key.octaves,
             key
         )
+    }
+}
+
+impl From<Pitch> for Sample {
+    fn from(p: Pitch) -> Self {
+        f64::from(p) as f32
     }
 }

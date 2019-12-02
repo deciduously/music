@@ -6,11 +6,14 @@ Random music!
 * Run program - `cargo run`
 
 ```txt
+$ cargo run -- -h
+    Finished dev [unoptimized + debuginfo] target(s) in 0.05s
+     Running `target/debug/music -h`
 music 0.1.0
 music is a procedural single-tone melody generator
 
 USAGE:
-    mod.exe [FLAGS] [OPTIONS]
+    music [FLAGS] [OPTIONS]
 
 FLAGS:
     -h, --help          Prints help information
@@ -26,10 +29,11 @@ OPTIONS:
 For example:
 
 ```txt
-$> cargo run -- -s locrian -b Eb2 -o 3
-    Finished dev [unoptimized + debuginfo] target(s) in 0.07s
-     Running `target\debug\music.exe -s locrian -b Eb2 -o 3`
-Cool Tunes (tm)
-Playing from the Locrian scale from E♭2 over 3 octave(s)
+$ cargo run -- -s locrian -b Eb2 -o 3
+    Finished dev [unoptimized + debuginfo] target(s) in 0.02s
+     Running `target/debug/music -s locrian -b Eb2 -o 3`
+.: Cool Tunes :.
+Generating music from the E♭ Locrian mode
+Octaves: 2 - 5
 [ E♭ E F# G# A B C# E♭ ]
 ```

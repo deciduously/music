@@ -14,71 +14,7 @@ fn test_subtract_hertz() {
 #[test]
 fn test_new_pitch() {
     assert_eq!(Pitch::default(), Pitch(Hertz(440.0)));
-    assert_eq!(Pitch::new(MIDDLE_C), Pitch(Hertz(261.621)));
-}
-
-#[test]
-fn test_semitones_to_cents() {
-    assert_eq!(Cents::from(Semitones(1)), Cents(100.0));
-    assert_eq!(Cents::from(Semitones(12)), Cents(1200.0));
-}
-
-#[test]
-fn test_interval_to_cents() {
-    use Interval::*;
-    assert_eq!(Cents::from(Unison), Cents(0.0));
-    assert_eq!(Cents::from(Min2), Cents(100.0));
-    assert_eq!(Cents::from(Octave), Cents(1200.0));
-}
-
-#[test]
-fn test_add_semitones() {
-    assert_eq!(Semitones(2) + Semitones(4), Semitones(6));
-}
-
-#[test]
-fn test_add_interval() {
-    use Interval::*;
-    assert_eq!(Unison + Unison, Unison);
-    assert_eq!(Unison + Maj3, Maj3);
-    assert_eq!(Maj2 + Min3, Perfect4);
-    assert_eq!(Octave + Octave, Unison);
-    assert_eq!(Tritone + Tritone, Unison);
-    assert_eq!(Maj7 + Min3, Maj2);
-}
-
-#[test]
-fn test_sub_interval() {
-    use Interval::*;
-    assert_eq!(Unison - Unison, Unison);
-    assert_eq!(Unison - Maj3, Min6);
-    assert_eq!(Maj2 - Min3, Maj7);
-    assert_eq!(Octave - Octave, Unison);
-    assert_eq!(Tritone - Tritone, Unison);
-    assert_eq!(Maj7 - Min3, Min6);
-}
-
-#[test]
-fn test_add_cents_to_pitch() {
-    let mut pitch = Pitch::default();
-    pitch += Cents(3.9302);
-    assert_eq!(pitch, Pitch::new(Hertz(441.0)));
-}
-
-#[test]
-fn test_add_semitones_to_pitch() {
-    use Interval::Octave;
-    let mut pitch = Pitch::default();
-    pitch += Semitones::from(Octave);
-    assert_eq!(pitch, Pitch::new(Hertz(880.0)))
-}
-
-#[test]
-fn test_add_interval_to_pitch() {
-    use Interval::Min2;
-    let mut pitch = Pitch::default();
-    pitch += Min2;
-    assert_eq!(pitch, Pitch::new(Hertz(466.1)))
+    assert_eq!(Pitch::new(MIDDLE_C), Pitch(Hertz(261.626)));
 }
 
 #[test]
@@ -138,36 +74,25 @@ fn test_new_piano_key() {
 }
 
 #[test]
-#[should_panic]
-fn test_reject_piano_key_too_high() {
-    assert_eq!(PianoKey::new("A9").unwrap(), PianoKey::default());
+fn test_add_interval() {
+    use Interval::*;
+    assert_eq!(Unison + Unison, Unison);
+    assert_eq!(Unison + Maj3, Maj3);
+    assert_eq!(Maj2 + Min3, Perfect4);
+    assert_eq!(Octave + Octave, Unison);
+    assert_eq!(Tritone + Tritone, Unison);
+    assert_eq!(Maj7 + Min3, Maj2);
 }
 
 #[test]
-#[should_panic]
-fn test_reject_piano_key_invalid_letter() {
-    assert_eq!(PianoKey::new("Q7").unwrap(), PianoKey::default());
-}
-
-#[test]
-fn test_piano_key_to_str() {
-    assert_eq!(PianoKey::default().to_string(), "C0".to_string());
-    assert_eq!(PianoKey::new("A#4").unwrap().to_string(), "A#4".to_string());
-    assert_eq!(PianoKey::new("Bb5").unwrap().to_string(), "B♭5".to_string())
-}
-
-#[test]
-fn test_char_strs() {
-        assert_eq!(char_strs("Hello"), ["H", "e", "l", "l", "o"])
-}
-
-#[test]
-fn test_chromatic_intervals() {
-    use Interval::Min2;
-    assert_eq!(
-        Scale::Chromatic.get_intervals(),
-        vec![Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2, Min2]
-    );
+fn test_sub_interval() {
+    use Interval::*;
+    assert_eq!(Unison - Unison, Unison);
+    assert_eq!(Unison - Maj3, Min6);
+    assert_eq!(Maj2 - Min3, Maj7);
+    assert_eq!(Octave - Octave, Unison);
+    assert_eq!(Tritone - Tritone, Unison);
+    assert_eq!(Maj7 - Min3, Min6);
 }
 
 #[test]
@@ -181,12 +106,6 @@ fn test_note_letter_to_interval() {
     assert_eq!(G.interval_from_c(), Perfect5);
     assert_eq!(A.interval_from_c(), Maj6);
     assert_eq!(B.interval_from_c(), Maj7);
-}
-
-#[test]
-fn test_piano_key_to_pitch() {
-    assert_eq!(Pitch::from(PianoKey::new("A4").unwrap()), Pitch::default());
-    assert_eq!(Pitch::from(PianoKey::default()), Pitch::new(C_ZERO));
 }
 
 #[test]
@@ -268,14 +187,6 @@ fn test_g_major() {
 }
 
 #[test]
-fn test_chromatic() {
-    assert_eq!(
-        &Key::new(Scale::Chromatic, PianoKey::default(), 1).to_string(),
-        "[ C C# D D# E F F# G G# A A# B C ]"
-    )
-}
-
-#[test]
 fn test_a_minor() {
     use Mode::*;
     use Scale::*;
@@ -286,6 +197,44 @@ fn test_a_minor() {
 }
 
 #[test]
-fn test_all_scales() {
-    // TODO assert_eq(all_scales == 86 or sommaught)
+fn test_semitones_to_cents() {
+    assert_eq!(Cents::from(Semitones(1)), Cents(100.0));
+    assert_eq!(Cents::from(Semitones(12)), Cents(1200.0));
+}
+
+#[test]
+fn test_interval_to_cents() {
+    use Interval::*;
+    assert_eq!(Cents::from(Unison), Cents(0.0));
+    assert_eq!(Cents::from(Min2), Cents(100.0));
+    assert_eq!(Cents::from(Octave), Cents(1200.0));
+}
+
+#[test]
+fn test_add_cents_to_pitch() {
+    let mut pitch = Pitch::default();
+    pitch += Cents(3.9302);
+    assert_eq!(pitch, Pitch::new(Hertz(441.0)));
+}
+
+#[test]
+fn test_add_semitones_to_pitch() {
+    use Interval::Octave;
+    let mut pitch = Pitch::default();
+    pitch += Semitones::from(Octave);
+    assert_eq!(pitch, Pitch::new(Hertz(880.0)))
+}
+
+#[test]
+fn test_add_interval_to_pitch() {
+    use Interval::Min2;
+    let mut pitch = Pitch::default();
+    pitch += Min2;
+    assert_eq!(pitch, Pitch::new(Hertz(466.1)))
+}
+
+#[test]
+fn test_piano_key_to_pitch() {
+    assert_eq!(Pitch::from(PianoKey::new("A4").unwrap()), Pitch::default());
+    assert_eq!(Pitch::from(PianoKey::default()), Pitch::new(C_ZERO));
 }
