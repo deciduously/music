@@ -40,7 +40,7 @@ Octaves: 2 - 6
 
 However, at the end of the day, it's just the thing in the cover image.
 
-While the complete runnable source code is embedded within this post, the full project can also be found on [GitHub](https://github.com/deciduously/music) along with this Markdown.  Feel free to make a PR!  I'll keep it in sync here.
+While the complete runnable source code is embedded within this post, the full project can also be found on [GitHub](https://github.com/deciduously/music) along with some [pre-compiled binaries](https://github.com/deciduously/music/releases/tag/v0.1.0).  Feel free to make a PR!
 
 ## Table of Contents
 
@@ -445,8 +445,6 @@ Sound is a continuous spectrum of frequency, but when we make music we tend to p
 
 One of the super cool things about it is the [octave](https://en.wikipedia.org/wiki/Octave).  Octaves just sound related, you know?
 
-// TODO embed octave sound
-
 It turns out the relationship is physical - to increase any pitch by an octave, you double the frequency.  Not only that, this fixed ratio actually holds for any arbitrary smaller or larger interval as well.  This system is called ["equal temperament"](https://en.wikipedia.org/wiki/Equal_temperament) - every pair of adjacent notes has the same ratio, regardless of how you define "adjacent".  To get halfway to the next octave, you multiply by 1.5 instead of 2.
 
 To start working with concrete numbers, we need some sort of standard to start multiplying from.   Some of the world has settled on [440Hz](https://en.wikipedia.org/wiki/A440_(pitch_standard)) - it's [ISO](https://en.wikipedia.org/wiki/International_Organization_for_Standardization) [16](https://www.iso.org/standard/3601.html), at least.  It's also apparently called "The Stuttgart Pitch", which is funny.
@@ -600,7 +598,7 @@ fn main() {
 }
 ```
 
-I'll briefly cover the other tidbits: `default_output_device()` attempts to find the running system's currently configured default audio device, and a [`Sink`](https://docs.rs/rodio/0.10.0/rodio/struct.Sink.html) is an abstraction for handling multiple sounds.  It works like an audio track.  You can `append()` a new `Source` of sound, and the first one appended starts the track.  A newly appended track will play after whatever is playing finishes, but a `rodioL::source::SineWive` is an infinite source.
+I'll briefly cover the other tidbits: `default_output_device()` attempts to find the running system's currently configured default audio device, and a [`Sink`](https://docs.rs/rodio/0.10.0/rodio/struct.Sink.html) is an abstraction for handling multiple sounds.  It works like an audio track.  You can `append()` a new `Source` of sound, and the first one appended starts the track.  A newly appended track will play after whatever is playing finishes, but a `rodio::source::SineWive` is an infinite source.
 
 Finally, we have to `sleep_until_end()` the thread until the sound completes playing (which for `SineWave` is never), or else the program will move right along and exit.  You'll have to kill this run with `Ctrl-C`, this sound will play forever.
 
@@ -1281,8 +1279,6 @@ whole, whole, half, whole, whole, whole, half
   2  +  2   +  1  +   2   +  2  +   2  +  1   =  12  
 C    D     E      F       G      A     B     C
 ```
-
-TODO embed sound
 
 We can hardcode this sequence in Rust as a `Vec<Interval>`:
 
@@ -2227,15 +2223,9 @@ impl Source for MusicMaker {
 }
 ```
 
-A little plumbing:
-
-```rust
-
-```
-
 The `current_frame_len()` and `total_duration()` bodies indicate that this source is infinite - there's no finite duration to return.  You'll need to kill the process some other way.  The `channels` method returns the number of frequencies in the signal, and we're just working with a single wave, so a single channel is all we need.
 
-Now we're finally ready to call that `choose()` method on something.  First, though, the full signature is TODO - we need to select a random seed from the `rand` crate.  We don't are about cryptographic soundness here, we just need random numbers, but speed is useful.  The [`rand::rngs::SmallRng`](https://docs.rs/rand/0.7.2/rand/rngs/struct.SmallRng.html) random number generator is ideal for that.  We can initialize it using `from_entropy()` to ultimately source it from the operating system - so, sorta in a roundabout way it's `dev/*random`, at least?  Maybe?
+Now we're finally ready to call that `choose()` method on something.  First, though, we need to select a random seed from the `rand` crate.  We don't are about cryptographic soundness here, we just need random numbers, but speed is useful.  The [`rand::rngs::SmallRng`](https://docs.rs/rand/0.7.2/rand/rngs/struct.SmallRng.html) random number generator is ideal for that.  We can initialize it using `from_entropy()` to ultimately source it from the operating system - so, sorta in a roundabout way it actually is `dev/urandom`, or similar.
 
 ```diff
 +  use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
@@ -2384,7 +2374,7 @@ fn main() {
 }
 ```
 
-Make sure the code generation worked as expected with `cargo run -- -h` - you use `--` to pas command line arguments through `cargo run`, but you'd pass them directly to a binary: `./music -h`:
+Make sure the code generation worked as expected with `cargo run -- -h` - you use `--` to pass command line arguments through `cargo run`, but you'd pass them directly to a binary: `./music -h`:
 
 ```txt
 $cargo run -- -h
