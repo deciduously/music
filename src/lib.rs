@@ -222,10 +222,6 @@ impl Note {
         };
         ret
     }
-    fn get_offset_from_interval(self, other: Interval) -> Interval {
-        let self_interval_from_c = self.interval_from_c();
-        self_interval_from_c - other
-    }
     fn get_offset(self, other: Self) -> Interval {
         let self_interval_from_c = self.interval_from_c();
         let other_interval_from_c = other.interval_from_c();

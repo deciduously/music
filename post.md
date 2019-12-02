@@ -1096,6 +1096,64 @@ impl AddAssign for Interval {
 We can also relate Notes to Intervals pretty well:
 
 ```rust
+#[test]
+fn test_get_note_interval_from_c() {
+    use Interval::*;
+    assert_eq!(Note::from_str("A").unwrap().interval_from_c(), Maj6);
+    assert_eq!(Note::from_str("A#").unwrap().interval_from_c(), Min7);
+    assert_eq!(Note::from_str("Bb").unwrap().interval_from_c(), Min7);
+    assert_eq!(Note::from_str("B").unwrap().interval_from_c(), Maj7);
+    assert_eq!(Note::from_str("C").unwrap().interval_from_c(), Unison);
+    assert_eq!(Note::from_str("C#").unwrap().interval_from_c(), Min2);
+    assert_eq!(Note::from_str("D").unwrap().interval_from_c(), Maj2);
+    assert_eq!(Note::from_str("D#").unwrap().interval_from_c(), Min3);
+    assert_eq!(Note::from_str("E").unwrap().interval_from_c(), Maj3);
+    assert_eq!(Note::from_str("F").unwrap().interval_from_c(), Perfect4);
+    assert_eq!(Note::from_str("F#").unwrap().interval_from_c(), Tritone);
+    assert_eq!(Note::from_str("G").unwrap().interval_from_c(), Perfect5);
+    assert_eq!(Note::from_str("G#").unwrap().interval_from_c(), Min6);
+}
+
+#[test]
+fn test_get_note_offset() {
+    use Interval::*;
+    let a = Note::from_str("A").unwrap();
+    assert_eq!(Note::from_str("A").unwrap().get_offset(a), Unison);
+    assert_eq!(Note::from_str("A#").unwrap().get_offset(a), Min2);
+    assert_eq!(Note::from_str("B").unwrap().get_offset(a), Maj2);
+    assert_eq!(Note::from_str("C").unwrap().get_offset(a), Min3);
+    assert_eq!(Note::from_str("C#").unwrap().get_offset(a), Maj3);
+    assert_eq!(Note::from_str("D").unwrap().get_offset(a), Perfect4);
+    assert_eq!(Note::from_str("D#").unwrap().get_offset(a), Tritone);
+    assert_eq!(Note::from_str("E").unwrap().get_offset(a), Perfect5);
+    assert_eq!(Note::from_str("F").unwrap().get_offset(a), Min6);
+    assert_eq!(Note::from_str("F#").unwrap().get_offset(a), Maj6);
+    assert_eq!(Note::from_str("G").unwrap().get_offset(a), Min7);
+    assert_eq!(Note::from_str("G#").unwrap().get_offset(a), Maj7);
+}
+
+#[test]
+fn test_add_interval_to_note() {
+    use Interval::*;
+    let a = Note::from_str("A").unwrap();
+    assert_eq!(a + Unison, a);
+    assert_eq!(a + Min2, Note::from_str("A#").unwrap());
+    assert_eq!(a + Maj2, Note::from_str("B").unwrap());
+    assert_eq!(a + Min3, Note::from_str("C").unwrap());
+    assert_eq!(a + Maj3, Note::from_str("C#").unwrap());
+    assert_eq!(a + Perfect4, Note::from_str("D").unwrap());
+    assert_eq!(a + Tritone, Note::from_str("D#").unwrap());
+    assert_eq!(a + Perfect5, Note::from_str("E").unwrap());
+    assert_eq!(a + Min6, Note::from_str("F").unwrap());
+    assert_eq!(a + Maj6, Note::from_str("F#").unwrap());
+    assert_eq!(a + Min7, Note::from_str("G").unwrap());
+    assert_eq!(a + Maj7, Note::from_str("G#").unwrap());
+}
+```
+
+This all works with the logic we've already modelled:
+
+```rust
 impl From<Interval> for Note {
     // Take an interval from C
     fn from(i: Interval) -> Self {
@@ -1128,7 +1186,7 @@ impl AddAssign<Interval> for Note {
 }
 ```
 
-For `Add<Interval> for Note` to work, we need to increment a `Note` with `inc()`:
+For `Add<Interval> for Note` to work, we need to add some extra helper methods`:
 
 ```rust
 impl NoteLetter {
@@ -1148,6 +1206,26 @@ impl NoteLetter {
 }
 
 impl Note {
+    fn interval_from_c(self) -> Interval {
+        use Accidental::*;
+        let ret = self.letter.interval_from_c();
+        if let Some(acc) = self.accidental {
+            match acc {
+                Flat => return Interval::from(Semitones::from(i8::from(Semitones::from(ret)) - 1)),
+                Sharp => return ret + Interval::Min2,
+            }
+        };
+        ret
+    }
+    fn get_offset_from_interval(self, other: Interval) -> Interval {
+        let self_interval_from_c = self.interval_from_c();
+        self_interval_from_c - other
+    }
+    fn get_offset(self, other: Self) -> Interval {
+        let self_interval_from_c = self.interval_from_c();
+        let other_interval_from_c = other.interval_from_c();
+        self_interval_from_c - other_interval_from_c
+    }
     fn inc(&mut self) {
         use Accidental::*;
         use NoteLetter::*;
@@ -1470,6 +1548,18 @@ The natural minor scale, is obtained by starting at A4 and counted up white keys
 whole, half, whole, whole, half, whole, whole
 ```
 
+```rust
+#[test]
+fn test_a_minor() {
+    use Mode::*;
+    use Scale::*;
+    assert_eq!(
+        &Key::new(Diatonic(Aeolian), PianoKey::from_str("A4").unwrap(), 1).to_string(),
+        "[ A B C D E F G A ]"
+    )
+}
+```
+
 It's the same pattern, just starting at a different offset.  You can play a corresponding minor scale using only the white keys by simply starting at the sixth note of the C major scale (or incrementing a major sixth), which is A.  Try counting it out yourself up from A4.
 
 There's an absurdly fancy name for each offset:
@@ -1503,7 +1593,7 @@ impl Mode {
 }
 ```
 
-Let's also hardcode the ScaleLenth:
+Let's also hardcode the scale length:
 
 ```rust
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -1750,7 +1840,8 @@ Discrete units like `Semitones` are useful for working with a keyboard, but as w
 Beyond the twelve 12 semitones in an octave, each semitone is divided into 100 [cents](https://en.wikipedia.org/wiki/Cent_(music)).  This means a full octave, representing a 2:1 ratio in frequency, spans 1200 cents, and each cent can be divided without losing the ratio as well if needed:
 
 ```rust
-struct Cents(f64);
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct Cents(f64);
 ```
 
 We need to do a little plumbing to let ourselves work at this higher level of abstraction.  We need to be able to translate our discrete `Semitones` into `Cents` ergonomically:
@@ -1766,15 +1857,15 @@ fn test_semitones_to_cents() {
 We can give ourselves some conversions to the inner primitive:
 
 ```rust
-impl From<Cents> for f64 {
-    fn from(cents: Cents) -> Self {
-        cents.0
+impl From<f64> for Cents {
+    fn from(f: f64) -> Self {
+        Cents(f)
     }
 }
 
-impl From<Semitones> for i8 {
-    fn from(semitones: Semitones) -> Self {
-        semitones.0
+impl From<Cents> for f64 {
+    fn from(c: Cents) -> Self {
+        c.0
     }
 }
 ```
@@ -1785,8 +1876,8 @@ Now we can encode the conversion factor:
 const SEMITONE_CENTS: Cents = Cents(100.0);
 
 impl From<Semitones> for Cents {
-    fn from(semitones: Semitones) -> Self {
-        Cents(i8::from(semitones) as f64 * f64::from(SEMITONE_CENTS))
+    fn from(s: Semitones) -> Self {
+        Cents(i8::from(s) as f64 * f64::from(SEMITONE_CENTS))
     }
 }
 ```
@@ -1804,14 +1895,6 @@ fn test_interval_to_cents() {
 ```
 
 We need `Interval` variants to map directly to `Semitones` instead of plain integers, to make sure they're always turned into `Cents` correctly:
-
-```rust
-impl From<Interval> for Semitones {
-    fn from(i: Interval) -> Self {
-        Semitones(i as i8)
-    }
-}
-```
 
 With that, it's easy to map `Interval`s to `Cents`:
 
@@ -1854,7 +1937,7 @@ Lets try to increase the standard pitch by single Hertz using the value above:
 fn test_add_cents_to_pitch() {
     let mut pitch = Pitch::default();
     pitch += Cents(3.9302);
-    assert_eq!(pitch, Pitch::new(441.0));
+    assert_eq!(pitch, Pitch::new(Hertz(441.0)));
 }
 ```
 
@@ -1880,8 +1963,9 @@ The [`AddAssign`](https://doc.rust-lang.org/std/ops/trait.AddAssign.html) trait 
 use std::ops::AddAssign
 
 impl AddAssign<Cents> for Pitch {
+    #[allow(clippy::suspicious_op_assign_impl)] // needed to stop clippy from yelling
     fn add_assign(&mut self, rhs: Cents) {
-        self.frequency *= 2.0_f64.powf((rhs / Cents::from(Interval::Octave)).into())
+        self.0 *= 2.0f64.powf((rhs / Cents::from(Interval::Octave)).into())
     }
 }
 ```
@@ -1889,6 +1973,8 @@ impl AddAssign<Cents> for Pitch {
 Oops, we also need to `*=` an `f64` to a `Hertz`:
 
 ```rust
+use std::ops::MulAssign;
+
 impl MulAssign<f64> for Hertz {
     fn mul_assign(&mut self, rhs: f64) {
         self.0 *= rhs;
@@ -1902,13 +1988,7 @@ If that's not quite clear, this is the exact equation shown above with a bit of 
 
 Sadly, though, `cargo test` tells us we have a problem:
 
-```txt
-Diff < left / right > :
- Pitch {
-<    frequency: 441.0000105867894,
->    frequency: 441.0,
- }
-```
+![fail float](https://thepracticaldev.s3.amazonaws.com/i/bu70ahx1w5rfln6sa3jq.png)
 
 Floating point arithmetic is not precise.  However, a delta of as much as a whole Hertz, or almost 4 cents, isn't large enough for any human to perceive.   The [just-noticeable difference](https://en.wikipedia.org/wiki/Just-noticeable_difference) is about 5 or 6 cents, or 5*2^(1/1200).  In this type we just care that it's "close enough".  At a glance we can look at those results and understand that we got where we need to be.  To convince Rust we're good to go, we can override the compiler-derived [`PartialEq`](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html) behavior for this type:
 
@@ -1948,7 +2028,7 @@ fn test_add_semitones_to_pitch() {
     use Interval::Octave;
     let mut pitch = Pitch::default();
     pitch += Semitones::from(Octave);
-    assert_eq!(pitch, Pitch::new(880.0))
+    assert_eq!(pitch, Pitch::new(Hertz(880.0)))
 }
 ```
 
@@ -1956,8 +2036,8 @@ That's pretty easy with the work we've already done:
 
 ```rust
 impl AddAssign<Semitones> for Pitch {
-    fn add_assign(&mut self, semitones: Semitones) {
-        *self += Cents::from(semitones)
+    fn add_assign(&mut self, rhs: Semitones) {
+        *self += Cents::from(rhs)
     }
 }
 ```
@@ -1970,7 +2050,7 @@ fn test_add_interval_to_pitch() {
     use Interval::Min2;
     let mut pitch = Pitch::default();
     pitch += Min2;
-    assert_eq!(pitch, Pitch::new(466.1))
+    assert_eq!(pitch, Pitch::new(Hertz(466.1)))
 }
 ```
 
@@ -1978,8 +2058,8 @@ Naturally, this is also trivial:
 
 ```rust
 impl AddAssign<Interval> for Pitch {
-    fn add_assign(&mut self, i: Interval) {
-        *self += Cents::from(i)
+    fn add_assign(&mut self, rhs: Interval) {
+        *self += Cents::from(rhs)
     }
 }
 ```
@@ -1994,8 +2074,6 @@ pub const C_ZERO: Hertz = Hertz(16.352);
 
 This is super low - most humans bottom out around 20Hz.  The 88-key piano's lowest note is up at A0, a 9-semitone [`major sixth`](https://en.wikipedia.org/wiki/Major_sixth) higher.  Note how even though this is a different abstraction for working with pitches, the frequencies baked in to the standard are still pinned to the A440 scale.
 
-// TODO go through the rest of FromStr
-
 We want to be able to convert from piano keys to pitches and have the frequencies work out for both standards:
 
 ```rust
@@ -2003,6 +2081,24 @@ We want to be able to convert from piano keys to pitches and have the frequencie
 fn test_piano_key_to_pitch() {
     assert_eq!(Pitch::from(PianoKey::new("A4").unwrap()), Pitch::default());
     assert_eq!(Pitch::from(PianoKey::default()), Pitch::new(C_ZERO));
+}
+```
+
+To get there, we can add octaves and smaller intervals up from `C0` to whatever note we need;
+
+```rust
+impl From<PianoKey> for Pitch {
+    fn from(sp: PianoKey) -> Self {
+        use Interval::*;
+        let mut ret = Pitch::new(C_ZERO);
+        // Add octaves
+        for _ in 0..sp.octave {
+            ret += Octave;
+        }
+        // Add note offset
+        ret += sp.note.letter.interval_from_c();
+        ret
+    }
 }
 ```
 
