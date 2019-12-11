@@ -686,9 +686,34 @@ impl From<PianoKey> for Pitch {
     }
 }
 
+//enum MusicSeed {
+//    ByteStream(Box<dyn Iterator<Item = u8>>),
+//    Linear,
+//    Random(SmallRng),
+//}
+
+trait MusicSeed: Send {
+    fn get_note(&mut self, key: Key) -> PianoKey;
+}
+
+struct RandomSeed(SmallRng);
+
+impl Default for RandomSeed {
+    fn default() -> Self {
+        Self(SmallRng::from_entropy())
+    }
+}
+
+impl MusicSeed for RandomSeed {
+    fn get_note(&mut self, key: Key) -> PianoKey {
+        let keys = key.all_keys();
+        *keys.choose(&mut self.0).unwrap()
+    }
+}
+
 pub struct MusicMaker {
     key: Key,
-    seed: SmallRng,
+    seed: Box<dyn MusicSeed>,
     current_note: PianoKey,
     current_sample: usize,
     sample_rate: Hertz,
@@ -699,7 +724,7 @@ impl Default for MusicMaker {
     fn default() -> Self {
         Self {
             key: Key::default(),
-            seed: SmallRng::from_entropy(),
+            seed: Box::new(RandomSeed::default()),
             current_note: PianoKey::from_str("C4").unwrap(),
             current_sample: usize::default(),
             sample_rate: SAMPLE_RATE,
@@ -719,8 +744,9 @@ impl MusicMaker {
         pitch.into()
     }
     fn new_note(&mut self) {
-        let keys = self.key.all_keys();
-        self.current_note = *keys.choose(&mut self.seed).unwrap();
+        let new_note = self.seed.get_note(self.key);
+        //print!("{} ", new_note); TODO doenst work b/c sleep until end, i think?
+        self.current_note = new_note;
     }
     pub fn set_key(mut self, base_note: PianoKey, scale: Scale, octaves: u8) -> Self {
         self.key = Key::new(scale, base_note, octaves);
