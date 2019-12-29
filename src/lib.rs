@@ -569,9 +569,11 @@ impl Key {
         for i in 0..self.octaves {
             notes.iter().for_each(|n| {
                 ret.push(
-                    PianoKey::from_str(&format!("{}{}", *n, i + self.base_note.octave)).unwrap_or_else(|_|
-                        PianoKey::from_str(&format!("{}{}", *n, PianoKey::max_octave())).unwrap(),
-                    ),
+                    PianoKey::from_str(&format!("{}{}", *n, i + self.base_note.octave))
+                        .unwrap_or_else(|_| {
+                            PianoKey::from_str(&format!("{}{}", *n, PianoKey::max_octave()))
+                                .unwrap()
+                        }),
                 )
             });
         }
@@ -692,6 +694,8 @@ impl From<PianoKey> for Pitch {
 //    Random(SmallRng),
 //}
 
+// Linear should implement Iterator, and get_note() will just call next()
+
 trait MusicSeed: Send {
     fn get_note(&mut self, key: Key) -> PianoKey;
 }
@@ -708,6 +712,24 @@ impl MusicSeed for RandomSeed {
     fn get_note(&mut self, key: Key) -> PianoKey {
         let keys = key.all_keys();
         *keys.choose(&mut self.0).unwrap()
+    }
+}
+
+#[derive(Default)]
+struct LinearSeed(u8);
+
+impl Iterator for LinearSeed {
+    type Item = u8;
+    fn next(&mut self) -> Option<Self::Item> {
+        let ret = self.0;
+        self.0 += 1;
+        Some(ret)
+    }
+}
+
+impl MusicSeed for LinearSeed {
+    fn get_note(&mut self, key: Key) -> PianoKey {
+        unimplemented!()
     }
 }
 
@@ -759,10 +781,7 @@ impl Iterator for MusicMaker {
     fn next(&mut self) -> Option<Self::Item> {
         self.current_sample = self.current_sample.wrapping_add(1); // will cycle
 
-        let value = self.volume
-            * PI
-            * self.get_frequency()
-            * self.current_sample as Sample
+        let value = self.volume * PI * self.get_frequency() * self.current_sample as Sample
             / f64::from(self.sample_rate) as Sample;
         // when to switch notes?
         if self.current_sample as f64 >= f64::from(self.sample_rate) {
