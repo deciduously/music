@@ -1,20 +1,19 @@
-use super::*;
+use super::theory::{
+    cent::Cents, hertz::*, interval::*, key::Key, note::*, piano_key::PianoKey, pitch::Pitch,
+    scale::*, semitone::Semitones,
+};
 use pretty_assertions::assert_eq;
-
-#[test]
-fn test_cool_greeting() {
-    assert_eq!(GREETING, ".: Cool Tunes :.");
-}
+use std::str::FromStr;
 
 #[test]
 fn test_subtract_hertz() {
-    assert_eq!(Hertz(440.0) - Hertz(1.0), Hertz(439.0))
+    assert_eq!(Hertz::from(440.0) - Hertz::from(1.0), Hertz::from(439.0))
 }
 
 #[test]
 fn test_new_pitch() {
-    assert_eq!(Pitch::default(), Pitch(Hertz(440.0)));
-    assert_eq!(Pitch::new(MIDDLE_C), Pitch(Hertz(261.626)));
+    assert_eq!(Pitch::default(), Pitch::new(Hertz::from(440.0)));
+    assert_eq!(Pitch::new(MIDDLE_C), Pitch::new(Hertz::from(261.626)));
 }
 
 #[test]
@@ -198,23 +197,23 @@ fn test_a_minor() {
 
 #[test]
 fn test_semitones_to_cents() {
-    assert_eq!(Cents::from(Semitones(1)), Cents(100.0));
-    assert_eq!(Cents::from(Semitones(12)), Cents(1200.0));
+    assert_eq!(Cents::from(Semitones::from(1)), Cents::from(100.0));
+    assert_eq!(Cents::from(Semitones::from(12)), Cents::from(1200.0));
 }
 
 #[test]
 fn test_interval_to_cents() {
     use Interval::*;
-    assert_eq!(Cents::from(Unison), Cents(0.0));
-    assert_eq!(Cents::from(Min2), Cents(100.0));
-    assert_eq!(Cents::from(Octave), Cents(1200.0));
+    assert_eq!(Cents::from(Unison), Cents::from(0.0));
+    assert_eq!(Cents::from(Min2), Cents::from(100.0));
+    assert_eq!(Cents::from(Octave), Cents::from(1200.0));
 }
 
 #[test]
 fn test_add_cents_to_pitch() {
     let mut pitch = Pitch::default();
-    pitch += Cents(3.9302);
-    assert_eq!(pitch, Pitch::new(Hertz(441.0)));
+    pitch += Cents::from(3.9302);
+    assert_eq!(pitch, Pitch::new(Hertz::from(441.0)));
 }
 
 #[test]
@@ -222,7 +221,7 @@ fn test_add_semitones_to_pitch() {
     use Interval::Octave;
     let mut pitch = Pitch::default();
     pitch += Semitones::from(Octave);
-    assert_eq!(pitch, Pitch::new(Hertz(880.0)))
+    assert_eq!(pitch, Pitch::new(Hertz::from(880.0)))
 }
 
 #[test]
@@ -230,7 +229,7 @@ fn test_add_interval_to_pitch() {
     use Interval::Min2;
     let mut pitch = Pitch::default();
     pitch += Min2;
-    assert_eq!(pitch, Pitch::new(Hertz(466.1)))
+    assert_eq!(pitch, Pitch::new(Hertz::from(466.1)))
 }
 
 #[test]

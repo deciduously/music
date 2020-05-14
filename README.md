@@ -2,6 +2,8 @@
 
 Random music!
 
+Install `libasuond2-dev`, e.g. `sudo apt install libasound2-dev`.
+
 * Run tests - `cargo test`
 * Run program - `cargo run`
 

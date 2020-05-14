@@ -1,4 +1,7 @@
-use music::*;
+use music::{
+    output::MusicMaker,
+    theory::{piano_key::PianoKey, pitch::Pitch, scale::Scale},
+};
 use rodio::{default_output_device, source::SineWave, Sink};
 use structopt::StructOpt;
 
@@ -19,6 +22,9 @@ struct Opt {
     #[structopt(short, long, default_value = "1")]
     octaves: u8,
 }
+
+/// Displayed in the CLI each run
+const GREETING: &str = ".: Cool Tunes :.";
 
 fn main() {
     // Read arguments, greet user
