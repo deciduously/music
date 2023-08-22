@@ -1,14 +1,14 @@
-//! All the different strategies for generating music
+//! All the different strategies for generating music.
 
 use crate::theory::{key::Key, piano_key::PianoKey};
 
-mod linear_seed;
-mod random_seed;
+mod linear;
+mod random;
 
-pub use linear_seed::LinearSeed;
-pub use random_seed::RandomSeed;
+pub use linear::Linear;
+pub use random::Random;
 
 /// To be a seed, types simply must implement this single method
-pub trait MusicSeed: Send {
-    fn get_note(&mut self, key: Key) -> PianoKey;
+pub trait Seed: Send {
+	fn get_note(&mut self, key: Key) -> PianoKey;
 }

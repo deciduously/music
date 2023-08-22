@@ -7,35 +7,57 @@ use std::ops::{MulAssign, Sub};
 pub struct Hertz(f64);
 
 impl Hertz {
-    /// Get the absolute value of a Hertz
-    pub fn abs(self) -> Self {
-        Self(self.0.abs())
-    }
+	/// Get the absolute value of a Hertz
+	#[must_use]
+	pub fn abs(self) -> Self {
+		Self(self.0.abs())
+	}
 }
 
 impl Sub for Hertz {
-    type Output = Self;
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self(f64::from(self) - f64::from(rhs))
-    }
+	type Output = Self;
+	fn sub(self, rhs: Self) -> Self::Output {
+		Self(f64::from(self) - f64::from(rhs))
+	}
 }
 
 impl From<Hertz> for f64 {
-    fn from(h: Hertz) -> Self {
-        h.0
-    }
+	fn from(h: Hertz) -> Self {
+		h.0
+	}
 }
 
 impl From<f64> for Hertz {
-    fn from(f: f64) -> Self {
-        Self(f)
-    }
+	fn from(f: f64) -> Self {
+		Self(f)
+	}
+}
+
+impl TryFrom<Hertz> for u32 {
+	type Error = &'static str;
+	fn try_from(h: Hertz) -> Result<Self, Self::Error> {
+		// Catch sign loss.
+		if h.0 < 0.0 {
+			return Err("Cannot convert negative Hertz to u32");
+		}
+
+		// Catch non-integer Hertz.
+		if h.0.fract() != 0.0 {
+			return Err("Cannot convert non-integer Hertz to u32");
+		}
+
+		#[allow(clippy::cast_possible_truncation)]
+		#[allow(clippy::cast_sign_loss)]
+		let result = h.0 as u32;
+
+		Ok(result)
+	}
 }
 
 impl MulAssign<f64> for Hertz {
-    fn mul_assign(&mut self, rhs: f64) {
-        self.0 *= rhs;
-    }
+	fn mul_assign(&mut self, rhs: f64) {
+		self.0 *= rhs;
+	}
 }
 
 /// The standard tuning pitch, per ISO 16

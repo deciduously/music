@@ -9,33 +9,33 @@ const SEMITONE_CENTS: Cents = Cents(100.0);
 pub struct Cents(f64);
 
 impl From<f64> for Cents {
-    fn from(f: f64) -> Self {
-        Cents(f)
-    }
+	fn from(f: f64) -> Self {
+		Cents(f)
+	}
 }
 
 impl From<Cents> for f64 {
-    fn from(c: Cents) -> Self {
-        c.0
-    }
+	fn from(c: Cents) -> Self {
+		c.0
+	}
 }
 
 impl From<Semitones> for Cents {
-    fn from(s: Semitones) -> Self {
-        Cents(i8::from(s) as f64 * f64::from(SEMITONE_CENTS))
-    }
+	fn from(s: Semitones) -> Self {
+		Cents(f64::from(i8::from(s)) * f64::from(SEMITONE_CENTS))
+	}
 }
 
 impl From<Interval> for Cents {
-    fn from(i: Interval) -> Self {
-        Semitones::from(i).into()
-    }
+	fn from(i: Interval) -> Self {
+		Semitones::from(i).into()
+	}
 }
 
 impl Div for Cents {
-    type Output = Self;
+	type Output = Self;
 
-    fn div(self, rhs: Self) -> Self {
-        Cents(f64::from(self) / f64::from(rhs))
-    }
+	fn div(self, rhs: Self) -> Self {
+		Cents(f64::from(self) / f64::from(rhs))
+	}
 }

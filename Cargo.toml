@@ -2,12 +2,16 @@
 name = "music"
 version = "0.1.0"
 authors = ["deciduously <ben@deciduously.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 
 rodio = "0.17"
-structopt = "0.3"
+
+[dependencies.clap]
+
+features = ["derive", "env"]
+version = "4"
 
 [dependencies.rand]
 
