@@ -7,25 +7,18 @@ Install `libasound2-dev`, e.g. `sudo apt install libasound2-dev`.
 - Run tests - `cargo test`
 - Run program - `cargo run`
 
+Usage:
+
 ```txt
-$ cargo run -- -h
-    Finished dev [unoptimized + debuginfo] target(s) in 0.05s
-     Running `target/debug/music -h`
-music 0.1.0
-music is a procedural single-tone melody generator
+Usage: music [OPTIONS]
 
-USAGE:
-    music [FLAGS] [OPTIONS]
-
-FLAGS:
-    -h, --help          Prints help information
-    -p, --pitch-mode    Single-pitch mode
-    -V, --version       Prints version information
-
-OPTIONS:
-    -b, --base-note <base-note>    The base note to calculate the scale from [default: C4]
-    -o, --octaves <octaves>        Number of octaves over which to range, anything over 8 gets parsed as 8 [default: 1]
-    -s, --scale <scale>            The series of intervals from the base note to use per octave [default: Ionian]
+Options:
+  -p, --pitch-mode             Single-pitch mode
+  -b, --base-note <BASE_NOTE>  The base note to calculate the scale from [default: C4]
+  -s, --scale <SCALE>          The series of intervals from the base note to use per octave [default: Ionian]
+  -o, --octaves <OCTAVES>      Number of octaves over which to range, anything over 8 gets parsed as 8 [default: 1]
+  -h, --help                   Print help
+  -V, --version                Print version
 ```
 
 For example:
