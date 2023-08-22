@@ -58,7 +58,7 @@ impl fmt::Display for Key {
         let notes = self.get_notes();
         let mut ret = String::from("[ ");
         notes.iter().for_each(|n| ret.push_str(&format!("{} ", *n)));
-        ret.push_str("]");
+        ret.push(']');
         write!(f, "{}", ret)
     }
 }

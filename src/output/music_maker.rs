@@ -16,7 +16,7 @@ impl Default for MusicMaker {
     fn default() -> Self {
         Self {
             key: Key::default(),
-            seed: Box::new(RandomSeed::default()),
+            seed: Box::<RandomSeed>::default(),
             current_note: PianoKey::from_str("C4").unwrap(),
             current_sample: usize::default(),
             sample_rate: SAMPLE_RATE,

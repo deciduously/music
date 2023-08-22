@@ -12,11 +12,8 @@ pub mod semitone;
 
 /// Helper function to split a string into a vector of strings, one per character
 /// Example: "hello" => vec!["h", "e", "l", "l", "o"]
-fn char_strs<'a>(s: &'a str) -> Vec<&'a str> {
-    s.split("")
-        .skip(1)
-        .take_while(|c| *c != "")
-        .collect::<Vec<&str>>()
+fn char_strs(s: &str) -> impl Iterator<Item = &str> {
+    s.split("").skip(1).take_while(|c| !c.is_empty())
 }
 
 #[cfg(test)]
@@ -25,6 +22,9 @@ mod test {
     use pretty_assertions::assert_eq;
     #[test]
     fn test_char_strs() {
-        assert_eq!(char_strs("hello"), vec!["h", "e", "l", "l", "o"])
+        assert_eq!(
+            char_strs("hello").collect::<Vec<_>>(),
+            vec!["h", "e", "l", "l", "o"]
+        )
     }
 }

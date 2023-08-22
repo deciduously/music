@@ -2,7 +2,7 @@ use music::{
     output::MusicMaker,
     theory::{piano_key::PianoKey, pitch::Pitch, scale::Scale},
 };
-use rodio::{default_output_device, source::SineWave, Sink};
+use rodio::{source::SineWave, OutputStream, Sink};
 use structopt::StructOpt;
 
 /// music is a procedural single-tone melody generator
@@ -32,8 +32,8 @@ fn main() {
     println!("{}", GREETING);
 
     // Set up audio playback
-    let device = default_output_device().unwrap();
-    let sink = Sink::new(&device);
+    let (_stream, handle) = OutputStream::try_default().unwrap();
+    let sink = Sink::try_new(&handle).expect("Could not create sink");
 
     // Define music source from Opt
     if opt.pitch_mode {

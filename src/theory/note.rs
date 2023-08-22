@@ -8,8 +8,9 @@ use std::{
 };
 
 /// Notes are one of these letters, with C as the base note
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub enum NoteLetter {
+    #[default]
     C = 0,
     D,
     E,
@@ -17,12 +18,6 @@ pub enum NoteLetter {
     G,
     A,
     B,
-}
-
-impl Default for NoteLetter {
-    fn default() -> Self {
-        NoteLetter::C
-    }
 }
 
 impl FromStr for NoteLetter {
@@ -164,8 +159,7 @@ impl fmt::Display for Note {
 impl FromStr for Note {
     type Err = io::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let char_strs = char_strs(s);
-        let mut char_strs = char_strs.iter();
+        let mut char_strs = char_strs(s);
         // note will be first
         if let Some(letter) = char_strs.next() {
             let letter = NoteLetter::from_str(letter)?;

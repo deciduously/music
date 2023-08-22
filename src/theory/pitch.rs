@@ -50,7 +50,7 @@ impl AddAssign<Semitones> for Pitch {
 
 impl From<Pitch> for SineWave {
     fn from(p: Pitch) -> Self {
-        SineWave::new(f64::from(p) as u32)
+        SineWave::new(f32::from(p))
     }
 }
 
