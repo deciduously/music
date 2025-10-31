@@ -67,7 +67,7 @@ impl Sub for Interval {
 		let mut delta = i8::from(self) - i8::from(rhs);
 		if delta < 0 {
 			delta += Interval::Octave as i8;
-		};
+		}
 		Interval::from(Semitones::from(delta))
 	}
 }

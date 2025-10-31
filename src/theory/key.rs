@@ -2,6 +2,7 @@
 //! It is defined by a base note, a scale up to the next octave, and a number of octaves
 
 use super::{interval::Interval, note::Note, piano_key::PianoKey, scale::Scale};
+use std::fmt::Write as _;
 use std::{fmt, str::FromStr};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
@@ -65,7 +66,9 @@ impl fmt::Display for Key {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let notes = self.get_notes();
 		let mut ret = String::from("[ ");
-		notes.iter().for_each(|n| ret.push_str(&format!("{} ", *n)));
+		for n in &notes {
+			write!(ret, "{} ", *n)?;
+		}
 		ret.push(']');
 		write!(f, "{ret}")
 	}

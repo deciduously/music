@@ -5,7 +5,6 @@ use crate::theory::{key::Key, piano_key::PianoKey};
 mod linear;
 mod random;
 
-pub use linear::Linear;
 pub use random::Random;
 
 /// To be a seed, types simply must implement this single method

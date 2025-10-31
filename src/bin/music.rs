@@ -55,7 +55,7 @@ fn main() {
 		println!("{music}");
 		// Play random melody
 		sink.append(music);
-	};
+	}
 	// Sleep thread to allow music to play infinitely
 	sink.sleep_until_end();
 }

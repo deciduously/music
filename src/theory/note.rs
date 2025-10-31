@@ -117,7 +117,7 @@ impl Note {
 				Flat => return Interval::from(Semitones::from(i8::from(Semitones::from(ret)) - 1)),
 				Sharp => return ret + Interval::Min2,
 			}
-		};
+		}
 		ret
 	}
 	#[must_use]
